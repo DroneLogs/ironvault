@@ -10,11 +10,13 @@
   --text: #e7eaf2;
   --text-dim: #aab2c5;
   --muted: #7f8799;
-  /* Okabe-Ito, the standard palette that survives every common form of colour
-     blindness. Its orange doubles as the honey amber of the brand. */
-  --accent: #e69f00;
-  --accent-soft: rgba(230, 159, 0, 0.18);
-  --accent-text: #1b1400;
+  /* IronvaultCB, the default. The accent is the original blue, which is
+     already safe under every common form of colour blindness. Only the
+     meaning colours below change, because green against red is the pair that
+     merges. */
+  --accent: #5b8dfb;
+  --accent-soft: rgba(91, 141, 251, 0.16);
+  --accent-text: #ffffff;
   --good: #56b4e9;
   --warn: #f0e442;
   --danger: #d55e00;
@@ -50,8 +52,8 @@ body.theme-light {
   --text: #1a1e28;
   --text-dim: #4a5162;
   --muted: #737b8d;
-  --accent: #b07000;
-  --accent-soft: rgba(176, 112, 0, 0.14);
+  --accent: #2f6ae0;
+  --accent-soft: rgba(47, 106, 224, 0.12);
   --accent-text: #ffffff;
   --good: #0072b2;
   --warn: #8a6d00;

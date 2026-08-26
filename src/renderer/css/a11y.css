@@ -239,3 +239,208 @@ body.strong-focus :focus-visible {
   white-space: nowrap;
   border: 0;
 }
+
+/* --------------------------------------------------------------- skip link */
+
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 200;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--accent-text);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s;
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+
+/* ------------------------------------------------------- larger click targets */
+
+/* Windows guidance and WCAG both land near 44 pixels for anyone with a tremor
+   or limited fine motor control. The default 30 is comfortable with a mouse and
+   punishing without one. */
+body.big-targets .icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+body.big-targets .icon-btn::before {
+  font-size: 18px;
+}
+
+body.big-targets .btn {
+  padding: 12px 18px;
+  min-height: 44px;
+}
+
+body.big-targets .btn.small {
+  padding: 9px 14px;
+  min-height: 38px;
+}
+
+body.big-targets .entry-row {
+  padding: 14px 12px;
+}
+
+body.big-targets .nav-item {
+  padding: 12px 10px;
+}
+
+body.big-targets .db-item {
+  padding: 16px 14px;
+}
+
+body.big-targets .checkline {
+  padding: 6px 0;
+}
+
+body.big-targets .checkline input {
+  width: 20px;
+  height: 20px;
+}
+
+body.big-targets input[type="text"],
+body.big-targets input[type="password"],
+body.big-targets input[type="search"],
+body.big-targets input[type="number"],
+body.big-targets select {
+  padding: 12px 12px;
+}
+
+body.big-targets .chip-x {
+  padding: 6px 8px;
+}
+
+body.big-targets .audit-item,
+body.big-targets .suggest-row {
+  padding: 14px 12px;
+}
+
+/* ----------------------------------------------------------- high contrast */
+
+/* Near black on near white with heavy borders. Every surface separation that
+   was carried by a subtle tint becomes an actual line. */
+body.high-contrast:not(.theme-light) {
+  --bg: #000000;
+  --panel: #000000;
+  --panel-2: #0d0d0d;
+  --panel-3: #1a1a1a;
+  --border: #ffffff;
+  --border-soft: #9a9a9a;
+  --text: #ffffff;
+  --text-dim: #f0f0f0;
+  --muted: #d0d0d0;
+  --accent: #ffd200;
+  --accent-soft: rgba(255, 210, 0, 0.28);
+  --accent-text: #000000;
+  --good: #4ac0ff;
+  --warn: #ffd200;
+  --danger: #ff8a3d;
+
+  --level-0: #ff8a3d;
+  --level-1: #ffb066;
+  --level-2: #ffd200;
+  --level-3: #4ac0ff;
+  --level-4: #6affc0;
+  --level-5: #ffffff;
+
+  --pw-upper: #6affc0;
+  --pw-lower: #ffffff;
+  --pw-digit: #4ac0ff;
+  --pw-symbol: #ffd200;
+  --pw-latin1: #ff8a3d;
+}
+
+body.high-contrast.theme-light {
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #f2f2f2;
+  --panel-3: #e4e4e4;
+  --border: #000000;
+  --border-soft: #4a4a4a;
+  --text: #000000;
+  --text-dim: #101010;
+  --muted: #303030;
+  --accent: #6b3f00;
+  --accent-soft: rgba(107, 63, 0, 0.18);
+  --accent-text: #ffffff;
+  --good: #00437a;
+  --warn: #6b5300;
+  --danger: #8a2b00;
+
+  --level-0: #8a2b00;
+  --level-1: #6b3f00;
+  --level-2: #6b5300;
+  --level-3: #00437a;
+  --level-4: #005c44;
+  --level-5: #000000;
+}
+
+body.high-contrast .card,
+body.high-contrast .modal,
+body.high-contrast .detail-field,
+body.high-contrast .notes-box,
+body.high-contrast .entry-row.active,
+body.high-contrast .audit-stat,
+body.high-contrast .gen-preview,
+body.high-contrast .totp-box,
+body.high-contrast .suggest-row {
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--border);
+}
+
+body.high-contrast .btn {
+  border-width: 2px;
+}
+
+body.high-contrast .strength-seg {
+  border-width: 2px;
+}
+
+body.high-contrast .nav-item.active,
+body.high-contrast .entry-row.active {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+body.high-contrast .avatar {
+  outline: 2px solid var(--border);
+  outline-offset: -2px;
+}
+
+/* Windows' own high contrast themes. When one is on, the system supplies the
+   colours and we get out of the way, keeping only the structure. */
+@media (forced-colors: active) {
+  .strength-seg.on {
+    background: Highlight;
+    border-color: Highlight;
+  }
+
+  .strength-seg {
+    border: 1px solid CanvasText;
+  }
+
+  .btn,
+  .icon-btn,
+  .card,
+  .modal,
+  .detail-field {
+    border: 1px solid CanvasText;
+  }
+
+  .entry-row.active,
+  .nav-item.active {
+    outline: 2px solid Highlight;
+  }
+
+  .avatar {
+    forced-color-adjust: none;
+  }
+}

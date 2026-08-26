@@ -1,0 +1,119 @@
+/* The four themes.
+ *
+ *   IronvaultCB   the default: the original look, with the ambiguous colours
+ *                 replaced by ones that survive colour blindness
+ *   Ironvault     the original exactly, blue and violet, red against green
+ *   PropolisCB    honey and resin, with the same safe substitutions
+ *   Propolis      honey and resin as first drawn
+ *
+ * The two CB themes keep the accent of their sibling, because blue and amber
+ * are both already distinguishable under every common form of colour blindness.
+ * What changes is the meaning colours: nothing says "good" in green and "bad"
+ * in red, since those are the pair that merges.
+ *
+ * app.css holds the base tokens, which are IronvaultCB. Everything below is an
+ * override on top of that.
+ */
+
+/* ------------------------------------------------------- Ironvault, original */
+
+body.scheme-ironvault {
+  --good: #3fcf8e;
+  --warn: #f0b429;
+  --danger: #f2686a;
+
+  --pw-upper: #9d8bff;
+  --pw-lower: #e7eaf2;
+  --pw-digit: #4fc3e8;
+  --pw-symbol: #f5a05a;
+  --pw-latin1: #f07fb0;
+
+  --level-0: #f2686a;
+  --level-1: #f2686a;
+  --level-2: #f0b429;
+  --level-3: #6cc24a;
+  --level-4: #3fcf8e;
+  --level-5: #2fb3a6;
+}
+
+body.scheme-ironvault.theme-light {
+  --good: #129a68;
+  --warn: #b7791f;
+  --danger: #d13b3f;
+
+  --pw-upper: #6b3fd4;
+  --pw-lower: #1a1e28;
+  --pw-digit: #0f7d9e;
+  --pw-symbol: #b4610f;
+  --pw-latin1: #b32b6d;
+}
+
+/* --------------------------------------------------------- Propolis, honeyed */
+
+/* Amber accent, and a ground the colour of resin in shadow. */
+body.scheme-propolis,
+body.scheme-propolis-cb {
+  --accent: #e69f00;
+  --accent-soft: rgba(230, 159, 0, 0.18);
+  --accent-text: #1b1400;
+}
+
+body.scheme-propolis:not(.theme-light),
+body.scheme-propolis-cb:not(.theme-light) {
+  --bg: #17120e;
+  --panel: #1e1813;
+  --panel-2: #241d17;
+  --panel-3: #2c231b;
+  --border: #3a2e24;
+  --border-soft: #2a2119;
+}
+
+body.scheme-propolis.theme-light,
+body.scheme-propolis-cb.theme-light {
+  --accent: #b07000;
+  --accent-soft: rgba(176, 112, 0, 0.14);
+  --accent-text: #ffffff;
+  --bg: #f6f1e8;
+  --panel: #fffdf8;
+  --panel-2: #f3ece1;
+  --panel-3: #e8dfd0;
+  --border: #d6c9b4;
+  --border-soft: #e4dacb;
+}
+
+/* Propolis without the safe substitutions keeps the warm green and red. */
+body.scheme-propolis {
+  --good: #3fcf8e;
+  --warn: #f0b429;
+  --danger: #f2686a;
+
+  --pw-upper: #c9a227;
+  --pw-lower: #f3ead9;
+  --pw-digit: #4fc3e8;
+  --pw-symbol: #f5a05a;
+  --pw-latin1: #f07fb0;
+
+  --level-0: #f2686a;
+  --level-1: #f2686a;
+  --level-2: #f0b429;
+  --level-3: #6cc24a;
+  --level-4: #3fcf8e;
+  --level-5: #2fb3a6;
+}
+
+body.scheme-propolis.theme-light {
+  --good: #129a68;
+  --warn: #b7791f;
+  --danger: #d13b3f;
+  --pw-lower: #241a0e;
+}
+
+/* PropolisCB inherits the safe meaning colours from the base, and only needs
+   its lower case glyphs warmed to match the ground. */
+body.scheme-propolis-cb:not(.theme-light) {
+  --pw-lower: #f3ead9;
+}
+
+body.scheme-propolis-cb.theme-light {
+  --pw-lower: #241a0e;
+}

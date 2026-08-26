@@ -75,6 +75,8 @@ window.IV = window.IV || {};
     body.classList.toggle('large-text', Number(prefs.zoom || 1) >= 1.25);
     body.classList.toggle('reduce-motion', Boolean(prefs.reduceMotion));
     body.classList.toggle('strong-focus', Boolean(prefs.strongFocus));
+    body.classList.toggle('big-targets', Boolean(prefs.bigTargets));
+    body.classList.toggle('high-contrast', Boolean(prefs.highContrast));
   }
 
   /* ------------------------------------------------------- lock screen */
@@ -104,7 +106,9 @@ window.IV = window.IV || {};
         'li',
         {
           class: 'db-item' + (db.exists ? '' : ' missing'),
-          onClick: () => (db.exists ? showUnlockPanel(db) : offerForget(db))
+          role: 'button',
+          'aria-label': db.name + (db.exists ? '' : ', file not found') + '. ' + db.path,
+          onActivate: () => (db.exists ? showUnlockPanel(db) : offerForget(db))
         },
         h('div', { class: 'db-icon', text: IV.dom.initials(db.name) }),
         h(
@@ -451,7 +455,10 @@ window.IV = window.IV || {};
           'li',
           {
             class: 'nav-item' + (active ? ' active' : ''),
-            onClick: () => select({ type: 'smart', key: item.key, label: item.label })
+            role: 'button',
+            'aria-current': active ? 'true' : null,
+            'aria-label': item.label + (count != null ? ', ' + count + ' entries' : ''),
+            onActivate: () => select({ type: 'smart', key: item.key, label: item.label })
           },
           h('span', { class: 'nav-glyph', text: item.glyph }),
           h('span', { class: 'nav-label', text: item.label }),
@@ -487,7 +494,30 @@ window.IV = window.IV || {};
       'li',
       {
         class: 'nav-item' + (active ? ' active' : ''),
-        onClick: () => select({ type: 'group', key: group.id, label: group.name }),
+        role: 'treeitem',
+        'aria-level': String(depth + 1),
+        'aria-selected': active ? 'true' : 'false',
+        'aria-expanded': hasChildren ? String(!isCollapsed) : null,
+        'aria-label': group.name + ', ' + group.totalEntryCount + ' entries',
+        onActivate: () => select({ type: 'group', key: group.id, label: group.name }),
+        onKeydown: (e) => {
+          // Arrow keys are what a tree is expected to answer to.
+          if (e.key === 'ArrowRight' && hasChildren && isCollapsed) {
+            e.preventDefault();
+            state.collapsed.delete(group.id);
+            renderSidebar();
+          } else if (e.key === 'ArrowLeft' && hasChildren && !isCollapsed) {
+            e.preventDefault();
+            state.collapsed.add(group.id);
+            renderSidebar();
+          } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const items = $$('#group-tree .nav-item');
+            const index = items.indexOf(e.currentTarget);
+            const next = items[index + (e.key === 'ArrowDown' ? 1 : -1)];
+            if (next) next.focus();
+          }
+        },
         onContextmenu: (e) => {
           e.preventDefault();
           openGroupMenu(group);
@@ -583,6 +613,15 @@ window.IV = window.IV || {};
     state.entries = sortEntries(entries);
     renderEntryList();
 
+    const countText =
+      state.entries.length +
+      (state.entries.length === 1 ? ' entry' : ' entries') +
+      ' in ' +
+      $('#list-title').textContent;
+    const countNode = $('#list-count');
+    if (countNode) countNode.textContent = countText;
+    IV.dom.announce(countText);
+
     if (state.entryId && !state.entries.some((e) => e.id === state.entryId)) state.entryId = null;
     if (state.entryId) await showEntry(state.entryId, true);
     else IV.detail.render(null);
@@ -643,12 +682,26 @@ window.IV = window.IV || {};
       if (entry.attachmentCount) flags.append(h('span', { text: '\u{1F4CE}' }));
       if ((entry.tags || []).some((t) => /^favou?rite$/i.test(t))) flags.append(h('span', { text: '★' }));
 
+      const spoken = [
+        entry.title || 'no title',
+        entry.username ? 'user ' + entry.username : '',
+        entry.groupName ? 'in ' + entry.groupName : '',
+        entry.expired ? 'expired' : '',
+        entry.hasTotp ? 'has a one time code' : '',
+        entry.attachmentCount ? entry.attachmentCount + ' attachments' : ''
+      ]
+        .filter(Boolean)
+        .join(', ');
+
       list.append(
         h(
           'li',
           {
             class: 'entry-row' + (entry.id === state.entryId ? ' active' : ''),
-            onClick: () => showEntry(entry.id),
+            role: 'option',
+            'aria-selected': entry.id === state.entryId ? 'true' : 'false',
+            'aria-label': spoken,
+            onActivate: () => showEntry(entry.id),
             onDblclick: async () => {
               const full = await IV.api.entry(entry.id);
               IV.editor.openEntryEditor(full);

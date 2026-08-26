@@ -32,7 +32,12 @@ window.IV = window.IV || {};
       'li',
       {
         class: 'audit-item',
-        onClick: () => {
+        role: 'button',
+        'aria-label':
+          (summary.title || 'no title') +
+          (summary.username ? ', ' + summary.username : '') +
+          (extra ? ', ' + extra : ''),
+        onActivate: () => {
           const top = IV.dom.topModal();
           if (top) top.close();
           IV.app.showEntry(summary.id);

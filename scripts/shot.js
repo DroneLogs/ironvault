@@ -113,7 +113,7 @@ async function main() {
   setTimeout(() => {
     console.error('watchdog: harness took too long, exiting');
     app.exit(2);
-  }, 150000).unref();
+  }, 400000).unref();
   await win.loadFile(path.join(__dirname, '..', 'src', 'renderer', 'index.html'));
   win.focus();
   await wait(1200);
@@ -360,6 +360,98 @@ async function main() {
   `, 'totp through the UI');
   const totpState = JSON.parse(totpCheck || '{}');
   check('one time code generated through the UI', /^\d{6}$/.test(totpState.code || ''), totpCheck);
+
+  /* ------------------------------------------------- accessibility checks */
+
+  console.log('');
+  console.log('accessibility checks');
+
+  const a11y = JSON.parse(
+    await run(`
+      (() => {
+        const rows = Array.from(document.querySelectorAll('.entry-row'));
+        const navs = Array.from(document.querySelectorAll('#group-tree .nav-item'));
+        const iconButtons = Array.from(document.querySelectorAll('.icon-btn'));
+        return JSON.stringify({
+          liveRegions: Boolean(document.getElementById('sr-status') && document.getElementById('sr-alert')),
+          skipLink: Boolean(document.querySelector('.skip-link')),
+          listboxRole: (document.getElementById('entry-list') || {}).getAttribute
+            ? document.getElementById('entry-list').getAttribute('role')
+            : null,
+          rowsHaveRole: rows.length > 0 && rows.every(r => r.getAttribute('role') === 'option'),
+          rowsFocusable: rows.length > 0 && rows.every(r => r.getAttribute('tabindex') === '0'),
+          rowsLabelled: rows.length > 0 && rows.every(r => (r.getAttribute('aria-label') || '').length > 3),
+          treeRole: (document.getElementById('group-tree') || {}).getAttribute
+            ? document.getElementById('group-tree').getAttribute('role')
+            : null,
+          treeItemsRole: navs.length > 0 && navs.every(n => n.getAttribute('role') === 'treeitem'),
+          treeItemsLevelled: navs.length > 0 && navs.every(n => n.hasAttribute('aria-level')),
+          iconButtonCount: iconButtons.length,
+          iconButtonsNamed: iconButtons.every(b => (b.getAttribute('aria-label') || b.textContent.trim()).length > 0),
+          searchLabelled: Boolean(document.querySelector('label[for="search-input"]'))
+        });
+      })()
+    `, 'a11y probe')
+  );
+
+  check('live regions present', a11y.liveRegions === true);
+  check('skip link present', a11y.skipLink === true);
+  check('entry list is a listbox', a11y.listboxRole === 'listbox', String(a11y.listboxRole));
+  check('entry rows are options', a11y.rowsHaveRole === true);
+  check('entry rows reachable by keyboard', a11y.rowsFocusable === true);
+  check('entry rows have spoken labels', a11y.rowsLabelled === true);
+  check('group list is a tree', a11y.treeRole === 'tree', String(a11y.treeRole));
+  check('group items are treeitems', a11y.treeItemsRole === true);
+  check('group items carry a level', a11y.treeItemsLevelled === true);
+  check(
+    'every icon button has a name (' + a11y.iconButtonCount + ' checked)',
+    a11y.iconButtonsNamed === true
+  );
+  check('search box has a label', a11y.searchLabelled === true);
+
+  // A dialog must keep focus inside it and hand focus back on close.
+  await run(`document.querySelector('#btn-generator').focus(); true`, 'focus generator button');
+  await run(`document.querySelector('#btn-generator').click(); true`, 'open generator');
+  await wait(700);
+  const dialogState = JSON.parse(
+    await run(`
+      (() => {
+        const dlg = IV.dom.topModal().dialog;
+        return JSON.stringify({
+          role: dlg.getAttribute('role'),
+          modal: dlg.getAttribute('aria-modal'),
+          labelled: Boolean(dlg.getAttribute('aria-labelledby')),
+          focusInside: dlg.contains(document.activeElement)
+        });
+      })()
+    `, 'dialog probe')
+  );
+  check('dialog has the dialog role', dialogState.role === 'dialog');
+  check('dialog is marked modal', dialogState.modal === 'true');
+  check('dialog is labelled', dialogState.labelled === true);
+  check('focus moves into the dialog', dialogState.focusInside === true);
+
+  await run(`IV.dom.topModal().close(); true`, 'close generator');
+  await wait(400);
+  const restored = await run(
+    `document.activeElement && document.activeElement.id === 'btn-generator'`,
+    'focus restore probe'
+  );
+  check('focus returns to what opened it', restored === true);
+
+  /* ------------------------------------------------ accessibility screens */
+
+  await run(`IV.api.setPrefs({highContrast:true}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'high contrast');
+  await wait(900);
+  await shot('20-high-contrast');
+  await run(`IV.api.setPrefs({highContrast:false}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset contrast');
+  await wait(500);
+
+  await run(`IV.api.setPrefs({bigTargets:true}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'big targets');
+  await wait(900);
+  await shot('21-large-targets');
+  await run(`IV.api.setPrefs({bigTargets:false}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset targets');
+  await wait(500);
 
   console.log('');
   console.log(passed + ' passed, ' + failed + ' failed');

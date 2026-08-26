@@ -15,7 +15,18 @@ window.IV = window.IV || {};
         else if (key === 'html') el.innerHTML = value; // only ever called with literals
         else if (key === 'dataset') Object.assign(el.dataset, value);
         else if (key === 'vars') for (const [k, v] of Object.entries(value)) el.style.setProperty(k, v);
-        else if (key.startsWith('on') && typeof value === 'function') {
+        else if (key === 'onActivate' && typeof value === 'function') {
+          // A div or li that behaves like a control has to be reachable and
+          // triggerable from the keyboard, not only clickable.
+          if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+          el.addEventListener('click', value);
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+              e.preventDefault();
+              value(e);
+            }
+          });
+        } else if (key.startsWith('on') && typeof value === 'function') {
           el.addEventListener(key.slice(2).toLowerCase(), value);
         } else if (key === 'value') el.value = value;
         else if (key === 'checked' || key === 'disabled' || key === 'hidden' || key === 'readOnly') el[key] = Boolean(value);
@@ -26,6 +37,18 @@ window.IV = window.IV || {};
       if (child == null || child === false) continue;
       el.append(child.nodeType ? child : document.createTextNode(String(child)));
     }
+
+    // An icon button says nothing to a screen reader: its label is a CSS
+    // glyph. Borrow the tooltip, which every one of them already sets.
+    if (
+      el.tagName === 'BUTTON' &&
+      !el.textContent.trim() &&
+      !el.hasAttribute('aria-label') &&
+      el.hasAttribute('title')
+    ) {
+      el.setAttribute('aria-label', el.getAttribute('title'));
+    }
+
     return el;
   }
 
@@ -46,20 +69,54 @@ window.IV = window.IV || {};
     clear(root).append(node);
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => node.remove(), kind === 'error' ? 4200 : 2100);
+    // The toast root is a live region, so this reaches a screen reader too.
+    announce(message, kind === 'error' ? 'assertive' : 'polite');
+  }
+
+  /**
+   * Speaks a message without showing anything. Used for things a sighted user
+   * infers from the screen changing, like a list reloading after a search.
+   */
+  let announceTimer = null;
+  function announce(message, urgency = 'polite') {
+    const region = $(urgency === 'assertive' ? '#sr-alert' : '#sr-status');
+    if (!region) return;
+    // Clearing first makes repeats of the same text announce again.
+    region.textContent = '';
+    if (announceTimer) clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      region.textContent = String(message || '');
+    }, 60);
   }
 
   /* --------------------------------------------------------------- modal */
 
   const modalStack = [];
 
+  const FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
+    'select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
+  function focusableWithin(root) {
+    return $$(FOCUSABLE, root).filter((el) => el.offsetParent !== null || el === document.activeElement);
+  }
+
   function modal({ title, body, footer, wide, onClose, initialFocus }) {
+    const titleId = 'modal-title-' + Math.random().toString(36).slice(2, 9);
+    const returnFocusTo = document.activeElement;
+
     const dialog = h(
       'div',
-      { class: 'modal' + (wide ? ' wide' : '') },
+      {
+        class: 'modal' + (wide ? ' wide' : ''),
+        role: 'dialog',
+        'aria-modal': 'true',
+        'aria-labelledby': titleId
+      },
       h(
         'div',
         { class: 'modal-head' },
-        h('h2', { text: title || '' }),
+        h('h2', { id: titleId, text: title || '' }),
         h('button', { class: 'icon-btn close', title: 'Close', onClick: () => close() })
       ),
       h('div', { class: 'modal-body' }, body),
@@ -77,10 +134,36 @@ window.IV = window.IV || {};
       dialog
     );
 
+    // Tab must not escape an open dialog, or focus lands on the page behind it
+    // where a screen reader will happily read content the user cannot see.
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const items = focusableWithin(dialog);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+
     function close(result) {
       const index = modalStack.indexOf(handle);
       if (index >= 0) modalStack.splice(index, 1);
       backdrop.remove();
+      // Put focus back where it came from, so keyboard users do not get
+      // dropped at the top of the page.
+      if (returnFocusTo && document.contains(returnFocusTo)) {
+        try {
+          returnFocusTo.focus();
+        } catch {
+          /* the element may have been replaced by a refresh */
+        }
+      }
       if (onClose) onClose(result);
     }
 
@@ -88,8 +171,11 @@ window.IV = window.IV || {};
     modalStack.push(handle);
     $('#modal-root').append(backdrop);
 
-    const focusTarget = initialFocus ? $(initialFocus, dialog) : dialog.querySelector('input, textarea, button.primary');
+    const focusTarget = initialFocus
+      ? $(initialFocus, dialog)
+      : dialog.querySelector('input, textarea, button.primary') || dialog.querySelector('button');
     if (focusTarget) setTimeout(() => focusTarget.focus(), 20);
+    announce(title ? title + ' dialog' : 'Dialog opened');
     return handle;
   }
 
@@ -201,6 +287,8 @@ window.IV = window.IV || {};
     formatDate,
     formatRelative,
     formatSize,
-    strengthMeter
+    strengthMeter,
+    announce,
+    focusableWithin
   };
 })(window.IV);

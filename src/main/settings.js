@@ -19,6 +19,8 @@ const DEFAULTS = {
     zoom: 1,
     reduceMotion: false,
     strongFocus: false,
+    bigTargets: false,
+    highContrast: false,
     appIcon: 'default',
     autoTypeHotkey: 'Control+Alt+A',
     keepBackups: 10,

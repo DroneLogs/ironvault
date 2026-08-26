@@ -155,6 +155,18 @@ window.IV = window.IV || {};
       zoomField(prefs),
       toggle('Reduce motion', Boolean(prefs.reduceMotion), (v) => apply({ reduceMotion: v }), 'Turns off fades and slides.'),
       toggle('Thicker focus outline', Boolean(prefs.strongFocus), (v) => apply({ strongFocus: v }), 'Easier to follow when moving through the app by keyboard.'),
+      toggle(
+        'Larger buttons and rows',
+        Boolean(prefs.bigTargets),
+        (v) => apply({ bigTargets: v }),
+        'Grows every control to at least 44 pixels, for tremor or limited fine motor control.'
+      ),
+      toggle(
+        'High contrast',
+        Boolean(prefs.highContrast),
+        (v) => apply({ highContrast: v }),
+        'Near black on near white with heavy borders. Windows own high contrast themes are followed automatically.'
+      ),
       h('p', {
         class: 'hint',
         text: 'Out of the box only the colourblind safe palette is on. Everything else here starts off.'
@@ -171,7 +183,9 @@ window.IV = window.IV || {};
               uiFont: 'system',
               zoom: 1,
               reduceMotion: false,
-              strongFocus: false
+              strongFocus: false,
+              bigTargets: false,
+              highContrast: false
             });
             handle.close();
             toast('Accessibility settings reset', 'good');

@@ -16,6 +16,7 @@ const sshagent = require('./sshagent');
 const autotype = require('./autotype');
 const hello = require('./hello');
 const brand = require('./brand');
+const yubikey = require('./yubikey');
 
 let ctx = {
   getWindow: () => null,
@@ -178,15 +179,17 @@ const handlers = {
   'db.chooseKeyFile': () => chooseKeyFile(),
 
   /* database lifecycle */
-  'db.create': async ({ filePath, password, keyFilePath, name, format }) => {
-    const info = await vault.create({ filePath, password, keyFilePath, name, format });
+  'db.create': async ({ filePath, password, keyFilePath, name, format, yubikey: yubiConfig }) => {
+    const info = await vault.create({ filePath, password, keyFilePath, name, format, yubikey: yubiConfig });
     settings.rememberDatabase({ path: filePath, name: name || info.name, keyFilePath: keyFilePath || null });
+    if (yubiConfig) settings.setSecrets(filePath, { yubikey: yubiConfig });
     return info;
   },
   'db.open': async ({ filePath, password, keyFilePath, rememberQuickUnlock, readOnly }) => {
     let info;
+    const yubiConfig = settings.getSecrets(filePath).yubikey || null;
     try {
-      info = await vault.open({ filePath, password, keyFilePath, readOnly });
+      info = await vault.open({ filePath, password, keyFilePath, readOnly, yubikey: yubiConfig });
     } catch (err) {
       if (err.code === 'INVALID_KEY' && settings.findDatabase(filePath)) {
         const outcome = security.recordFailure(filePath);
@@ -303,7 +306,8 @@ const handlers = {
     settings.rememberDatabase({ path: target, name: info.name });
     return info;
   },
-  'db.changeCredentials': ({ password, keyFilePath }) => vault.changeCredentials({ password, keyFilePath }),
+  'db.changeCredentials': ({ password, keyFilePath, yubikey: yubiConfig }) =>
+    vault.changeCredentials({ password, keyFilePath, yubikey: yubiConfig }),
   'db.revealInFolder': ({ filePath }) => {
     shell.showItemInFolder(filePath || vault.info().filePath || '');
     return { ok: true };
@@ -364,6 +368,20 @@ const handlers = {
   'gen.usernames': () => generator.generateUsernames(),
   'gen.wordLists': () => wordlists.catalogue(),
   'gen.strength': ({ password }) => vault.estimateStrength(password),
+
+  /* YubiKey */
+  'yubikey.detect': () => yubikey.detect(),
+  'yubikey.test': ({ slot }) => yubikey.selfTest({ slot: Number(slot) || 2 }),
+  'yubikey.get': ({ filePath }) => {
+    const secrets = settings.getSecrets(filePath || vault.info().filePath);
+    return secrets.yubikey || null;
+  },
+  'yubikey.set': ({ filePath, slot, enabled }) => {
+    settings.setSecrets(filePath || vault.info().filePath, {
+      yubikey: enabled ? { slot: Number(slot) || 2 } : null
+    });
+    return { ok: true, enabled: Boolean(enabled) };
+  },
 
   /* audits */
   'audit.similar': (opts) => features.auditSimilar(opts || {}),

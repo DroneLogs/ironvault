@@ -256,6 +256,28 @@ async function main() {
   await run(`IV.api.setPrefs({palette:'accessible'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset palette');
   await wait(400);
 
+  await run(`
+    IV.api.setPrefs({appIcon:'propolis'}).then(async p => {
+      IV.state.prefs = p;
+      const info = await IV.api.appInfo();
+      IV.state.productName = info.productName;
+      IV.app.applyTheme();
+      IV.app.applyBrand();
+    }); true
+  `, 'propolis brand');
+  await wait(1100);
+  await shot('19-propolis');
+  await run(`
+    IV.api.setPrefs({appIcon:'default'}).then(async p => {
+      IV.state.prefs = p;
+      const info = await IV.api.appInfo();
+      IV.state.productName = info.productName;
+      IV.app.applyTheme();
+      IV.app.applyBrand();
+    }); true
+  `, 'reset brand');
+  await wait(600);
+
   await run(`IV.settings.openShortcuts(); true`, 'shortcuts');
   await wait(400);
   await shot('14-shortcuts');

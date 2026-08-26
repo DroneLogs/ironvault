@@ -15,9 +15,15 @@ const zlib = require('zlib');
 const SIZES = [16, 24, 32, 48, 64, 128, 256];
 const SAMPLES = 4; // supersampling factor per axis
 
-/** Honey amber by default, with the alternates offered in Settings. */
+/**
+ * Honey amber by default, with the alternates offered in Settings.
+ *
+ * Propolis is the resin bees seal the hive with, so its colours are the deep
+ * reddish brown of the real thing rather than the gold of honey.
+ */
 const THEMES = {
   default: [[0xf7, 0xc1, 0x2e], [0xdd, 0x76, 0x00]],
+  propolis: [[0xd5, 0x5e, 0x00], [0x6b, 0x2d, 0x0c]],
   blue: [[0x5b, 0x8d, 0xfb], [0x8f, 0x6b, 0xff]],
   green: [[0x35, 0xc4, 0x8a], [0x1f, 0x9d, 0xb4]],
   crimson: [[0xf2, 0x5f, 0x7c], [0xb0, 0x2b, 0x6a]],
@@ -196,14 +202,24 @@ function buildIco(images) {
 /* -------------------------------------------------------------------- main */
 
 const buildDir = path.join(__dirname, '..', 'build');
+const rendererDir = path.join(__dirname, '..', 'src', 'renderer', 'icons');
 fs.mkdirSync(buildDir, { recursive: true });
+fs.mkdirSync(rendererDir, { recursive: true });
 
 for (const [name, [a, b]] of Object.entries(THEMES)) {
   COLOR_A = a;
   COLOR_B = b;
   const images = SIZES.map((size) => ({ size, png: encodePng(render(size), size) }));
   const suffix = name === 'default' ? '' : '-' + name;
+
+  // The .ico is what Windows uses for the window and the installer.
   fs.writeFileSync(path.join(buildDir, 'icon' + suffix + '.ico'), buildIco(images));
-  if (name === 'default') fs.writeFileSync(path.join(buildDir, 'icon.png'), encodePng(render(512), 512));
-  console.log('wrote build/icon' + suffix + '.ico');
+
+  // The .png is what the app draws in its own title bar and lock screen, which
+  // is the icon a user actually looks at while the app is running.
+  const large = encodePng(render(512), 512);
+  fs.writeFileSync(path.join(rendererDir, 'app' + suffix + '.png'), large);
+  if (name === 'default') fs.writeFileSync(path.join(buildDir, 'icon.png'), large);
+
+  console.log('wrote build/icon' + suffix + '.ico and renderer app' + suffix + '.png');
 }

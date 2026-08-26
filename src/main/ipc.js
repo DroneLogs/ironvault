@@ -15,6 +15,7 @@ const remote = require('./remote');
 const sshagent = require('./sshagent');
 const autotype = require('./autotype');
 const hello = require('./hello');
+const brand = require('./brand');
 
 let ctx = {
   getWindow: () => null,
@@ -22,6 +23,7 @@ let ctx = {
   takePendingFile: () => null,
   applyAppIcon: () => {},
   applyZoom: () => {},
+  relaunch: () => {},
   registerHotkeys: () => {}
 };
 let clipboardTimer = null;
@@ -137,8 +139,14 @@ const handlers = {
     prefs: settings.getPrefs(),
     quickUnlockAvailable: quickUnlockAvailable(),
     wordLists: wordlists.catalogue(),
+    productName: brand.productNameFor(settings.getPrefs().appIcon),
+    tagline: brand.taglineFor(settings.getPrefs().appIcon),
     openWith: ctx.takePendingFile()
   }),
+  'app.relaunch': () => {
+    ctx.relaunch();
+    return { ok: true };
+  },
   'prefs.get': () => settings.getPrefs(),
   'prefs.set': (patch) => {
     const prefs = settings.setPrefs(patch);
@@ -149,16 +157,9 @@ const handlers = {
   },
   'app.iconChoices': () => {
     const dir = path.join(__dirname, '..', '..', 'build');
-    const choices = [{ key: 'default', name: 'Ironvault blue' }];
-    for (const [key, name] of [
-      ['green', 'Green'],
-      ['amber', 'Amber'],
-      ['crimson', 'Crimson'],
-      ['slate', 'Slate']
-    ]) {
-      if (fs.existsSync(path.join(dir, 'icon-' + key + '.ico'))) choices.push({ key, name });
-    }
-    return choices;
+    return brand
+      .choices()
+      .filter((c) => c.key === 'default' || fs.existsSync(path.join(dir, 'icon-' + c.key + '.ico')));
   },
 
   /* database list */

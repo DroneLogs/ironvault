@@ -11,6 +11,7 @@ const { registerIpc, clearClipboardNow } = require('./ipc');
 const updater = require('./updater');
 const features = require('./features');
 const sshagent = require('./sshagent');
+const brand = require('./brand');
 
 registerArgon2();
 
@@ -37,12 +38,22 @@ function applyZoom(factor) {
 
 function applyAppIcon(name) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  const target = iconPathFor(name);
   try {
-    mainWindow.setIcon(target);
+    mainWindow.setIcon(iconPathFor(name));
+    mainWindow.setTitle(brand.productNameFor(name));
   } catch (err) {
     console.error('Could not set the window icon: ' + err.message);
   }
+}
+
+/**
+ * Windows caches the taskbar icon against the running instance, so a live
+ * setIcon does not always reach it. Relaunching is the reliable way to make the
+ * change take everywhere at once.
+ */
+function relaunch() {
+  app.relaunch();
+  app.exit(0);
 }
 let mainWindow = null;
 let idleTimer = null;
@@ -383,6 +394,7 @@ if (!gotLock) {
       lockNow,
       applyAppIcon,
       applyZoom,
+      relaunch,
       registerHotkeys,
       takePendingFile: () => {
         const file = pendingFile;

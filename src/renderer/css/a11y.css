@@ -239,3 +239,34 @@ body.strong-focus :focus-visible {
   white-space: nowrap;
   border: 0;
 }
+
+/* ------------------------------------------------------------ Propolis brand */
+
+/* Propolis is the resin bees seal the hive with: deep reddish brown rather than
+   the gold of honey. The accent is Okabe-Ito vermillion, so switching brand
+   never costs colourblind safety. */
+body.brand-propolis {
+  --accent: #d55e00;
+  --accent-soft: rgba(213, 94, 0, 0.18);
+  --accent-text: #ffffff;
+  --danger: #e69f00;
+
+  --level-0: #e69f00;
+  --level-1: #d55e00;
+}
+
+body.brand-propolis.theme-light {
+  --accent: #a34500;
+  --accent-soft: rgba(163, 69, 0, 0.14);
+  --danger: #8a6d00;
+}
+
+/* A warmer ground, the colour of resin in shadow. */
+body.brand-propolis:not(.theme-light) {
+  --bg: #17120e;
+  --panel: #1e1813;
+  --panel-2: #241d17;
+  --panel-3: #2c231b;
+  --border: #3a2e24;
+  --border-soft: #2a2119;
+}

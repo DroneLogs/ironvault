@@ -15,6 +15,8 @@ window.IV = window.IV || {};
     call,
 
     appInfo: () => call('app.info'),
+    relaunch: () => call('app.relaunch'),
+    iconChoices: () => call('app.iconChoices'),
     getPrefs: () => call('prefs.get'),
     setPrefs: (patch) => call('prefs.set', patch),
 

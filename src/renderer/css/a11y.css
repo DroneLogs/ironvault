@@ -56,46 +56,6 @@ body.font-hyperlegible {
   --font: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
 }
 
-/* ------------------------------------------------------- the classic palette */
-
-/* The original blue and violet scheme, kept for anyone who prefers it. It uses
-   red against green in places, which is exactly what the default avoids. */
-body.palette-classic {
-  --accent: #5b8dfb;
-  --accent-soft: rgba(91, 141, 251, 0.16);
-  --accent-text: #ffffff;
-  --good: #3fcf8e;
-  --warn: #f0b429;
-  --danger: #f2686a;
-
-  --pw-upper: #9d8bff;
-  --pw-lower: #e7eaf2;
-  --pw-digit: #4fc3e8;
-  --pw-symbol: #f5a05a;
-  --pw-latin1: #f07fb0;
-
-  --level-0: #f2686a;
-  --level-1: #f2686a;
-  --level-2: #f0b429;
-  --level-3: #6cc24a;
-  --level-4: #3fcf8e;
-  --level-5: #2fb3a6;
-}
-
-body.palette-classic.theme-light {
-  --accent: #2f6ae0;
-  --accent-soft: rgba(47, 106, 224, 0.12);
-  --good: #129a68;
-  --warn: #b7791f;
-  --danger: #d13b3f;
-
-  --pw-upper: #6b3fd4;
-  --pw-lower: #1a1e28;
-  --pw-digit: #0f7d9e;
-  --pw-symbol: #b4610f;
-  --pw-latin1: #b32b6d;
-}
-
 /* -------------------------------------------------------------- text scaling */
 
 /* The window zoom factor does the real work, set from the main process. These
@@ -443,4 +403,48 @@ body.high-contrast .avatar {
   .avatar {
     forced-color-adjust: none;
   }
+}
+
+/* ------------------------------------------------------------- explanations */
+
+/* A collapsed answer next to the thing it explains. Quiet when closed, so it
+   never gets in the way of somebody who already knows the word. */
+details.explain {
+  margin: -2px 0 14px;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+details.explain > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--accent);
+  user-select: none;
+  list-style: none;
+  padding: 2px 0;
+}
+
+details.explain > summary::marker,
+details.explain > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.explain > summary::before {
+  content: "\003F\00a0";
+  font-weight: 700;
+}
+
+details.explain[open] > summary {
+  margin-bottom: 6px;
+}
+
+details.explain p {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+
+details.explain p:last-child {
+  margin-bottom: 4px;
 }

@@ -36,11 +36,11 @@ function applyZoom(factor) {
   }
 }
 
-function applyAppIcon(name) {
+function applyAppIcon(themeKey) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   try {
-    mainWindow.setIcon(iconPathFor(name));
-    mainWindow.setTitle(brand.productNameFor(name));
+    mainWindow.setIcon(iconPathFor(brand.iconKeyFor(themeKey)));
+    mainWindow.setTitle(brand.productNameFor(themeKey));
   } catch (err) {
     console.error('Could not set the window icon: ' + err.message);
   }
@@ -121,7 +121,9 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    icon: fs.existsSync(iconPathFor(settings.getPrefs().appIcon)) ? iconPathFor(settings.getPrefs().appIcon) : undefined,
+    icon: fs.existsSync(iconPathFor(brand.iconKeyFor(settings.getPrefs().theme)))
+      ? iconPathFor(brand.iconKeyFor(settings.getPrefs().theme))
+      : undefined,
     backgroundColor: '#12141a',
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',

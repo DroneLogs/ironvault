@@ -88,14 +88,16 @@ window.IV = window.IV || {};
     );
   }
 
-  function appIconField(prefs) {
+  /**
+   * One picker for the whole look: name, icon and palette move together.
+   * The in app logo and name change at once; the taskbar icon is held by
+   * Windows against the running process, so that part needs a restart.
+   */
+  function themeField(prefs) {
     const select = h('select', {
       onChange: async () => {
-        await apply({ appIcon: select.value });
+        await apply({ theme: select.value });
 
-        // The in app logo and name change immediately. The taskbar and window
-        // icon are held by Windows against the running instance, so those need
-        // a restart to catch up.
         const info = await IV.api.appInfo();
         IV.state.productName = info.productName;
         IV.state.tagline = info.tagline;
@@ -105,12 +107,13 @@ window.IV = window.IV || {};
           title: 'Restart to finish',
           message: 'Restart now so the taskbar and window icon change too?',
           detail:
-            'The icon and name inside the app have already changed. Windows holds the taskbar icon ' +
-            'against the running program, so it only updates on a restart. Any open database is locked first.',
+            'The colours, the name and the logo inside the app have already changed. Windows holds the ' +
+            'taskbar icon against the running program, so only that part needs a restart. Any open ' +
+            'database is locked first.',
           confirmLabel: 'Restart now'
         });
         if (!ok) {
-          toast('Changed. The taskbar icon updates next time you start the app.');
+          toast('Theme changed. The taskbar icon follows next time you start the app.');
           return;
         }
         await IV.api.lock().catch(() => {});
@@ -119,12 +122,16 @@ window.IV = window.IV || {};
     });
 
     IV.api
-      .iconChoices()
-      .then((choices) => {
+      .themes()
+      .then((themes) => {
         IV.dom.clear(select);
-        for (const choice of choices) {
+        for (const theme of themes) {
           select.append(
-            h('option', { value: choice.key, selected: choice.key === (prefs.appIcon || 'default'), text: choice.name })
+            h('option', {
+              value: theme.key,
+              selected: theme.key === (prefs.theme || 'ironvault-cb'),
+              text: theme.name
+            })
           );
         }
       })
@@ -133,13 +140,14 @@ window.IV = window.IV || {};
     return h(
       'label',
       { class: 'field' },
-      h('span', { class: 'field-label', text: 'App icon and name' }),
+      h('span', { class: 'field-label', text: 'Theme' }),
       select,
       h('p', {
         class: 'hint',
         text:
-          'Propolis renames the running app and gives it the resin coloured mark. The installed shortcut, ' +
-          'the executable and the entry in Windows Apps keep the name the build was made with.'
+          'The two CB themes swap the colours that merge under colour blindness, mainly green against red. ' +
+          'Propolis also renames the running app. The installed shortcut and the executable keep the name ' +
+          'the build was made with.'
       })
     );
   }
@@ -165,18 +173,11 @@ window.IV = window.IV || {};
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
-      toggle('Light theme', prefs.theme === 'light', (v) => apply({ theme: v ? 'light' : 'dark' })),
-      h('div', { class: 'detail-section' }, h('h3', { text: 'Accessibility' })),
-      selectField(
-        'Colours',
-        [
-          { value: 'accessible', label: 'Colourblind safe (default)' },
-          { value: 'classic', label: 'Original blue and violet' }
-        ],
-        prefs.palette || 'accessible',
-        (v) => apply({ palette: v }),
-        'The default uses the Okabe-Ito palette, which stays readable with any common form of colour blindness. Strength meters also fill a number of blocks, so they work with no colour vision at all.'
+      themeField(prefs),
+      toggle('Light background', prefs.appearance === 'light', (v) =>
+        apply({ appearance: v ? 'light' : 'dark' })
       ),
+      h('div', { class: 'detail-section' }, h('h3', { text: 'Accessibility' })),
       selectField(
         'Typeface',
         [
@@ -214,7 +215,7 @@ window.IV = window.IV || {};
           text: 'Reset accessibility to defaults',
           onClick: async () => {
             await apply({
-              palette: 'accessible',
+              theme: 'ironvault-cb',
               uiFont: 'system',
               zoom: 1,
               reduceMotion: false,
@@ -240,7 +241,7 @@ window.IV = window.IV || {};
         (v) => apply({ masterPasswordReminderDays: v })
       ),
       hotkeyField(prefs),
-      appIconField(prefs),
+
       h(
         'div',
         { class: 'row-gap' },

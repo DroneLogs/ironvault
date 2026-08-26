@@ -139,8 +139,8 @@ const handlers = {
     prefs: settings.getPrefs(),
     quickUnlockAvailable: quickUnlockAvailable(),
     wordLists: wordlists.catalogue(),
-    productName: brand.productNameFor(settings.getPrefs().appIcon),
-    tagline: brand.taglineFor(settings.getPrefs().appIcon),
+    productName: brand.productNameFor(settings.getPrefs().theme),
+    tagline: brand.taglineFor(settings.getPrefs().theme),
     openWith: ctx.takePendingFile()
   }),
   'app.relaunch': () => {
@@ -150,17 +150,12 @@ const handlers = {
   'prefs.get': () => settings.getPrefs(),
   'prefs.set': (patch) => {
     const prefs = settings.setPrefs(patch);
-    if ('appIcon' in patch) ctx.applyAppIcon(prefs.appIcon);
+    if ('theme' in patch) ctx.applyAppIcon(prefs.theme);
     if ('zoom' in patch) ctx.applyZoom(prefs.zoom);
     if ('autoTypeHotkey' in patch) ctx.registerHotkeys();
     return prefs;
   },
-  'app.iconChoices': () => {
-    const dir = path.join(__dirname, '..', '..', 'build');
-    return brand
-      .choices()
-      .filter((c) => c.key === 'default' || fs.existsSync(path.join(dir, 'icon-' + c.key + '.ico')));
-  },
+  'app.themes': () => brand.choices(),
 
   /* database list */
   'db.list': () =>

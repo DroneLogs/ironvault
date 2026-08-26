@@ -346,8 +346,10 @@ window.IV = window.IV || {};
     const dicewarePanel = h(
       'div',
       { hidden: true },
+      IV.glossary.note('diceware'),
       wordSlider.row,
       h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Word list' }), listSelect),
+      IV.glossary.note('wordlist'),
       h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Separator' }), separatorInput),
       dicewareAdvanced
     );
@@ -378,6 +380,7 @@ window.IV = window.IV || {};
         colourKey,
         meter,
         listInfo,
+        IV.glossary.note('entropy'),
         h('div', { class: 'gen-panels' }, basicPanel, dicewarePanel)
       ),
       footer: [

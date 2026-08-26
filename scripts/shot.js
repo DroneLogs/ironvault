@@ -116,7 +116,7 @@ async function main() {
   }, 400000).unref();
   await win.loadFile(path.join(__dirname, '..', 'src', 'renderer', 'index.html'));
   win.focus();
-  await wait(1200);
+  await wait(540);
 
   async function shot(name) {
     // Let the compositor land two clean frames before grabbing the surface,
@@ -125,7 +125,7 @@ async function main() {
       'new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(true))))',
       true
     );
-    await wait(250);
+    await wait(150);
     const image = await win.webContents.capturePage();
     fs.writeFileSync(path.join(outDir, name + '.png'), image.toPNG());
     console.log('wrote ' + name + '.png');
@@ -143,13 +143,13 @@ async function main() {
   await shot('01-lock');
 
   await run(`document.querySelector('#btn-new-db').click(); true`, 'new database');
-  await wait(1200);
+  await wait(540);
   await shot('01b-new-database');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close new database');
-  await wait(300);
+  await wait(150);
 
   await run(`document.querySelector('.db-item').click(); true`);
-  await wait(200);
+  await wait(150);
   await shot('02-unlock');
 
   await run(`
@@ -157,7 +157,7 @@ async function main() {
     document.querySelector('#unlock-form').dispatchEvent(new Event('submit', { cancelable: true }));
     true
   `);
-  await wait(2000);
+  await wait(900);
   await shot('03-main');
 
   await run(`
@@ -166,48 +166,48 @@ async function main() {
       row.closest('.entry-row').click();
     })(); true
   `);
-  await wait(600);
+  await wait(270);
   await shot('04-detail');
 
   await run(`document.querySelector('#search-input').value='bank'; document.querySelector('#search-input').dispatchEvent(new Event('input')); true`);
-  await wait(400);
+  await wait(180);
   await shot('05-search');
 
   await run(`document.querySelector('#btn-audit').click(); true`);
-  await wait(700);
+  await wait(315);
   await run(`document.querySelectorAll('.audit-group').forEach(d => d.open = true); true`);
-  await wait(200);
+  await wait(150);
   await shot('06-audit');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
 
   await run(`document.querySelector('#btn-generator').click(); true`, 'open generator');
-  await wait(700);
+  await wait(315);
   await run(`document.querySelectorAll('.modal details.adv').forEach(d => d.open = true); true`, 'expand advanced');
-  await wait(300);
+  await wait(150);
   await shot('07-generator-basic');
 
   await run(
     `Array.from(document.querySelectorAll('.modal .tab')).find(t => t.textContent === 'Diceware').click(); true`,
     'diceware tab'
   );
-  await wait(600);
+  await wait(270);
   await run(`document.querySelectorAll('.modal details.adv').forEach(d => d.open = true); true`, 'expand advanced');
-  await wait(300);
+  await wait(150);
   await shot('08-generator-diceware');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close generator');
-  await wait(300);
+  await wait(150);
 
   await run(`IV.generator.openUsernamePicker({}); true`, 'username picker');
-  await wait(800);
+  await wait(360);
   await shot('09-usernames');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close usernames');
-  await wait(200);
+  await wait(150);
 
   await run(`IV.settings.openUpdates(); true`, 'updates');
-  await wait(800);
+  await wait(360);
   await shot('10-updates');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close updates');
-  await wait(200);
+  await wait(150);
 
   await run(`
     (async () => {
@@ -218,46 +218,46 @@ async function main() {
       IV.editor.openEntryEditor(entry);
     })(); true
   `, 'open editor');
-  await wait(800);
+  await wait(360);
   await shot('11-editor');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
 
   await run(`document.querySelector('#btn-settings').click(); true`);
-  await wait(500);
+  await wait(225);
   await shot('12-settings');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
 
-  await run(`IV.api.setPrefs({theme:'light'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);
-  await wait(900);
+  await run(`IV.api.setPrefs({appearance:'light'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);
+  await wait(405);
   await shot('13-light');
-  await run(`IV.api.setPrefs({theme:'dark'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);
+  await run(`IV.api.setPrefs({appearance:'dark'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);
 
   await run(`IV.settings.openSettings(); true`, 'settings for a11y');
-  await wait(700);
+  await wait(315);
   await run(`
     const b = IV.dom.topModal().dialog.querySelector('.modal-body');
     b.scrollTop = 320;
     true
   `, 'scroll settings');
-  await wait(300);
+  await wait(150);
   await shot('16-accessibility');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close settings');
-  await wait(200);
+  await wait(150);
 
   await run(`IV.api.setPrefs({uiFont:'dyslexic', zoom:1}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'dyslexic font');
-  await wait(900);
+  await wait(405);
   await shot('17-dyslexic-font');
   await run(`IV.api.setPrefs({uiFont:'system'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset font');
-  await wait(400);
+  await wait(180);
 
-  await run(`IV.api.setPrefs({palette:'classic'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'classic palette');
-  await wait(700);
-  await shot('18-classic-palette');
-  await run(`IV.api.setPrefs({palette:'accessible'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset palette');
-  await wait(400);
+  await run(`IV.api.setPrefs({theme:'ironvault'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'ironvault theme');
+  await wait(315);
+  await shot('18-ironvault-theme');
+  await run(`IV.api.setPrefs({theme:'ironvault-cb'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset theme');
+  await wait(180);
 
   await run(`
-    IV.api.setPrefs({appIcon:'propolis'}).then(async p => {
+    IV.api.setPrefs({theme:'propolis-cb'}).then(async p => {
       IV.state.prefs = p;
       const info = await IV.api.appInfo();
       IV.state.productName = info.productName;
@@ -265,10 +265,10 @@ async function main() {
       IV.app.applyBrand();
     }); true
   `, 'propolis brand');
-  await wait(1100);
+  await wait(495);
   await shot('19-propolis');
   await run(`
-    IV.api.setPrefs({appIcon:'default'}).then(async p => {
+    IV.api.setPrefs({theme:'ironvault-cb'}).then(async p => {
       IV.state.prefs = p;
       const info = await IV.api.appInfo();
       IV.state.productName = info.productName;
@@ -276,10 +276,10 @@ async function main() {
       IV.app.applyBrand();
     }); true
   `, 'reset brand');
-  await wait(600);
+  await wait(270);
 
   await run(`IV.settings.openShortcuts(); true`, 'shortcuts');
-  await wait(400);
+  await wait(180);
   await shot('14-shortcuts');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close shortcuts');
 
@@ -308,7 +308,7 @@ async function main() {
       IV.editor.openEntryEditor(null, null);
     })(); true
   `, 'open new entry editor');
-  await wait(700);
+  await wait(315);
 
   await run(`
     (() => {
@@ -321,7 +321,7 @@ async function main() {
       Array.from(dialog.querySelectorAll('.modal-foot button')).find(b => b.textContent === 'Create').click();
     })(); true
   `, 'submit new entry');
-  await wait(1400);
+  await wait(630);
 
   const created = await run(`
     JSON.stringify({
@@ -341,7 +341,7 @@ async function main() {
   check('database file was rewritten', savedOnDisk > 0);
 
   await run(`document.querySelector('#btn-lock').click(); true`, 'lock');
-  await wait(900);
+  await wait(405);
   const locked = await run(`
     JSON.stringify({
       lockVisible: !document.querySelector('#screen-lock').hidden,
@@ -354,13 +354,13 @@ async function main() {
   await shot('15-locked');
 
   await run(`document.querySelector('.db-item').click(); true`, 'pick database');
-  await wait(300);
+  await wait(150);
   await run(`
     document.querySelector('#unlock-password').value = ${JSON.stringify(PASSWORD)};
     document.querySelector('#unlock-form').dispatchEvent(new Event('submit', { cancelable: true }));
     true
   `, 'unlock again');
-  await wait(2000);
+  await wait(900);
 
   const reopened = await run(`
     (async () => {
@@ -410,6 +410,9 @@ async function main() {
           treeItemsLevelled: navs.length > 0 && navs.every(n => n.hasAttribute('aria-level')),
           iconButtonCount: iconButtons.length,
           iconButtonsNamed: iconButtons.every(b => (b.getAttribute('aria-label') || b.textContent.trim()).length > 0),
+          unnamedButtons: iconButtons
+            .filter(b => !(b.getAttribute('aria-label') || b.textContent.trim()).length)
+            .map(b => b.className + '#' + (b.id || '') + '@' + (b.parentElement ? b.parentElement.className : '')),
           searchLabelled: Boolean(document.querySelector('label[for="search-input"]'))
         });
       })()
@@ -427,14 +430,15 @@ async function main() {
   check('group items carry a level', a11y.treeItemsLevelled === true);
   check(
     'every icon button has a name (' + a11y.iconButtonCount + ' checked)',
-    a11y.iconButtonsNamed === true
+    a11y.iconButtonsNamed === true,
+    'unnamed: ' + (a11y.unnamedButtons || []).join(' | ')
   );
   check('search box has a label', a11y.searchLabelled === true);
 
   // A dialog must keep focus inside it and hand focus back on close.
   await run(`document.querySelector('#btn-generator').focus(); true`, 'focus generator button');
   await run(`document.querySelector('#btn-generator').click(); true`, 'open generator');
-  await wait(700);
+  await wait(315);
   const dialogState = JSON.parse(
     await run(`
       (() => {
@@ -443,7 +447,12 @@ async function main() {
           role: dlg.getAttribute('role'),
           modal: dlg.getAttribute('aria-modal'),
           labelled: Boolean(dlg.getAttribute('aria-labelledby')),
-          focusInside: dlg.contains(document.activeElement)
+          focusInside: dlg.contains(document.activeElement),
+          active: document.activeElement ? document.activeElement.tagName + '.' + document.activeElement.className : 'none',
+          target: (() => {
+            const t = dlg.querySelector('input, textarea, button.primary') || dlg.querySelector('button');
+            return t ? t.tagName + '.' + t.className : 'none';
+          })()
         });
       })()
     `, 'dialog probe')
@@ -451,10 +460,14 @@ async function main() {
   check('dialog has the dialog role', dialogState.role === 'dialog');
   check('dialog is marked modal', dialogState.modal === 'true');
   check('dialog is labelled', dialogState.labelled === true);
-  check('focus moves into the dialog', dialogState.focusInside === true);
+  check(
+    'focus moves into the dialog',
+    dialogState.focusInside === true,
+    'active=' + dialogState.active + ' target=' + dialogState.target
+  );
 
   await run(`IV.dom.topModal().close(); true`, 'close generator');
-  await wait(400);
+  await wait(180);
   const restored = await run(
     `document.activeElement && document.activeElement.id === 'btn-generator'`,
     'focus restore probe'
@@ -464,16 +477,16 @@ async function main() {
   /* ------------------------------------------------ accessibility screens */
 
   await run(`IV.api.setPrefs({highContrast:true}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'high contrast');
-  await wait(900);
+  await wait(405);
   await shot('20-high-contrast');
   await run(`IV.api.setPrefs({highContrast:false}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset contrast');
-  await wait(500);
+  await wait(225);
 
   await run(`IV.api.setPrefs({bigTargets:true}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'big targets');
-  await wait(900);
+  await wait(405);
   await shot('21-large-targets');
   await run(`IV.api.setPrefs({bigTargets:false}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset targets');
-  await wait(500);
+  await wait(225);
 
   console.log('');
   console.log(passed + ' passed, ' + failed + ' failed');

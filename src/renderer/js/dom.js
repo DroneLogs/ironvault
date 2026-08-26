@@ -111,7 +111,8 @@ window.IV = window.IV || {};
         class: 'modal' + (wide ? ' wide' : ''),
         role: 'dialog',
         'aria-modal': 'true',
-        'aria-labelledby': titleId
+        'aria-labelledby': titleId,
+        tabindex: '-1'
       },
       h(
         'div',
@@ -171,10 +172,29 @@ window.IV = window.IV || {};
     modalStack.push(handle);
     $('#modal-root').append(backdrop);
 
-    const focusTarget = initialFocus
-      ? $(initialFocus, dialog)
-      : dialog.querySelector('input, textarea, button.primary') || dialog.querySelector('button');
-    if (focusTarget) setTimeout(() => focusTarget.focus(), 20);
+    // Prefer somewhere typing makes sense, then the confirming button. A range
+    // slider must not win, since arrow keys would then change a value the user
+    // never meant to touch. The dialog itself is the last resort, so focus can
+    // never be left on the page behind.
+    const preferred =
+      (initialFocus && $(initialFocus, dialog)) ||
+      dialog.querySelector('[autofocus]') ||
+      dialog.querySelector(
+        '.modal-body input[type="text"], .modal-body input[type="password"], ' +
+          '.modal-body input[type="search"], .modal-body input[type="number"], .modal-body textarea'
+      ) ||
+      dialog.querySelector('.modal-foot button.primary') ||
+      focusableWithin(dialog)[0] ||
+      dialog;
+
+    setTimeout(() => {
+      try {
+        preferred.focus();
+        if (!dialog.contains(document.activeElement)) dialog.focus();
+      } catch {
+        dialog.focus();
+      }
+    }, 20);
     announce(title ? title + ' dialog' : 'Dialog opened');
     return handle;
   }

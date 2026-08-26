@@ -48,6 +48,7 @@ window.IV = window.IV || {};
     state.quickUnlockAvailable = info.quickUnlockAvailable;
     applyTheme();
     applyBrand();
+    nameStaticIconButtons();
     wireGlobalEvents();
     await showLockScreen();
     if (info.openWith) await openPath(info.openWith);
@@ -68,10 +69,10 @@ window.IV = window.IV || {};
     );
   }
 
-  /** Title bar name, lock screen name and logo, all from the icon choice. */
+  /** Title bar name, lock screen name and logo, all from the chosen theme. */
   function applyBrand() {
-    const icon = state.prefs.appIcon || 'default';
-    const suffix = icon === 'default' ? '' : '-' + icon;
+    const honey = String(state.prefs.theme || '').startsWith('propolis');
+    const suffix = honey ? '' : '-blue';
     const name = state.productName || 'Ironvault';
 
     for (const node of $$('.brand-name, .lock-title')) node.textContent = name;
@@ -81,12 +82,28 @@ window.IV = window.IV || {};
     document.title = name;
   }
 
+  /**
+   * Buttons written directly into index.html never pass through the helper that
+   * borrows a tooltip for the accessible name, so they are swept once at boot.
+   */
+  function nameStaticIconButtons() {
+    for (const button of $$('button')) {
+      if (button.getAttribute('aria-label')) continue;
+      if (button.textContent.trim()) continue;
+      const title = button.getAttribute('title');
+      if (title) button.setAttribute('aria-label', title);
+    }
+  }
+
   function applyTheme() {
     const body = document.body;
     const prefs = state.prefs;
-    body.classList.toggle('brand-propolis', prefs.appIcon === 'propolis');
-    body.classList.toggle('theme-light', prefs.theme === 'light');
-    body.classList.toggle('palette-classic', prefs.palette === 'classic');
+    const theme = prefs.theme || 'ironvault-cb';
+
+    for (const key of ['ironvault', 'ironvault-cb', 'propolis', 'propolis-cb']) {
+      body.classList.toggle('scheme-' + key, theme === key);
+    }
+    body.classList.toggle('theme-light', prefs.appearance === 'light');
     body.classList.toggle('font-dyslexic', prefs.uiFont === 'dyslexic');
     body.classList.toggle('font-hyperlegible', prefs.uiFont === 'hyperlegible');
     body.classList.toggle('large-text', Number(prefs.zoom || 1) >= 1.25);
@@ -389,9 +406,11 @@ window.IV = window.IV || {};
               }
             }),
             h('button', { class: 'btn ghost small', text: 'Clear', onClick: () => (keyPath.value = '') })
-          )
+          ),
+          IV.glossary.note('keyfile')
         ),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Format' }), formatSelect)
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Format' }), formatSelect),
+        IV.glossary.note('kdf')
       ),
       footer: [
         h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
@@ -864,6 +883,9 @@ window.IV = window.IV || {};
       if (picked) $('#unlock-keyfile').value = picked;
     });
     $('#btn-clear-keyfile').addEventListener('click', () => ($('#unlock-keyfile').value = ''));
+
+    const keyfileHelp = $('#unlock-keyfile-help');
+    if (keyfileHelp) keyfileHelp.append(IV.glossary.note('keyfile'));
 
     for (const button of $$('[data-reveal]')) {
       button.addEventListener('click', () => {

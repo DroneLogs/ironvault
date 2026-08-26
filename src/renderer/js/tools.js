@@ -250,7 +250,11 @@ window.IV = window.IV || {};
 
     const status = h('p', { class: 'update-status', text: 'Checking...' });
     const results = h('div');
-    const handle = modal({ title: 'Have I Been Pwned', wide: true, body: h('div', null, status, results) });
+    const handle = modal({
+      title: 'Have I Been Pwned',
+      wide: true,
+      body: h('div', null, status, IV.glossary.note('pwned'), results)
+    });
 
     const stop = IV.api.on('progress', (p) => {
       if (p.job === 'pwned') status.textContent = 'Checking... ' + p.done + ' of ' + p.total + ' ranges';
@@ -616,6 +620,7 @@ window.IV = window.IV || {};
     body.append(
       h('div', { class: 'detail-section' }, h('h3', { text: 'Duress PIN' })),
       duressState,
+      IV.glossary.note('duress'),
       h(
         'div',
         { class: 'row-gap' },
@@ -898,6 +903,7 @@ window.IV = window.IV || {};
         'div',
         null,
         status,
+        IV.glossary.note('remote'),
         field('Where this database lives', provider),
         webdavFields,
         sftpFields,
@@ -1058,6 +1064,7 @@ window.IV = window.IV || {};
         actions,
         h('div', { class: 'detail-section' }, h('h3', { text: 'Keys' })),
         keyList,
+        IV.glossary.note('sshagent'),
         h('div', { class: 'detail-section' }, h('h3', { text: 'How to use it' })),
         h('p', {
           class: 'hint',
@@ -1138,6 +1145,7 @@ window.IV = window.IV || {};
       body: h(
         'div',
         null,
+        IV.glossary.note('totp'),
         field('Paste an otpauth:// address', uri, 'This is what a QR code contains. Everything below is filled in from it.'),
         h('div', { class: 'detail-section' }, h('h3', { text: 'Or enter the secret by hand' })),
         field('Secret', secret),

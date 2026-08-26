@@ -1,47 +1,89 @@
 'use strict';
 
 /**
- * The app's own identity, which the icon choice can change.
+ * The four themes, and the identity each one carries.
  *
- * Picking Propolis renames the running app and swaps its mark for the resin
- * coloured one. What it cannot change is anything Windows fixed at install
- * time: the executable's name, the Start menu shortcut, and the entry under
- * Installed apps all keep the name the build was made with.
+ * A theme is a name, an icon and a palette together, because switching to
+ * Propolis is meant to feel like a different product rather than a recolour.
+ * The two CB themes keep their sibling's accent, since blue and amber are both
+ * already distinguishable under every common form of colour blindness. What
+ * they replace is the meaning colours, because green against red is the pair
+ * that merges.
+ *
+ * What a theme cannot change is anything Windows fixed when the app was built:
+ * the executable's name, the Start menu shortcut, and the entry under
+ * Installed apps.
  */
 
-const BRANDS = {
-  default: {
-    key: 'default',
+const THEMES = {
+  'ironvault-cb': {
+    key: 'ironvault-cb',
     name: 'Ironvault',
-    label: 'Ironvault, honey amber',
+    label: 'IronvaultCB, the original with colourblind safe meanings',
+    icon: 'blue',
+    colourblind: true,
     tagline: 'Your KeePass databases, on Windows.'
+  },
+  ironvault: {
+    key: 'ironvault',
+    name: 'Ironvault',
+    label: 'Ironvault, the original blue and violet',
+    icon: 'blue',
+    colourblind: false,
+    tagline: 'Your KeePass databases, on Windows.'
+  },
+  'propolis-cb': {
+    key: 'propolis-cb',
+    name: 'Propolis',
+    label: 'PropolisCB, honey and resin with colourblind safe meanings',
+    icon: 'default',
+    colourblind: true,
+    tagline: 'The resin that seals the hive.'
   },
   propolis: {
     key: 'propolis',
     name: 'Propolis',
-    label: 'Propolis, resin red (renames the app)',
+    label: 'Propolis, honey and resin',
+    icon: 'default',
+    colourblind: false,
     tagline: 'The resin that seals the hive.'
-  },
-  blue: { key: 'blue', name: 'Ironvault', label: 'Blue' },
-  green: { key: 'green', name: 'Ironvault', label: 'Green' },
-  crimson: { key: 'crimson', name: 'Ironvault', label: 'Crimson' },
-  slate: { key: 'slate', name: 'Ironvault', label: 'Slate' }
+  }
 };
 
-function brandFor(iconKey) {
-  return BRANDS[iconKey] || BRANDS.default;
+const DEFAULT_THEME = 'ironvault-cb';
+
+function themeFor(key) {
+  return THEMES[key] || THEMES[DEFAULT_THEME];
 }
 
-function productNameFor(iconKey) {
-  return brandFor(iconKey).name;
+function productNameFor(key) {
+  return themeFor(key).name;
 }
 
-function taglineFor(iconKey) {
-  return brandFor(iconKey).tagline || BRANDS.default.tagline;
+function taglineFor(key) {
+  return themeFor(key).tagline;
+}
+
+/** Which icon file a theme uses. Both Ironvault themes share one, as do both Propolis. */
+function iconKeyFor(key) {
+  return themeFor(key).icon;
 }
 
 function choices() {
-  return Object.values(BRANDS).map((b) => ({ key: b.key, name: b.label, product: b.name }));
+  return Object.values(THEMES).map((t) => ({
+    key: t.key,
+    name: t.label,
+    product: t.name,
+    colourblind: t.colourblind
+  }));
 }
 
-module.exports = { BRANDS, brandFor, productNameFor, taglineFor, choices };
+module.exports = {
+  THEMES,
+  DEFAULT_THEME,
+  themeFor,
+  productNameFor,
+  taglineFor,
+  iconKeyFor,
+  choices
+};

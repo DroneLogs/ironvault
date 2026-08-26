@@ -643,6 +643,110 @@ window.IV = window.IV || {};
       )
     );
 
+    /* YubiKey */
+    const yubiState = h('p', { class: 'hint' });
+    const yubiActions = h('div', { class: 'row-gap' });
+    const slotSelect = h(
+      'select',
+      null,
+      h('option', { value: '1', text: 'Slot 1' }),
+      h('option', { value: '2', selected: true, text: 'Slot 2 (usual choice)' })
+    );
+
+    async function refreshYubi() {
+      const [detected, configured] = await Promise.all([
+        IV.api.yubikeyDetect(),
+        IV.api.yubikeyGet(info.filePath)
+      ]);
+      if (configured) slotSelect.value = String(configured.slot);
+
+      yubiState.textContent = configured
+        ? 'This database needs a YubiKey in slot ' + configured.slot + '. ' + detected.message
+        : detected.message;
+
+      IV.dom.clear(yubiActions);
+      yubiActions.append(
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Test this key',
+          onClick: async () => {
+            yubiState.textContent = 'Touch the key if it blinks...';
+            try {
+              const result = await IV.api.yubikeyTest(Number(slotSelect.value));
+              yubiState.textContent =
+                'It answered ' + result.bytes + ' bytes in ' + result.tookMs + ' ms. Slot ' + result.slot + ' works.';
+            } catch (err) {
+              yubiState.textContent = err.message;
+            }
+          }
+        }),
+        h('button', {
+          class: 'btn ' + (configured ? 'danger' : 'primary') + ' small',
+          text: configured ? 'Stop using a YubiKey' : 'Require a YubiKey',
+          onClick: async () => {
+            if (configured) {
+              const ok = await IV.api.confirm({
+                title: 'Stop using a YubiKey',
+                message: 'Stop requiring a YubiKey for this database?',
+                detail: 'The master key is rewritten without the challenge answer in it.',
+                confirmLabel: 'Stop using it',
+                destructive: true
+              });
+              if (!ok) return;
+              try {
+                await IV.api.changeCredentials({ password: await askMasterPassword('Confirm your master password') });
+                await IV.api.yubikeySet({ filePath: info.filePath, enabled: false });
+                await refreshYubi();
+                toast('YubiKey no longer required', 'good');
+              } catch (err) {
+                toast(err.message, 'error');
+              }
+              return;
+            }
+
+            const ok = await IV.api.confirm({
+              title: 'Require a YubiKey',
+              message: 'Bind this database to the YubiKey in slot ' + slotSelect.value + '?',
+              detail:
+                'From then on the database will not open without that key plugged in. If you lose it, and have ' +
+                'no backup of the database, the contents are gone. Test the key first, and keep a backup. ' +
+                'This feature is still a beta and has not been tested against real hardware.',
+              confirmLabel: 'Bind it',
+              destructive: true
+            });
+            if (!ok) return;
+
+            const password = await askMasterPassword('Confirm your master password');
+            if (password === null) return;
+            try {
+              await IV.api.yubikeySet({ filePath: info.filePath, slot: Number(slotSelect.value), enabled: true });
+              await IV.api.changeCredentials({
+                password,
+                yubikey: { slot: Number(slotSelect.value) }
+              });
+              await refreshYubi();
+              toast('This database now needs the YubiKey', 'good');
+            } catch (err) {
+              await IV.api.yubikeySet({ filePath: info.filePath, enabled: false });
+              toast(err.message, 'error');
+            }
+          }
+        })
+      );
+    }
+
+    body.append(
+      h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
+      h('p', {
+        class: 'error-line',
+        text: 'Beta. This has not been tested against real hardware yet. Test your key below, and keep a backup of the database before binding it.'
+      }),
+      yubiState,
+      field('Slot', slotSelect),
+      yubiActions
+    );
+    refreshYubi();
+
     /* failed attempts */
     const failInput = h('input', {
       type: 'number',

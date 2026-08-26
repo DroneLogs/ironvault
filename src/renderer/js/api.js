@@ -92,6 +92,11 @@ window.IV = window.IV || {};
     setReadOnly: (readOnly) => call('db.setReadOnly', { readOnly }),
     masterKeyAge: () => call('db.masterKeyAge'),
 
+    yubikeyDetect: () => call('yubikey.detect'),
+    yubikeyTest: (slot) => call('yubikey.test', { slot }),
+    yubikeyGet: (filePath) => call('yubikey.get', { filePath }),
+    yubikeySet: (opts) => call('yubikey.set', opts),
+
     securityStatus: (filePath) => call('security.status', { filePath }),
     setPin: (opts) => call('security.setPin', opts),
     clearPin: (filePath) => call('security.clearPin', { filePath }),

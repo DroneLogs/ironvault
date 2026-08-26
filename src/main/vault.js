@@ -9,6 +9,7 @@ const kdbxweb = require('kdbxweb');
 const { parseTotpConfig, generateCode } = require('./totp');
 const strength = require('./strength');
 const backups = require('./backups');
+const yubikey = require('./yubikey');
 
 const STANDARD_FIELDS = ['Title', 'UserName', 'Password', 'URL', 'Notes'];
 
@@ -17,6 +18,7 @@ const state = {
   filePath: null,
   keyFilePath: null,
   password: null, // kept so a save does not have to re-prompt for the master key
+  yubikey: null, // { slot } when this database is bound to a hardware key
   dirty: false,
   readOnly: false,
   openedAt: 0,
@@ -238,22 +240,32 @@ function serializeGroup(group) {
 
 /* -------------------------------------------------------------- credentials */
 
-async function buildCredentials(password, keyFilePath) {
+async function buildCredentials(password, keyFilePath, yubiConfig) {
   const pv = password ? kdbxweb.ProtectedValue.fromString(password) : null;
   let keyFileBuffer = null;
   if (keyFilePath) {
     const raw = await fsp.readFile(keyFilePath);
     keyFileBuffer = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
   }
-  if (!pv && !keyFileBuffer) throw new Error('A password or a key file is required');
-  return { credentials: new kdbxweb.Credentials(pv, keyFileBuffer), protectedPassword: pv };
+  if (!pv && !keyFileBuffer && !yubiConfig) {
+    throw new Error('A password, a key file, or a YubiKey is required');
+  }
+
+  // kdbxweb asks for the challenge answer on every load and every save, so the
+  // key has to stay plugged in for as long as the database is open.
+  const challengeFn = yubiConfig ? yubikey.credentialFn(yubiConfig) : undefined;
+
+  return {
+    credentials: new kdbxweb.Credentials(pv, keyFileBuffer, challengeFn),
+    protectedPassword: pv
+  };
 }
 
 /* ---------------------------------------------------------------- lifecycle */
 
-async function create({ filePath, password, keyFilePath, name, format = 4 }) {
+async function create({ filePath, password, keyFilePath, name, format = 4, yubikey: yubiConfig }) {
   if (fs.existsSync(filePath)) throw new Error('A file already exists at that location');
-  const { credentials, protectedPassword } = await buildCredentials(password, keyFilePath);
+  const { credentials, protectedPassword } = await buildCredentials(password, keyFilePath, yubiConfig);
   const db = kdbxweb.Kdbx.create(credentials, name || path.basename(filePath, path.extname(filePath)));
   db.setVersion(format === 3 ? 3 : 4);
   db.meta.generator = 'Propolis';
@@ -268,16 +280,17 @@ async function create({ filePath, password, keyFilePath, name, format = 4 }) {
   state.filePath = filePath;
   state.keyFilePath = keyFilePath || null;
   state.password = protectedPassword;
+  state.yubikey = yubiConfig || null;
   state.dirty = true;
   state.openedAt = Date.now();
   await save();
   return info();
 }
 
-async function open({ filePath, password, keyFilePath, readOnly = false }) {
+async function open({ filePath, password, keyFilePath, readOnly = false, yubikey: yubiConfig }) {
   const raw = await fsp.readFile(filePath);
   const data = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
-  const { credentials, protectedPassword } = await buildCredentials(password, keyFilePath);
+  const { credentials, protectedPassword } = await buildCredentials(password, keyFilePath, yubiConfig);
   let db;
   try {
     db = await kdbxweb.Kdbx.load(data, credentials);
@@ -293,6 +306,7 @@ async function open({ filePath, password, keyFilePath, readOnly = false }) {
   state.filePath = filePath;
   state.keyFilePath = keyFilePath || null;
   state.password = protectedPassword;
+  state.yubikey = yubiConfig || null;
   state.dirty = false;
   state.readOnly = Boolean(readOnly);
   state.openedAt = Date.now();
@@ -305,6 +319,7 @@ function lock() {
   state.filePath = null;
   state.keyFilePath = null;
   state.password = null;
+  state.yubikey = null;
   state.dirty = false;
   state.readOnly = false;
   state.openedAt = 0;
@@ -388,6 +403,7 @@ function info() {
     readOnly: state.readOnly,
     keyChanged: db.meta.keyChanged ? new Date(db.meta.keyChanged).getTime() : null,
     keyFilePath: state.keyFilePath,
+    yubikey: state.yubikey ? { slot: state.yubikey.slot } : null,
     entryCount: allEntries(db.getDefaultGroup()).length,
     groupCount: allGroups(db.getDefaultGroup()).filter(
       (g) => g !== db.getDefaultGroup() && !isInRecycleBin(g)
@@ -432,13 +448,14 @@ async function saveAs(newPath) {
   return save();
 }
 
-async function changeCredentials({ password, keyFilePath }) {
+async function changeCredentials({ password, keyFilePath, yubikey: yubiConfig }) {
   const db = requireOpen();
-  const { credentials, protectedPassword } = await buildCredentials(password, keyFilePath);
+  const { credentials, protectedPassword } = await buildCredentials(password, keyFilePath, yubiConfig);
   db.credentials = credentials;
   db.meta.keyChanged = new Date();
   state.password = protectedPassword;
   state.keyFilePath = keyFilePath || null;
+  state.yubikey = yubiConfig || null;
   state.dirty = true;
   return save();
 }

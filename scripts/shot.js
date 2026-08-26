@@ -142,6 +142,12 @@ async function main() {
 
   await shot('01-lock');
 
+  await run(`document.querySelector('#btn-new-db').click(); true`, 'new database');
+  await wait(1200);
+  await shot('01b-new-database');
+  await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close new database');
+  await wait(300);
+
   await run(`document.querySelector('.db-item').click(); true`);
   await wait(200);
   await shot('02-unlock');
@@ -225,6 +231,30 @@ async function main() {
   await wait(900);
   await shot('13-light');
   await run(`IV.api.setPrefs({theme:'dark'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);
+
+  await run(`IV.settings.openSettings(); true`, 'settings for a11y');
+  await wait(700);
+  await run(`
+    const b = IV.dom.topModal().dialog.querySelector('.modal-body');
+    b.scrollTop = 320;
+    true
+  `, 'scroll settings');
+  await wait(300);
+  await shot('16-accessibility');
+  await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close settings');
+  await wait(200);
+
+  await run(`IV.api.setPrefs({uiFont:'dyslexic', zoom:1}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'dyslexic font');
+  await wait(900);
+  await shot('17-dyslexic-font');
+  await run(`IV.api.setPrefs({uiFont:'system'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset font');
+  await wait(400);
+
+  await run(`IV.api.setPrefs({palette:'classic'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'classic palette');
+  await wait(700);
+  await shot('18-classic-palette');
+  await run(`IV.api.setPrefs({palette:'accessible'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset palette');
+  await wait(400);
 
   await run(`IV.settings.openShortcuts(); true`, 'shortcuts');
   await wait(400);

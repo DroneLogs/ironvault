@@ -37,6 +37,14 @@ Full per list detail, including counts and source URLs, is in
 - **First names and surnames** — US Census Bureau, public domain, via
   dominictarr/random-name.
 
+## Fonts
+
+- **OpenDyslexic** by Abbie Gonzalez — SIL Open Font Licence 1.1
+- **Atkinson Hyperlegible** by the Braille Institute of America — SIL Open Font Licence 1.1
+
+Both permit bundling inside an application, commercial use included, as long as the licence
+accompanies the font and the font is not sold on its own.
+
 ## Design reference
 
 The password generator's options, character sets, and strength summary format follow

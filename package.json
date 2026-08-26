@@ -1,7 +1,7 @@
 {
   "name": "ironvault",
   "productName": "Ironvault",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A KeePass (.kdbx) password manager for Windows",
   "main": "src/main/main.js",
   "author": {
@@ -17,7 +17,8 @@
     "shots": "electron scripts/shot.js",
     "pack": "electron-builder --win --dir",
     "dist": "electron-builder --win",
-    "wordlists": "node scripts/fetch-wordlists.js"
+    "wordlists": "node scripts/fetch-wordlists.js",
+    "fonts": "node scripts/fetch-fonts.js"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",

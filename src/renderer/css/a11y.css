@@ -1,0 +1,241 @@
+/* Accessibility layer: fonts, the classic palette, text scaling, and the
+   non-colour cues that make the interface readable without relying on hue.
+
+   The default palette in app.css is built on the Okabe-Ito set, which stays
+   distinguishable under deuteranopia, protanopia, and tritanopia. This file
+   holds the opt-outs and the opt-ins. */
+
+/* ------------------------------------------------------------------- fonts */
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../fonts/OpenDyslexic-Regular.woff") format("woff");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../fonts/OpenDyslexic-Bold.woff") format("woff");
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../fonts/AtkinsonHyperlegible-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../fonts/AtkinsonHyperlegible-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* OpenDyslexic weights the bottom of every letter, so a b cannot be read as a
+   d by flipping it. It runs wide, so the line height opens up to match. */
+body.font-dyslexic {
+  --font: "OpenDyslexic", "Segoe UI", system-ui, sans-serif;
+  --mono: "OpenDyslexic", "Cascadia Mono", Consolas, monospace;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+}
+
+body.font-dyslexic .gen-preview,
+body.font-dyslexic .df-value.mono,
+body.font-dyslexic .totp-code {
+  letter-spacing: 1px;
+}
+
+/* Atkinson Hyperlegible separates the shapes low vision readers confuse most,
+   notably I, l, and 1. */
+body.font-hyperlegible {
+  --font: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------- the classic palette */
+
+/* The original blue and violet scheme, kept for anyone who prefers it. It uses
+   red against green in places, which is exactly what the default avoids. */
+body.palette-classic {
+  --accent: #5b8dfb;
+  --accent-soft: rgba(91, 141, 251, 0.16);
+  --accent-text: #ffffff;
+  --good: #3fcf8e;
+  --warn: #f0b429;
+  --danger: #f2686a;
+
+  --pw-upper: #9d8bff;
+  --pw-lower: #e7eaf2;
+  --pw-digit: #4fc3e8;
+  --pw-symbol: #f5a05a;
+  --pw-latin1: #f07fb0;
+
+  --level-0: #f2686a;
+  --level-1: #f2686a;
+  --level-2: #f0b429;
+  --level-3: #6cc24a;
+  --level-4: #3fcf8e;
+  --level-5: #2fb3a6;
+}
+
+body.palette-classic.theme-light {
+  --accent: #2f6ae0;
+  --accent-soft: rgba(47, 106, 224, 0.12);
+  --good: #129a68;
+  --warn: #b7791f;
+  --danger: #d13b3f;
+
+  --pw-upper: #6b3fd4;
+  --pw-lower: #1a1e28;
+  --pw-digit: #0f7d9e;
+  --pw-symbol: #b4610f;
+  --pw-latin1: #b32b6d;
+}
+
+/* -------------------------------------------------------------- text scaling */
+
+/* The window zoom factor does the real work, set from the main process. These
+   rules keep long labels from clipping once everything grows. */
+body.large-text .entry-title,
+body.large-text .entry-sub,
+body.large-text .db-sub,
+body.large-text .nav-item .nav-label {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+body.large-text .pane-head h2 {
+  white-space: normal;
+}
+
+body.large-text .detail-field {
+  flex-wrap: wrap;
+}
+
+body.large-text .detail-field .df-label {
+  width: auto;
+  min-width: 96px;
+}
+
+/* --------------------------------------------------- cues that are not colour */
+
+/* The strength meter is segmented, so the number of filled blocks says the same
+   thing the colour does. Someone who sees no colour at all still reads it. */
+.strength-segments {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  min-width: 90px;
+}
+
+.strength-seg {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--panel-3);
+  border: 1px solid var(--border-soft);
+}
+
+.strength-seg.on {
+  background: var(--level-color, var(--accent));
+  border-color: var(--level-color, var(--accent));
+}
+
+.strength[data-level="0"] { --level-color: var(--level-0); }
+.strength[data-level="1"] { --level-color: var(--level-1); }
+.strength[data-level="2"] { --level-color: var(--level-2); }
+.strength[data-level="3"] { --level-color: var(--level-3); }
+.strength[data-level="4"] { --level-color: var(--level-4); }
+.strength[data-level="5"] { --level-color: var(--level-5); }
+
+/* A legend for the generator preview, so the character colours are labelled
+   rather than something you have to know. */
+.pw-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.pw-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pw-legend b {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Diff rows carry a minus and a plus as well as the colour. */
+.diff-left::before {
+  content: "\2212\00a0";
+  opacity: 0.75;
+}
+
+.diff-right::before {
+  content: "+\00a0";
+  opacity: 0.75;
+}
+
+/* Audit tiles get a word, not just a tint. */
+.audit-stat.bad b::after,
+.audit-stat.warn b::after,
+.audit-stat.ok b::after {
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.audit-stat.bad b::after { content: "\26A0"; }
+.audit-stat.warn b::after { content: "\26A0"; }
+.audit-stat.ok b::after { content: "\2713"; }
+
+/* ------------------------------------------------------------ reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* --------------------------------------------------------- focus visibility */
+
+/* A thicker ring than the default, since the people most helped by the rest of
+   this file are also the ones navigating by keyboard. */
+body.strong-focus :focus-visible {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* ------------------------------------------------------------ screen readers */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

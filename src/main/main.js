@@ -24,6 +24,17 @@ function iconPathFor(name) {
   return fs.existsSync(candidate) ? candidate : APP_ICON;
 }
 
+/** Window zoom is how text scaling is done: it grows layout as well as glyphs. */
+function applyZoom(factor) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const clamped = Math.max(0.8, Math.min(2.5, Number(factor) || 1));
+  try {
+    mainWindow.webContents.setZoomFactor(clamped);
+  } catch (err) {
+    console.error('Could not set the zoom factor: ' + err.message);
+  }
+}
+
 function applyAppIcon(name) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const target = iconPathFor(name);
@@ -129,6 +140,8 @@ function createWindow() {
     clearTimeout(revealTimer);
     mainWindow.show();
   };
+  mainWindow.webContents.on('did-finish-load', () => applyZoom(settings.getPrefs().zoom));
+
   const revealTimer = setTimeout(reveal, 2500);
   mainWindow.once('ready-to-show', reveal);
   mainWindow.webContents.once('did-finish-load', reveal);
@@ -369,6 +382,7 @@ if (!gotLock) {
       getWindow: () => mainWindow,
       lockNow,
       applyAppIcon,
+      applyZoom,
       registerHotkeys,
       takePendingFile: () => {
         const file = pendingFile;

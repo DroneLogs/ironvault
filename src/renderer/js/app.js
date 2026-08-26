@@ -66,7 +66,15 @@ window.IV = window.IV || {};
   }
 
   function applyTheme() {
-    document.body.classList.toggle('theme-light', state.prefs.theme === 'light');
+    const body = document.body;
+    const prefs = state.prefs;
+    body.classList.toggle('theme-light', prefs.theme === 'light');
+    body.classList.toggle('palette-classic', prefs.palette === 'classic');
+    body.classList.toggle('font-dyslexic', prefs.uiFont === 'dyslexic');
+    body.classList.toggle('font-hyperlegible', prefs.uiFont === 'hyperlegible');
+    body.classList.toggle('large-text', Number(prefs.zoom || 1) >= 1.25);
+    body.classList.toggle('reduce-motion', Boolean(prefs.reduceMotion));
+    body.classList.toggle('strong-focus', Boolean(prefs.strongFocus));
   }
 
   /* ------------------------------------------------------- lock screen */
@@ -189,40 +197,138 @@ window.IV = window.IV || {};
 
   /* ------------------------------------------------------ new database */
 
+
+  /**
+   * New database. A memorable passphrase is generated up front, the way
+   * Strongbox does it, because a master password people choose for themselves
+   * is the weakest link in the whole design. Typing your own is one click away.
+   */
   async function newDatabase() {
     const nameInput = h('input', { type: 'text', value: 'My Passwords' });
-    const pass1 = h('input', { type: 'password', autocomplete: 'new-password' });
-    const pass2 = h('input', { type: 'password', autocomplete: 'new-password' });
-    const keyPath = h('input', { type: 'text', readOnly: true, placeholder: 'None' });
-    const meter = h('div');
     const formatSelect = h(
       'select',
       null,
       h('option', { value: '4', text: 'KDBX 4 with Argon2 (recommended)' }),
       h('option', { value: '3', text: 'KDBX 3.1 with AES-KDF (older readers)' })
     );
+    const keyPath = h('input', { type: 'text', readOnly: true, placeholder: 'None' });
+
+    let mode = 'generated';
+    let generated = '';
+
+    const preview = h('div', { class: 'gen-preview' });
+    const meter = h('div', { class: 'gen-meter' });
+    const copiedNote = h('p', { class: 'hint' });
+
+    const pass1 = h('input', { type: 'password', autocomplete: 'new-password' });
+    const pass2 = h('input', { type: 'password', autocomplete: 'new-password' });
+    const manualMeter = h('div');
 
     pass1.addEventListener('input', async () => {
       const estimate = await IV.api.strength(pass1.value);
-      clear(meter);
-      if (pass1.value) meter.append(IV.dom.strengthMeter(estimate));
+      clear(manualMeter);
+      if (pass1.value) manualMeter.append(IV.dom.strengthMeter(estimate));
     });
 
-    async function submit() {
-      if (!pass1.value && !keyPath.value) {
-        toast('Set a master password, a key file, or both', 'error');
-        return;
+    async function regenerate() {
+      try {
+        const result = await IV.api.generate({
+          ...(IV.state.prefs.generator || {}),
+          algorithm: 'diceware',
+          wordCount: 6,
+          casing: 'title',
+          separator: '-'
+        });
+        generated = result.password;
+        IV.generator.colorize(generated, preview);
+        clear(meter).append(IV.dom.strengthMeter(result.strength));
+      } catch (err) {
+        generated = '';
+        clear(preview).append(h('span', { class: 'gen-error', text: err.message }));
       }
-      if (pass1.value !== pass2.value) {
+    }
+
+    const generatedPanel = h(
+      'div',
+      null,
+      h('span', { class: 'field-label', text: 'Your new master password' }),
+      preview,
+      meter,
+      copiedNote,
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', { class: 'btn ghost small', text: 'Regenerate', onClick: regenerate }),
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Copy',
+          onClick: async () => {
+            await IV.api.copy(generated);
+            copiedNote.textContent = 'Copied. Paste it somewhere safe before you finish.';
+          }
+        }),
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Other options...',
+          onClick: () =>
+            IV.generator.openGenerator({
+              title: 'Choose a master password',
+              onUse: async (value) => {
+                generated = value;
+                IV.generator.colorize(generated, preview);
+                clear(meter).append(IV.dom.strengthMeter(await IV.api.strength(value)));
+              }
+            })
+        }),
+        h('button', { class: 'btn ghost small', text: 'Type my own', onClick: () => setMode('manual') })
+      ),
+      h('p', {
+        class: 'error-line',
+        text: 'Write this down before you continue. There is no reset, no recovery, and no back door. Lose it and the database is gone.'
+      })
+    );
+
+    const manualPanel = h(
+      'div',
+      { hidden: true },
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Master password' }), pass1, manualMeter),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Repeat password' }), pass2),
+      h('button', { class: 'btn ghost small', text: 'Generate one for me instead', onClick: () => setMode('generated') })
+    );
+
+    function setMode(next) {
+      mode = next;
+      generatedPanel.hidden = next !== 'generated';
+      manualPanel.hidden = next !== 'manual';
+      if (next === 'manual') setTimeout(() => pass1.focus(), 20);
+    }
+
+    async function submit() {
+      const password = mode === 'generated' ? generated : pass1.value;
+      if (mode === 'manual' && pass1.value !== pass2.value) {
         toast('The two passwords do not match', 'error');
         return;
       }
+      if (!password && !keyPath.value) {
+        toast('Set a master password, a key file, or both', 'error');
+        return;
+      }
+      if (mode === 'generated') {
+        const ok = await IV.api.confirm({
+          title: 'Have you saved it?',
+          message: 'Have you written down or saved the master password?',
+          detail: 'This is the only time it is shown. Nobody can recover it for you.',
+          confirmLabel: 'Yes, I saved it'
+        });
+        if (!ok) return;
+      }
+
       const filePath = await IV.api.chooseNew(nameInput.value.trim() || 'My Passwords');
       if (!filePath) return;
       try {
         const info = await IV.api.createDatabase({
           filePath,
-          password: pass1.value,
+          password,
           keyFilePath: keyPath.value || null,
           name: nameInput.value.trim() || 'My Passwords',
           format: Number(formatSelect.value)
@@ -238,12 +344,13 @@ window.IV = window.IV || {};
 
     const handle = modal({
       title: 'New database',
+      wide: true,
       body: h(
         'div',
         null,
         h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Name' }), nameInput),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Master password' }), pass1, meter),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Repeat password' }), pass2),
+        generatedPanel,
+        manualPanel,
         h(
           'div',
           { class: 'field' },
@@ -263,17 +370,15 @@ window.IV = window.IV || {};
             h('button', { class: 'btn ghost small', text: 'Clear', onClick: () => (keyPath.value = '') })
           )
         ),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Format' }), formatSelect),
-        h('p', {
-          class: 'hint',
-          text: 'There is no way to recover a forgotten master password. Write it down somewhere safe.'
-        })
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Format' }), formatSelect)
       ),
       footer: [
         h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
         h('button', { class: 'btn primary', text: 'Choose location and create', onClick: submit })
       ]
     });
+
+    await regenerate();
   }
 
   async function openExisting() {

@@ -21,6 +21,7 @@ let ctx = {
   lockNow: () => {},
   takePendingFile: () => null,
   applyAppIcon: () => {},
+  applyZoom: () => {},
   registerHotkeys: () => {}
 };
 let clipboardTimer = null;
@@ -142,6 +143,7 @@ const handlers = {
   'prefs.set': (patch) => {
     const prefs = settings.setPrefs(patch);
     if ('appIcon' in patch) ctx.applyAppIcon(prefs.appIcon);
+    if ('zoom' in patch) ctx.applyZoom(prefs.zoom);
     if ('autoTypeHotkey' in patch) ctx.registerHotkeys();
     return prefs;
   },

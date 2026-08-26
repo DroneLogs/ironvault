@@ -27,6 +27,42 @@ window.IV = window.IV || {};
     return h('label', { class: 'checkline' }, input, h('span', { text: label }));
   }
 
+  function selectField(label, options, value, onChange, hint) {
+    const select = h(
+      'select',
+      { onChange: () => onChange(select.value) },
+      options.map((o) => h('option', { value: o.value, selected: o.value === value, text: o.label }))
+    );
+    return h(
+      'label',
+      { class: 'field' },
+      h('span', { class: 'field-label', text: label }),
+      select,
+      hint ? h('p', { class: 'hint', text: hint }) : null
+    );
+  }
+
+  function zoomField(prefs) {
+    const output = h('output', { text: Math.round((prefs.zoom || 1) * 100) + '%' });
+    const input = h('input', {
+      type: 'range',
+      min: '80',
+      max: '200',
+      step: '10',
+      value: String(Math.round((prefs.zoom || 1) * 100)),
+      onInput: () => {
+        output.textContent = input.value + '%';
+      },
+      onChange: () => apply({ zoom: Number(input.value) / 100 })
+    });
+    return h(
+      'div',
+      { class: 'field' },
+      h('span', { class: 'field-label', text: 'Text and interface size' }),
+      h('div', { class: 'range-row' }, input, output)
+    );
+  }
+
   /** A text box rather than a key capture: Electron accelerators are text. */
   function hotkeyField(prefs) {
     const input = h('input', {
@@ -95,6 +131,30 @@ window.IV = window.IV || {};
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
       toggle('Light theme', prefs.theme === 'light', (v) => apply({ theme: v ? 'light' : 'dark' })),
+      h('div', { class: 'detail-section' }, h('h3', { text: 'Accessibility' })),
+      selectField(
+        'Colours',
+        [
+          { value: 'accessible', label: 'Colourblind safe (default)' },
+          { value: 'classic', label: 'Original blue and violet' }
+        ],
+        prefs.palette || 'accessible',
+        (v) => apply({ palette: v }),
+        'The default uses the Okabe-Ito palette, which stays readable with any common form of colour blindness. Strength meters also fill a number of blocks, so they work with no colour vision at all.'
+      ),
+      selectField(
+        'Typeface',
+        [
+          { value: 'system', label: 'System default' },
+          { value: 'dyslexic', label: 'OpenDyslexic (for dyslexia)' },
+          { value: 'hyperlegible', label: 'Atkinson Hyperlegible (for low vision)' }
+        ],
+        prefs.uiFont || 'system',
+        (v) => apply({ uiFont: v })
+      ),
+      zoomField(prefs),
+      toggle('Reduce motion', Boolean(prefs.reduceMotion), (v) => apply({ reduceMotion: v }), 'Turns off fades and slides.'),
+      toggle('Thicker focus outline', Boolean(prefs.strongFocus), (v) => apply({ strongFocus: v }), 'Easier to follow when moving through the app by keyboard.'),
       toggle('Render notes as Markdown', prefs.markdownNotes !== false, (v) => apply({ markdownNotes: v })),
       numberField('Keep this many backups', prefs.keepBackups, 0, 100, 'saves (0 to keep none)', (v) =>
         apply({ keepBackups: v })

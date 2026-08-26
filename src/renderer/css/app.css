@@ -10,17 +10,28 @@
   --text: #e7eaf2;
   --text-dim: #aab2c5;
   --muted: #7f8799;
-  --accent: #5b8dfb;
-  --accent-soft: rgba(91, 141, 251, 0.16);
-  --accent-text: #ffffff;
-  --good: #3fcf8e;
-  --warn: #f0b429;
-  --danger: #f2686a;
-  --pw-upper: #9d8bff;
+  /* Okabe-Ito, the standard palette that survives every common form of colour
+     blindness. Its orange doubles as the honey amber of the brand. */
+  --accent: #e69f00;
+  --accent-soft: rgba(230, 159, 0, 0.18);
+  --accent-text: #1b1400;
+  --good: #56b4e9;
+  --warn: #f0e442;
+  --danger: #d55e00;
+
+  /* Strength ladder, dark to light and back, so the six levels differ in
+     lightness as well as hue. */
+  --level-0: #d55e00;
+  --level-1: #e69f00;
+  --level-2: #f0e442;
+  --level-3: #56b4e9;
+  --level-4: #009e73;
+  --level-5: #0072b2;
+  --pw-upper: #009e73;
   --pw-lower: #e7eaf2;
-  --pw-digit: #4fc3e8;
-  --pw-symbol: #f5a05a;
-  --pw-latin1: #f07fb0;
+  --pw-digit: #56b4e9;
+  --pw-symbol: #e69f00;
+  --pw-latin1: #cc79a7;
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   --radius: 10px;
   --radius-sm: 7px;
@@ -39,16 +50,24 @@ body.theme-light {
   --text: #1a1e28;
   --text-dim: #4a5162;
   --muted: #737b8d;
-  --accent: #2f6ae0;
-  --accent-soft: rgba(47, 106, 224, 0.12);
-  --good: #129a68;
-  --warn: #b7791f;
-  --danger: #d13b3f;
-  --pw-upper: #6b3fd4;
+  --accent: #b07000;
+  --accent-soft: rgba(176, 112, 0, 0.14);
+  --accent-text: #ffffff;
+  --good: #0072b2;
+  --warn: #8a6d00;
+  --danger: #b34700;
+
+  --level-0: #b34700;
+  --level-1: #8a6d00;
+  --level-2: #9a8c00;
+  --level-3: #0072b2;
+  --level-4: #007a5a;
+  --level-5: #004c78;
+  --pw-upper: #007a5a;
   --pw-lower: #1a1e28;
-  --pw-digit: #0f7d9e;
-  --pw-symbol: #b4610f;
-  --pw-latin1: #b32b6d;
+  --pw-digit: #005f96;
+  --pw-symbol: #a06a00;
+  --pw-latin1: #9c3b6f;
   --shadow: 0 18px 40px rgba(30, 40, 70, 0.18);
 }
 
@@ -1035,15 +1054,16 @@ summary:focus-visible {
   height: 100%;
   width: calc(var(--pct) * 1%);
   border-radius: 3px;
-  background: var(--danger);
+  background: var(--level-0);
   transition: width 0.18s, background 0.18s;
 }
 
-.strength[data-level="1"] .strength-fill { background: #f2686a; }
-.strength[data-level="2"] .strength-fill { background: var(--warn); }
-.strength[data-level="3"] .strength-fill { background: #6cc24a; }
-.strength[data-level="4"] .strength-fill { background: var(--good); }
-.strength[data-level="5"] .strength-fill { background: #2fb3a6; }
+.strength[data-level="0"] .strength-fill { background: var(--level-0); }
+.strength[data-level="1"] .strength-fill { background: var(--level-1); }
+.strength[data-level="2"] .strength-fill { background: var(--level-2); }
+.strength[data-level="3"] .strength-fill { background: var(--level-3); }
+.strength[data-level="4"] .strength-fill { background: var(--level-4); }
+.strength[data-level="5"] .strength-fill { background: var(--level-5); }
 
 .strength-summary {
   white-space: nowrap;

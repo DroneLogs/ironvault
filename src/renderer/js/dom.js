@@ -164,16 +164,26 @@ window.IV = window.IV || {};
     return (unit === 0 ? value : value.toFixed(1)) + ' ' + units[unit];
   }
 
+  /**
+   * Six segments, one per strength level, with the count filled matching the
+   * level. The number of blocks carries the meaning, so the meter still reads
+   * correctly with no colour vision at all.
+   */
   function strengthMeter(estimate, { summary = true } = {}) {
-    const pct = Math.round((estimate.fraction != null ? estimate.fraction : 0) * 100);
+    const level = Math.max(0, Math.min(5, estimate.level != null ? estimate.level : 0));
+    const segments = h('div', { class: 'strength-segments', role: 'img' });
+    for (let i = 0; i <= 5; i++) {
+      segments.append(h('div', { class: 'strength-seg' + (i <= level ? ' on' : '') }));
+    }
+
+    const text = summary ? estimate.summary : estimate.label + ' · ' + estimate.bits + ' bits';
+    segments.setAttribute('aria-label', text);
+
     return h(
       'div',
-      { class: 'strength', dataset: { level: String(estimate.level != null ? estimate.level : 0) } },
-      h('div', { class: 'strength-bar' }, h('div', { class: 'strength-fill', vars: { '--pct': String(pct) } })),
-      h('span', {
-        class: 'strength-summary',
-        text: summary ? estimate.summary : estimate.label + ' · ' + estimate.bits + ' bits'
-      })
+      { class: 'strength', dataset: { level: String(level) } },
+      segments,
+      h('span', { class: 'strength-summary', text })
     );
   }
 

@@ -42,19 +42,25 @@ window.IV = window.IV || {};
     flush();
   }
 
-  function strengthLine(estimate) {
-    const bar = h('div', { class: 'strength-bar' });
-    const fill = h('div', {
-      class: 'strength-fill',
-      vars: { '--pct': String(Math.round((estimate.fraction || 0) * 100)) }
-    });
-    bar.append(fill);
+  /** Names the colours in the preview, so they are labelled and not just hues. */
+  function legend() {
     return h(
       'div',
-      { class: 'strength', dataset: { level: String(estimate.level) } },
-      bar,
-      h('span', { class: 'strength-summary', text: estimate.summary })
+      { class: 'pw-legend' },
+      [
+        ['upper', 'A', 'uppercase'],
+        ['lower', 'a', 'lowercase'],
+        ['digit', '1', 'digits'],
+        ['symbol', '#', 'symbols'],
+        ['latin1', 'ä', 'Latin-1']
+      ].map(([cls, glyph, label]) =>
+        h('span', null, h('b', { class: 'pw-' + cls, text: glyph }), h('span', { text: label }))
+      )
     );
+  }
+
+  function strengthLine(estimate) {
+    return IV.dom.strengthMeter(estimate);
   }
 
   /* ------------------------------------------------------------- controls */
@@ -152,6 +158,7 @@ window.IV = window.IV || {};
     const preview = h('div', { class: 'gen-preview' });
     const meter = h('div', { class: 'gen-meter' });
     const listInfo = h('p', { class: 'hint' });
+    const colourKey = legend();
 
     let pending = null;
     async function regenerate() {
@@ -368,6 +375,7 @@ window.IV = window.IV || {};
         null,
         h('div', { class: 'tabs' }, tabBasic, tabDiceware),
         preview,
+        colourKey,
         meter,
         listInfo,
         h('div', { class: 'gen-panels' }, basicPanel, dicewarePanel)

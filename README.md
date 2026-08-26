@@ -14,6 +14,8 @@ uploaded anywhere and the app makes no network requests at all.
 **Databases**
 - Opens KDBX 3.1 and KDBX 4 files (AES-256 or ChaCha20; Argon2d, Argon2id, or AES-KDF)
 - Creates new databases in either format
+- Generates a memorable master password for you when you create a database, with
+  regenerate, full generator options, or type your own
 - Unlocks with a master password, a key file, or both
 - Quick unlock: optionally remember the master password for one Windows account, encrypted
   with DPAPI through Electron's `safeStorage`
@@ -78,6 +80,16 @@ characters is accounted for honestly.
 **Security audit**
 - Weak passwords, reused passwords, entries with no password, expired entries, and anything
   not changed in over two years
+
+**Accessibility**
+- The default palette is built on the Okabe-Ito set, which stays distinguishable under
+  deuteranopia, protanopia, and tritanopia. The original blue and violet scheme is still
+  there in Settings.
+- Nothing depends on colour alone. Strength meters fill a number of blocks, the generator
+  labels every character colour, and comparison rows are marked with a minus and a plus.
+- **OpenDyslexic** and **Atkinson Hyperlegible** are bundled and switchable.
+- Text and interface size scales from 80 to 200 percent.
+- Reduced motion, and a thicker focus outline for keyboard use.
 
 **Safety**
 - Clipboard clears itself after a configurable delay, and only if the value it wrote is
@@ -291,7 +303,8 @@ Then they get the update prompt automatically. To publish a new version: bump `v
 npm install
 npm test          # 91 checks against the KDBX, generator, and strength layers
 npm run dev       # run the app with dev tools enabled
-npm run icon      # regenerate build/icon.ico and build/icon.png
+npm run icon      # regenerate the app icons
+npm run fonts     # download the accessibility fonts
 npm run wordlists # re-download every word list from its source
 npm run shots     # drive the real UI and write PNGs of every screen
 npm run dist      # build the installer and the portable exe into dist/
@@ -322,6 +335,7 @@ src/main/       Electron main process: the only place that touches files or cryp
   main.js       window, menu, auto lock
 src/preload/    the contextBridge, exposing exactly one call() and one on()
 src/renderer/   the window: plain HTML, CSS, and scripts, no framework
+src/renderer/fonts/  OpenDyslexic and Atkinson Hyperlegible, both SIL OFL
 wordlists/      the word lists themselves, plus a manifest and attribution
 scripts/        self test, screenshot harness, icon and word list generators
 ```

@@ -15,11 +15,11 @@ const zlib = require('zlib');
 const SIZES = [16, 24, 32, 48, 64, 128, 256];
 const SAMPLES = 4; // supersampling factor per axis
 
-/** The default pair, plus the alternates offered in Settings. */
+/** Honey amber by default, with the alternates offered in Settings. */
 const THEMES = {
-  default: [[0x5b, 0x8d, 0xfb], [0x8f, 0x6b, 0xff]],
+  default: [[0xf7, 0xc1, 0x2e], [0xdd, 0x76, 0x00]],
+  blue: [[0x5b, 0x8d, 0xfb], [0x8f, 0x6b, 0xff]],
   green: [[0x35, 0xc4, 0x8a], [0x1f, 0x9d, 0xb4]],
-  amber: [[0xf5, 0xa6, 0x23], [0xf0, 0x6a, 0x3a]],
   crimson: [[0xf2, 0x5f, 0x7c], [0xb0, 0x2b, 0x6a]],
   slate: [[0x7d, 0x89, 0xa3], [0x46, 0x51, 0x66]]
 };
@@ -29,40 +29,56 @@ let COLOR_B = THEMES.default[1];
 
 /* ------------------------------------------------------------------ shapes */
 
-function insideRoundedSquare(x, y) {
-  const inset = 0.035;
-  const radius = 0.225;
-  const min = inset;
-  const max = 1 - inset;
-  if (x < min || x > max || y < min || y > max) return false;
-  const cx = Math.min(Math.max(x, min + radius), max - radius);
-  const cy = Math.min(Math.max(y, min + radius), max - radius);
-  const dx = x - cx;
-  const dy = y - cy;
-  return dx * dx + dy * dy <= radius * radius;
+/**
+ * A flat topped hexagon, the shape of a honeycomb cell.
+ *
+ * With circumradius R the apothem is R times root three over two, and a point
+ * is inside when it sits under the flat top and behind both slanted edges.
+ */
+function insideHexagon(x, y, scale = 1) {
+  const R = 0.47 * scale;
+  const apothem = R * 0.8660254;
+  const dx = Math.abs(x - 0.5);
+  const dy = Math.abs(y - 0.5);
+  if (dy > apothem) return false;
+  return apothem * dx + (R / 2) * dy <= apothem * R;
 }
 
 function insideKeyhole(x, y) {
   const headX = 0.5;
-  const headY = 0.415;
-  const headR = 0.125;
+  const headY = 0.44;
+  const headR = 0.115;
   const dx = x - headX;
   const dy = y - headY;
   if (dx * dx + dy * dy <= headR * headR) return true;
 
-  const top = 0.44;
-  const bottom = 0.72;
+  const top = 0.46;
+  const bottom = 0.70;
   if (y < top || y > bottom) return false;
   const t = (y - top) / (bottom - top);
-  const halfWidth = 0.052 + t * 0.042;
+  const halfWidth = 0.048 + t * 0.040;
   return Math.abs(x - headX) <= halfWidth;
 }
 
 function pixel(u, v) {
   // u, v are 0..1 across the icon. Returns [r, g, b, a].
-  if (!insideRoundedSquare(u, v)) return [0, 0, 0, 0];
-  if (insideKeyhole(u, v)) return [255, 255, 255, 255];
-  const t = Math.min(1, Math.max(0, (u * 0.45 + v * 0.55)));
+  if (!insideHexagon(u, v)) return [0, 0, 0, 0];
+
+  // An inner hexagon border, the way a comb cell has a rim.
+  const inner = insideHexagon(u, v, 0.86);
+  if (!inner) {
+    const t = Math.min(1, Math.max(0, u * 0.45 + v * 0.55));
+    return [
+      Math.round((COLOR_A[0] + (COLOR_B[0] - COLOR_A[0]) * t) * 0.72),
+      Math.round((COLOR_A[1] + (COLOR_B[1] - COLOR_A[1]) * t) * 0.72),
+      Math.round((COLOR_A[2] + (COLOR_B[2] - COLOR_A[2]) * t) * 0.72),
+      255
+    ];
+  }
+
+  if (insideKeyhole(u, v)) return [255, 253, 245, 255];
+
+  const t = Math.min(1, Math.max(0, u * 0.45 + v * 0.55));
   return [
     Math.round(COLOR_A[0] + (COLOR_B[0] - COLOR_A[0]) * t),
     Math.round(COLOR_A[1] + (COLOR_B[1] - COLOR_A[1]) * t),

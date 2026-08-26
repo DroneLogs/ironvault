@@ -194,6 +194,16 @@ async function main() {
   await run(`document.querySelectorAll('.modal details.adv').forEach(d => d.open = true); true`, 'expand advanced');
   await wait(150);
   await shot('08-generator-diceware');
+  await run(`document.querySelector('.tab-row .help-badge').click(); true`, 'open explanation');
+  await wait(500);
+  await shot('08b-what-is-diceware');
+  const explained = await run(
+    `IV.dom.topModal() && IV.dom.topModal().dialog.querySelector('h2').textContent`,
+    'explanation title'
+  );
+  await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close explanation');
+  await wait(250);
+
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close generator');
   await wait(150);
 
@@ -419,6 +429,7 @@ async function main() {
     `, 'a11y probe')
   );
 
+  check('explanation opens from the badge', explained === 'What is Diceware?', String(explained));
   check('live regions present', a11y.liveRegions === true);
   check('skip link present', a11y.skipLink === true);
   check('entry list is a listbox', a11y.listboxRole === 'listbox', String(a11y.listboxRole));

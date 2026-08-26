@@ -254,7 +254,25 @@ window.IV = window.IV || {};
     let mode = 'generated';
     let generated = '';
 
-    const preview = h('div', { class: 'gen-preview' });
+    const previewText = h('div', { class: 'gen-preview-text' });
+    const preview = h(
+      'div',
+      { class: 'gen-preview' },
+      previewText,
+      h(
+        'div',
+        { class: 'gen-preview-actions' },
+        h('button', { class: 'icon-btn refresh', title: 'Generate another', onClick: () => regenerate() }),
+        h('button', {
+          class: 'icon-btn copy',
+          title: 'Copy to the clipboard',
+          onClick: async () => {
+            await IV.api.copy(generated);
+            copiedNote.textContent = 'Copied. Paste it somewhere safe before you finish.';
+          }
+        })
+      )
+    );
     const meter = h('div', { class: 'gen-meter' });
     const copiedNote = h('p', { class: 'hint' });
 
@@ -278,33 +296,24 @@ window.IV = window.IV || {};
           separator: '-'
         });
         generated = result.password;
-        IV.generator.colorize(generated, preview);
+        IV.generator.colorize(generated, previewText);
         clear(meter).append(IV.dom.strengthMeter(result.strength));
       } catch (err) {
         generated = '';
-        clear(preview).append(h('span', { class: 'gen-error', text: err.message }));
+        clear(previewText).append(h('span', { class: 'gen-error', text: err.message }));
       }
     }
 
     const generatedPanel = h(
       'div',
       null,
-      h('span', { class: 'field-label', text: 'Your new master password' }),
+      IV.glossary.label('Your new master password', 'diceware'),
       preview,
       meter,
       copiedNote,
       h(
         'div',
         { class: 'row-gap' },
-        h('button', { class: 'btn ghost small', text: 'Regenerate', onClick: regenerate }),
-        h('button', {
-          class: 'btn ghost small',
-          text: 'Copy',
-          onClick: async () => {
-            await IV.api.copy(generated);
-            copiedNote.textContent = 'Copied. Paste it somewhere safe before you finish.';
-          }
-        }),
         h('button', {
           class: 'btn ghost small',
           text: 'Other options...',
@@ -313,7 +322,7 @@ window.IV = window.IV || {};
               title: 'Choose a master password',
               onUse: async (value) => {
                 generated = value;
-                IV.generator.colorize(generated, preview);
+                IV.generator.colorize(generated, previewText);
                 clear(meter).append(IV.dom.strengthMeter(await IV.api.strength(value)));
               }
             })
@@ -392,7 +401,7 @@ window.IV = window.IV || {};
         h(
           'div',
           { class: 'field' },
-          h('span', { class: 'field-label', text: 'Key file (optional)' }),
+          IV.glossary.label('Key file (optional)', 'keyfile'),
           h(
             'div',
             { class: 'row-gap' },
@@ -406,11 +415,9 @@ window.IV = window.IV || {};
               }
             }),
             h('button', { class: 'btn ghost small', text: 'Clear', onClick: () => (keyPath.value = '') })
-          ),
-          IV.glossary.note('keyfile')
+          )
         ),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Format' }), formatSelect),
-        IV.glossary.note('kdf')
+        h('label', { class: 'field' }, IV.glossary.label('Format', 'kdf'), formatSelect)
       ),
       footer: [
         h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
@@ -884,8 +891,11 @@ window.IV = window.IV || {};
     });
     $('#btn-clear-keyfile').addEventListener('click', () => ($('#unlock-keyfile').value = ''));
 
-    const keyfileHelp = $('#unlock-keyfile-help');
-    if (keyfileHelp) keyfileHelp.append(IV.glossary.note('keyfile'));
+    const keyfileLabel = $('#unlock-keyfile-label');
+    if (keyfileLabel) keyfileLabel.append(IV.glossary.badge('keyfile'));
+
+    const readonlyLabel = $('#unlock-readonly-label');
+    if (readonlyLabel) readonlyLabel.append(IV.glossary.badge('readonly'));
 
     for (const button of $$('[data-reveal]')) {
       button.addEventListener('click', () => {

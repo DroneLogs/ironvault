@@ -103,17 +103,57 @@ window.IV = window.IV || {};
     }
   };
 
-  /** A collapsed explanation, sized to sit under the control it describes. */
-  function note(key) {
+  /**
+   * A question mark in a circle, sized to sit on the same line as a label.
+   * Clicking it opens the explanation, so the answer is one click away and
+   * takes up no room until somebody wants it.
+   */
+  function badge(key, { label } = {}) {
     const term = TERMS[key];
     if (!term) return null;
-    return h(
-      'details',
-      { class: 'explain' },
-      h('summary', { text: term.title }),
-      term.body.map((paragraph) => h('p', { text: paragraph }))
-    );
+    return h('button', {
+      type: 'button',
+      class: 'help-badge',
+      title: label || term.title,
+      'aria-label': label || term.title,
+      onClick: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        open(key);
+      }
+    });
   }
 
-  IV.glossary = { note, TERMS };
+  /** The explanation itself. */
+  function open(key) {
+    const term = TERMS[key];
+    if (!term) return;
+    const handle = IV.dom.modal({
+      title: term.title,
+      body: h('div', { class: 'explain-body' }, term.body.map((p) => h('p', { text: p }))),
+      footer: [h('button', { class: 'btn primary', text: 'Got it', onClick: () => handle.close() })]
+    });
+  }
+
+  /**
+   * A field label with the question mark beside it, which is where most of
+   * these belong.
+   */
+  function label(text, key) {
+    return h('span', { class: 'field-label with-help' }, h('span', { text }), badge(key));
+  }
+
+  /** A plain text link, for the few places a circle would look out of place. */
+  function link(key, text) {
+    const term = TERMS[key];
+    if (!term) return null;
+    return h('button', {
+      type: 'button',
+      class: 'help-link',
+      text: text || term.title,
+      onClick: () => open(key)
+    });
+  }
+
+  IV.glossary = { badge, open, label, link, TERMS };
 })(window.IV);

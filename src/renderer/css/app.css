@@ -1668,3 +1668,115 @@ kbd {
   color: var(--muted);
   margin: -6px 0 14px;
 }
+
+/* ------------------------------------------------------------ explanations */
+
+/* A question mark in a circle, sitting on the same line as whatever it
+   explains. Quiet until you look for it, and one click from the answer. */
+.help-badge {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--muted);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  vertical-align: middle;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.help-badge::before {
+  content: "?";
+}
+
+.help-badge:hover,
+.help-badge:focus-visible {
+  color: var(--accent-text);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.field-label.with-help,
+h3.with-help,
+span.with-help,
+.with-help {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.help-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.explain-body p {
+  margin: 0 0 12px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.explain-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ------------------------------------- generator preview with inline actions */
+
+.gen-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.gen-preview-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+}
+
+.gen-preview-actions {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  margin: -4px -4px 0 0;
+}
+
+.gen-preview-actions .icon-btn {
+  width: 28px;
+  height: 28px;
+}
+
+.icon-btn.refresh::before {
+  content: "\21BB";
+  font-size: 16px;
+}
+
+.tab-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.strength-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strength-row .strength {
+  flex: 1;
+  min-width: 0;
+}

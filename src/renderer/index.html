@@ -66,14 +66,13 @@
               </span>
             </label>
             <div class="field">
-              <span class="field-label">Key file (optional)</span>
+              <span class="field-label with-help" id="unlock-keyfile-label"><span>Key file (optional)</span></span>
               <div class="row-gap">
                 <label class="visually-hidden" for="unlock-keyfile">Key file path</label>
                 <input id="unlock-keyfile" type="text" readonly placeholder="None" />
                 <button type="button" id="btn-pick-keyfile" class="btn ghost small">Choose</button>
                 <button type="button" id="btn-clear-keyfile" class="btn ghost small">Clear</button>
               </div>
-              <div id="unlock-keyfile-help"></div>
             </div>
             <label class="checkline">
               <input id="unlock-remember" type="checkbox" />
@@ -81,7 +80,7 @@
             </label>
             <label class="checkline">
               <input id="unlock-readonly" type="checkbox" />
-              <span>Open read only</span>
+              <span class="with-help" id="unlock-readonly-label"><span>Open read only</span></span>
             </label>
             <div id="unlock-pin-row" class="row-gap" hidden>
               <label class="visually-hidden" for="unlock-pin">PIN</label>

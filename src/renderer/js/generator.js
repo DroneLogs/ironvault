@@ -60,7 +60,7 @@ window.IV = window.IV || {};
   }
 
   function strengthLine(estimate) {
-    return IV.dom.strengthMeter(estimate);
+    return h('div', { class: 'strength-row' }, IV.dom.strengthMeter(estimate), IV.glossary.badge('entropy'));
   }
 
   /* ------------------------------------------------------------- controls */
@@ -155,7 +155,30 @@ window.IV = window.IV || {};
     let current = '';
     let mode = config.algorithm === 'diceware' ? 'diceware' : 'basic';
 
-    const preview = h('div', { class: 'gen-preview' });
+    const previewText = h('div', { class: 'gen-preview-text' });
+    const preview = h(
+      'div',
+      { class: 'gen-preview' },
+      previewText,
+      h(
+        'div',
+        { class: 'gen-preview-actions' },
+        h('button', {
+          class: 'icon-btn refresh',
+          title: 'Generate another',
+          onClick: () => regenerate()
+        }),
+        h('button', {
+          class: 'icon-btn copy',
+          title: 'Copy to the clipboard',
+          onClick: async () => {
+            if (!current) return;
+            await IV.api.copy(current);
+            toast('Password copied');
+          }
+        })
+      )
+    );
     const meter = h('div', { class: 'gen-meter' });
     const listInfo = h('p', { class: 'hint' });
     const colourKey = legend();
@@ -167,7 +190,7 @@ window.IV = window.IV || {};
         try {
           const result = await IV.api.generate({ ...config, algorithm: mode });
           current = result.password;
-          colorize(current, preview);
+          colorize(current, previewText);
           clear(meter).append(strengthLine(result.strength));
           if (mode === 'diceware') {
             listInfo.textContent =
@@ -177,7 +200,7 @@ window.IV = window.IV || {};
           }
         } catch (err) {
           current = '';
-          clear(preview).append(h('span', { class: 'gen-error', text: err.message }));
+          clear(previewText).append(h('span', { class: 'gen-error', text: err.message }));
           clear(meter);
         }
       }, 10);
@@ -346,10 +369,8 @@ window.IV = window.IV || {};
     const dicewarePanel = h(
       'div',
       { hidden: true },
-      IV.glossary.note('diceware'),
       wordSlider.row,
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Word list' }), listSelect),
-      IV.glossary.note('wordlist'),
+      h('label', { class: 'field' }, IV.glossary.label('Word list', 'wordlist'), listSelect),
       h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Separator' }), separatorInput),
       dicewareAdvanced
     );
@@ -358,6 +379,7 @@ window.IV = window.IV || {};
 
     const tabBasic = h('button', { class: 'tab', text: 'Basic', onClick: () => setMode('basic') });
     const tabDiceware = h('button', { class: 'tab', text: 'Diceware', onClick: () => setMode('diceware') });
+    const tabHelp = IV.glossary.badge('diceware', { label: 'What is Diceware?' });
 
     function setMode(next) {
       mode = next;
@@ -375,26 +397,15 @@ window.IV = window.IV || {};
       body: h(
         'div',
         null,
-        h('div', { class: 'tabs' }, tabBasic, tabDiceware),
+        h('div', { class: 'tab-row' }, h('div', { class: 'tabs' }, tabBasic, tabDiceware), tabHelp),
         preview,
         colourKey,
         meter,
         listInfo,
-        IV.glossary.note('entropy'),
         h('div', { class: 'gen-panels' }, basicPanel, dicewarePanel)
       ),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Regenerate', onClick: regenerate }),
         h('span', { class: 'spacer' }),
-        h('button', {
-          class: 'btn ghost',
-          text: 'Copy',
-          onClick: async () => {
-            if (!current) return;
-            await IV.api.copy(current);
-            toast('Password copied');
-          }
-        }),
         onUse
           ? h('button', {
               class: 'btn primary',

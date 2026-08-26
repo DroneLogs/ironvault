@@ -253,7 +253,7 @@ window.IV = window.IV || {};
     const handle = modal({
       title: 'Have I Been Pwned',
       wide: true,
-      body: h('div', null, status, IV.glossary.note('pwned'), results)
+      body: h('div', null, h('div', { class: 'with-help' }, status, IV.glossary.badge('pwned')), results)
     });
 
     const stop = IV.api.on('progress', (p) => {
@@ -618,9 +618,8 @@ window.IV = window.IV || {};
     refreshDuress();
 
     body.append(
-      h('div', { class: 'detail-section' }, h('h3', { text: 'Duress PIN' })),
+      h('div', { class: 'detail-section' }, h('h3', { class: 'with-help' }, 'Duress PIN', IV.glossary.badge('duress'))),
       duressState,
-      IV.glossary.note('duress'),
       h(
         'div',
         { class: 'row-gap' },
@@ -903,8 +902,12 @@ window.IV = window.IV || {};
         'div',
         null,
         status,
-        IV.glossary.note('remote'),
-        field('Where this database lives', provider),
+        h(
+          'div',
+          { class: 'field' },
+          IV.glossary.label('Where this database lives', 'remote'),
+          provider
+        ),
         webdavFields,
         sftpFields,
         h('p', {
@@ -1064,8 +1067,7 @@ window.IV = window.IV || {};
         actions,
         h('div', { class: 'detail-section' }, h('h3', { text: 'Keys' })),
         keyList,
-        IV.glossary.note('sshagent'),
-        h('div', { class: 'detail-section' }, h('h3', { text: 'How to use it' })),
+        h('div', { class: 'detail-section' }, h('h3', { class: 'with-help' }, 'How to use it', IV.glossary.badge('sshagent'))),
         h('p', {
           class: 'hint',
           text:
@@ -1092,7 +1094,13 @@ window.IV = window.IV || {};
       body: h(
         'div',
         null,
-        field('Sequence', sequence, 'Leave empty to use {USERNAME}{TAB}{PASSWORD}{ENTER}.'),
+        h(
+          'div',
+          { class: 'field' },
+          IV.glossary.label('Sequence', 'placeholders'),
+          sequence,
+          h('p', { class: 'hint', text: 'Leave empty to use {USERNAME}{TAB}{PASSWORD}{ENTER}.' })
+        ),
         field('Window title contains', window, 'Optional. Helps Ironvault pick this entry over a similar one.'),
         h('p', {
           class: 'hint',
@@ -1145,8 +1153,13 @@ window.IV = window.IV || {};
       body: h(
         'div',
         null,
-        IV.glossary.note('totp'),
-        field('Paste an otpauth:// address', uri, 'This is what a QR code contains. Everything below is filled in from it.'),
+        h(
+          'div',
+          { class: 'field' },
+          IV.glossary.label('Paste an otpauth:// address', 'totp'),
+          uri,
+          h('p', { class: 'hint', text: 'This is what a QR code contains. Everything below is filled in from it.' })
+        ),
         h('div', { class: 'detail-section' }, h('h3', { text: 'Or enter the secret by hand' })),
         field('Secret', secret),
         h('div', { class: 'gen-grid' }, field('Digits', digits), field('Period (seconds)', period)),

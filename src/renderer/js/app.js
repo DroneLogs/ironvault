@@ -43,8 +43,11 @@ window.IV = window.IV || {};
     state.app = info;
     state.prefs = info.prefs;
     state.wordLists = info.wordLists || [];
+    state.productName = info.productName || 'Ironvault';
+    state.tagline = info.tagline || '';
     state.quickUnlockAvailable = info.quickUnlockAvailable;
     applyTheme();
+    applyBrand();
     wireGlobalEvents();
     await showLockScreen();
     if (info.openWith) await openPath(info.openWith);
@@ -65,9 +68,23 @@ window.IV = window.IV || {};
     );
   }
 
+  /** Title bar name, lock screen name and logo, all from the icon choice. */
+  function applyBrand() {
+    const icon = state.prefs.appIcon || 'default';
+    const suffix = icon === 'default' ? '' : '-' + icon;
+    const name = state.productName || 'Ironvault';
+
+    for (const node of $$('.brand-name, .lock-title')) node.textContent = name;
+    for (const img of $$('.brand-mark, .lock-logo')) img.src = 'icons/app' + suffix + '.png';
+    const tagline = $('.lock-tagline');
+    if (tagline && state.tagline) tagline.textContent = state.tagline;
+    document.title = name;
+  }
+
   function applyTheme() {
     const body = document.body;
     const prefs = state.prefs;
+    body.classList.toggle('brand-propolis', prefs.appIcon === 'propolis');
     body.classList.toggle('theme-light', prefs.theme === 'light');
     body.classList.toggle('palette-classic', prefs.palette === 'classic');
     body.classList.toggle('font-dyslexic', prefs.uiFont === 'dyslexic');
@@ -1095,7 +1112,7 @@ window.IV = window.IV || {};
     }
   }
 
-  IV.app = { boot, refresh, showEntry, autoSave, saveNow, applyTheme, select };
+  IV.app = { boot, refresh, showEntry, autoSave, saveNow, applyTheme, applyBrand, select };
 
   document.addEventListener('DOMContentLoaded', () => {
     boot().catch((err) => {

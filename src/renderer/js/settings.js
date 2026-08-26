@@ -92,11 +92,34 @@ window.IV = window.IV || {};
     const select = h('select', {
       onChange: async () => {
         await apply({ appIcon: select.value });
-        toast('App icon changed', 'good');
+
+        // The in app logo and name change immediately. The taskbar and window
+        // icon are held by Windows against the running instance, so those need
+        // a restart to catch up.
+        const info = await IV.api.appInfo();
+        IV.state.productName = info.productName;
+        IV.state.tagline = info.tagline;
+        IV.app.applyBrand();
+
+        const ok = await IV.api.confirm({
+          title: 'Restart to finish',
+          message: 'Restart now so the taskbar and window icon change too?',
+          detail:
+            'The icon and name inside the app have already changed. Windows holds the taskbar icon ' +
+            'against the running program, so it only updates on a restart. Any open database is locked first.',
+          confirmLabel: 'Restart now'
+        });
+        if (!ok) {
+          toast('Changed. The taskbar icon updates next time you start the app.');
+          return;
+        }
+        await IV.api.lock().catch(() => {});
+        await IV.api.relaunch();
       }
     });
+
     IV.api
-      .call('app.iconChoices')
+      .iconChoices()
       .then((choices) => {
         IV.dom.clear(select);
         for (const choice of choices) {
@@ -106,7 +129,19 @@ window.IV = window.IV || {};
         }
       })
       .catch(() => {});
-    return h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'App icon' }), select);
+
+    return h(
+      'label',
+      { class: 'field' },
+      h('span', { class: 'field-label', text: 'App icon and name' }),
+      select,
+      h('p', {
+        class: 'hint',
+        text:
+          'Propolis renames the running app and gives it the resin coloured mark. The installed shortcut, ' +
+          'the executable and the entry in Windows Apps keep the name the build was made with.'
+      })
+    );
   }
 
   async function apply(patch) {

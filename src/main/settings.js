@@ -6,6 +6,7 @@ const { app } = require('electron');
 
 const DEFAULTS = {
   databases: [],
+  migrations: {},
   prefs: {
     clipboardClearSeconds: 30,
     autoLockMinutes: 5,
@@ -24,8 +25,8 @@ const DEFAULTS = {
     markdownNotes: true,
     masterPasswordReminderDays: 180,
     autoCheckUpdates: true,
-    updateFeedUrl: '',
-    updateReleasePageUrl: '',
+    updateFeedUrl: 'https://github.com/DroneLogs/ironvault/releases/latest/download/',
+    updateReleasePageUrl: 'https://github.com/DroneLogs/ironvault/releases',
     generator: {
       algorithm: 'basic',
 
@@ -71,13 +72,31 @@ function deepMerge(base, override) {
   return out;
 }
 
+/**
+ * Profiles written before the update feed had a default carry an empty string,
+ * which would otherwise win over the new default forever. Fill it in once, and
+ * remember that we did, so clearing it on purpose still sticks.
+ */
+function migrate(settings) {
+  if (!settings.migrations) settings.migrations = {};
+  if (!settings.migrations.defaultUpdateFeed) {
+    if (!settings.prefs.updateFeedUrl) settings.prefs.updateFeedUrl = DEFAULTS.prefs.updateFeedUrl;
+    if (!settings.prefs.updateReleasePageUrl) {
+      settings.prefs.updateReleasePageUrl = DEFAULTS.prefs.updateReleasePageUrl;
+    }
+    settings.migrations.defaultUpdateFeed = true;
+  }
+  return settings;
+}
+
 function load() {
   if (cache) return cache;
   try {
     const raw = fs.readFileSync(file(), 'utf8');
-    cache = deepMerge(DEFAULTS, JSON.parse(raw));
+    cache = migrate(deepMerge(DEFAULTS, JSON.parse(raw)));
   } catch {
     cache = JSON.parse(JSON.stringify(DEFAULTS));
+    cache.migrations = { defaultUpdateFeed: true };
   }
   return cache;
 }

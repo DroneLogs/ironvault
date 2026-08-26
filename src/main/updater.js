@@ -16,6 +16,24 @@ const settings = require('./settings');
 let autoUpdater = null;
 let wired = false;
 
+const DEFAULT_FEED = 'https://github.com/DroneLogs/ironvault/releases/latest/download/';
+
+/**
+ * A private GitHub repository answers an unauthenticated request for a release
+ * asset with a 404, which reads like a broken URL. Say what it actually means.
+ */
+function explain(message, url) {
+  const text = String(message || '');
+  if (/github\.com/i.test(url) && /(404|401|403)|not found|cannot find/i.test(text)) {
+    return (
+      'The update feed could not be read. If the repository is still private, update ' +
+      'checks cannot reach it: the app sends no credentials. Make the repository public, ' +
+      'or point the feed somewhere unauthenticated.'
+    );
+  }
+  return text;
+}
+
 const current = {
   status: 'idle', // idle | checking | available | none | downloading | ready | error | unconfigured
   version: null,
@@ -79,7 +97,7 @@ function wire() {
     setState({ status: 'ready', version: info.version, percent: 100 });
   });
   updater.on('error', (err) => {
-    setState({ status: 'error', error: err ? err.message : 'Update check failed' });
+    setState({ status: 'error', error: explain(err && err.message, feedUrl()) || 'Update check failed' });
   });
 }
 
@@ -106,7 +124,7 @@ async function check({ manual = true } = {}) {
     setState({ status: 'checking', error: null });
     await updater.checkForUpdates();
   } catch (err) {
-    setState({ status: 'error', error: err.message });
+    setState({ status: 'error', error: explain(err.message, url) });
   }
   return snapshot();
 }
@@ -140,7 +158,13 @@ function openReleasePage() {
 }
 
 function snapshot() {
-  return { ...current, currentVersion: app.getVersion(), feedUrl: feedUrl() };
+  return {
+    ...current,
+    currentVersion: app.getVersion(),
+    feedUrl: feedUrl(),
+    defaultFeedUrl: DEFAULT_FEED,
+    usingDefaultFeed: feedUrl() === DEFAULT_FEED
+  };
 }
 
 function state() {
@@ -164,6 +188,7 @@ function setNotifier(send) {
 }
 
 module.exports = {
+  DEFAULT_FEED,
   check,
   download,
   installNow,

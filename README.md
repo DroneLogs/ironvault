@@ -186,16 +186,21 @@ reproducible and documented in the fetch script.
 
 ## Updates
 
-Ironvault can check for new versions and install them, the way KeePass does on Windows. It
-is off until you point it somewhere, and with no URL set it never touches the network.
+Ironvault checks the project's own releases by default, the way KeePass does on Windows.
+The feed is preset to `https://github.com/DroneLogs/ironvault/releases/latest/download/`,
+and **Settings > Updates > Never check** turns it off completely, after which the app never
+touches the network for updates.
+
+While the repository is private, update checks cannot read it: the app sends no
+credentials, so GitHub answers 404. Ironvault says so in plain words rather than showing an
+HTTP code. Make the repository public and it starts working with no change to the app.
 
 To publish an update:
 
 1. Bump `version` in `package.json` and run `npm run dist`.
 2. Upload `Ironvault-Setup-X.Y.Z.exe`, `latest.yml`, and the `.blockmap` file from `dist/`
    to wherever you host them.
-3. In Ironvault, open **Settings > Updates** and set the feed URL to the folder holding
-   those files.
+3. Nothing else. Installed copies already point at that release feed.
 
 A GitHub release works with no server of your own. Attach the three files to a release and
 use `https://github.com/USER/REPO/releases/latest/download/` as the feed URL. The repository

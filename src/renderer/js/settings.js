@@ -155,6 +155,29 @@ window.IV = window.IV || {};
       zoomField(prefs),
       toggle('Reduce motion', Boolean(prefs.reduceMotion), (v) => apply({ reduceMotion: v }), 'Turns off fades and slides.'),
       toggle('Thicker focus outline', Boolean(prefs.strongFocus), (v) => apply({ strongFocus: v }), 'Easier to follow when moving through the app by keyboard.'),
+      h('p', {
+        class: 'hint',
+        text: 'Out of the box only the colourblind safe palette is on. Everything else here starts off.'
+      }),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Reset accessibility to defaults',
+          onClick: async () => {
+            await apply({
+              palette: 'accessible',
+              uiFont: 'system',
+              zoom: 1,
+              reduceMotion: false,
+              strongFocus: false
+            });
+            handle.close();
+            toast('Accessibility settings reset', 'good');
+          }
+        })
+      ),
       toggle('Render notes as Markdown', prefs.markdownNotes !== false, (v) => apply({ markdownNotes: v })),
       numberField('Keep this many backups', prefs.keepBackups, 0, 100, 'saves (0 to keep none)', (v) =>
         apply({ keepBackups: v })
@@ -275,6 +298,10 @@ window.IV = window.IV || {};
     switch (update.status) {
       case 'unconfigured':
         return 'No update source is set, so Ironvault never checks.';
+      case 'idle':
+        return update.usingDefaultFeed
+          ? 'Set to check the Ironvault repository. Version ' + update.currentVersion + '.'
+          : 'Version ' + update.currentVersion + '.';
       case 'checking':
         return 'Checking...';
       case 'available':
@@ -398,9 +425,33 @@ window.IV = window.IV || {};
           apply({ autoCheckUpdates: v })
         ),
         h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Update feed URL' }), feedInput),
+        h(
+          'div',
+          { class: 'row-gap' },
+          h('button', {
+            class: 'btn ghost small',
+            text: 'Use the Ironvault repository',
+            onClick: async () => {
+              const state = await IV.api.updateState();
+              feedInput.value = state.defaultFeedUrl;
+              await apply({ updateFeedUrl: state.defaultFeedUrl });
+              toast('Feed reset to the Ironvault repository', 'good');
+            }
+          }),
+          h('button', {
+            class: 'btn ghost small',
+            text: 'Never check',
+            onClick: async () => {
+              feedInput.value = '';
+              await apply({ updateFeedUrl: '' });
+              render(await IV.api.updateState());
+              toast('Update checks turned off');
+            }
+          })
+        ),
         h('p', {
           class: 'hint',
-          text: 'The folder holding latest.yml and the installer. A GitHub release works: https://github.com/USER/REPO/releases/latest/download/'
+          text: 'This points at the Ironvault releases by default. While the repository is private, update checks cannot read it, because the app sends no credentials.'
         }),
         h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Release notes page (optional)' }), pageInput),
         h('p', {

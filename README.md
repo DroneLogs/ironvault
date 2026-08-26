@@ -201,12 +201,69 @@ Download and run one of the two builds in `dist/`:
   desktop shortcuts. No administrator rights needed.
 - `Ironvault-1.0.0-portable.exe` runs straight from the file, including from a USB stick.
 
+Both are attached to the release at
+https://github.com/DroneLogs/ironvault/releases/tag/v1.0.0 (private repository, so you need
+access to it).
+
 Neither build is code signed, so SmartScreen will show "Windows protected your PC" the
 first time. Choose **More info** then **Run anyway**.
 
 Ironvault does not take over the `.kdbx` file association. If you want double clicking a
 database to open it here, right click a `.kdbx` file, choose **Open with > Choose another
 app**, and pick Ironvault.
+
+## Sharing it with people
+
+The repository is private, which matters for how downloads work: **GitHub release assets on
+a private repo need a signed in GitHub account with access.** A plain link will 404 for
+anyone else.
+
+Three ways to get a build to a friend, easiest first.
+
+**1. Send them the portable exe.** Grab `Ironvault-1.0.0-portable.exe` and put it in Proton
+Drive, OneDrive, or anywhere else you already share files. They double click it and it runs.
+Nothing is installed, nothing is registered, and deleting the file removes it completely.
+Best option for anyone who does not have a GitHub account.
+
+**2. Add them as a collaborator.** They need a GitHub account, then:
+
+```bash
+gh api -X PUT repos/DroneLogs/ironvault/collaborators/THEIR_USERNAME -f permission=pull
+```
+
+They accept the invite and can then download from
+https://github.com/DroneLogs/ironvault/releases. Use this if you want them to see new
+versions as you publish them.
+
+**3. Make the repository public.** Then release links work for anyone, and the in-app
+updater starts working too (see below). Read [LICENSING.md](LICENSING.md) first: the code is
+yours to publish, but two of the bundled word lists have licences you should decide about
+before the repository becomes public.
+
+### Tell them what to expect
+
+Every one of them will hit the SmartScreen warning, because the build is not code signed.
+Worth saying up front so nobody thinks it is a virus:
+
+> Windows will say "Windows protected your PC". Click **More info**, then **Run anyway**.
+> That warning is about the build not being signed, not about anything it found.
+
+### Turning on updates for testers
+
+The in-app updater sends no credentials, so it cannot read a private repository's releases.
+Until the repo is public, either tell testers when a new build is out, or point the feed at
+somewhere unauthenticated that you control.
+
+Once the repository is public, each tester opens **Settings > Updates** and sets the feed URL
+to:
+
+```
+https://github.com/DroneLogs/ironvault/releases/latest/download/
+```
+
+Then they get the update prompt automatically. To publish a new version: bump `version` in
+`package.json`, run `npm run dist`, and attach the setup exe, `latest.yml`, and the
+`.blockmap` to a new release.
 
 ## Keyboard shortcuts
 

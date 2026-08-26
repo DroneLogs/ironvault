@@ -1,0 +1,236 @@
+[
+  {
+    "key": "fandom-got",
+    "name": "Game of Thrones (EFF Fandom)",
+    "category": "fandom",
+    "count": 4000,
+    "bitsPerWord": 11.97,
+    "source": "https://www.eff.org/files/2018/08/29/gameofthrones_8k-2018.txt",
+    "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
+  },
+  {
+    "key": "fandom-harrypotter",
+    "name": "Harry Potter (EFF Fandom)",
+    "category": "fandom",
+    "count": 4000,
+    "bitsPerWord": 11.97,
+    "source": "https://www.eff.org/files/2018/08/29/harrypotter_8k-2018.txt",
+    "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
+  },
+  {
+    "key": "fandom-startrek",
+    "name": "Star Trek (EFF Fandom)",
+    "category": "fandom",
+    "count": 4000,
+    "bitsPerWord": 11.97,
+    "source": "https://www.eff.org/files/2018/08/29/memory-alpha_8k_2018.txt",
+    "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
+  },
+  {
+    "key": "fandom-starwars",
+    "name": "Star Wars (EFF Fandom)",
+    "category": "fandom",
+    "count": 4000,
+    "bitsPerWord": 11.97,
+    "source": "https://www.eff.org/files/2018/08/29/starwars_8k_2018.txt",
+    "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
+  },
+  {
+    "key": "lang-catalan",
+    "name": "Catalan",
+    "category": "languages",
+    "count": 7771,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareCA.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-dutch",
+    "name": "Dutch",
+    "category": "languages",
+    "count": 7776,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareNL.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-finnish",
+    "name": "Finnish",
+    "category": "languages",
+    "count": 7775,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareFI.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-french",
+    "name": "French",
+    "category": "languages",
+    "count": 8191,
+    "bitsPerWord": 13,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareFR.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-german",
+    "name": "German",
+    "category": "languages",
+    "count": 7724,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareDE.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-icelandic",
+    "name": "Icelandic",
+    "category": "languages",
+    "count": 7776,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/hrafnthor/diceware-is/master/res/source",
+    "credit": "Derived from the Icelandic word corpus in hrafnthor/diceware-is (BÍN, CC BY-SA 4.0)"
+  },
+  {
+    "key": "lang-italian",
+    "name": "Italian",
+    "category": "languages",
+    "count": 7725,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareIT.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-japanese",
+    "name": "Japanese",
+    "category": "languages",
+    "count": 7740,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareJP.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-norwegian",
+    "name": "Norwegian",
+    "category": "languages",
+    "count": 7726,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareNO.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-polish",
+    "name": "Polish",
+    "category": "languages",
+    "count": 7724,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewarePL.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-portuguese-br",
+    "name": "Portuguese (Brazilian)",
+    "category": "languages",
+    "count": 7724,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewarePT.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "lang-swedish",
+    "name": "Swedish",
+    "category": "languages",
+    "count": 7725,
+    "bitsPerWord": 12.92,
+    "source": "https://raw.githubusercontent.com/atoponce/webpassgen/master/lists/dicewareSV.js",
+    "credit": "Diceware translations collected in atoponce/webpassgen"
+  },
+  {
+    "key": "names-first",
+    "name": "First names (US)",
+    "category": "names",
+    "count": 4941,
+    "bitsPerWord": 12.27,
+    "source": "https://raw.githubusercontent.com/dominictarr/random-name/master/first-names.txt",
+    "credit": "US Census Bureau, public domain"
+  },
+  {
+    "key": "names-surnames",
+    "name": "Surnames (US)",
+    "category": "names",
+    "count": 12000,
+    "bitsPerWord": 13.55,
+    "source": "https://raw.githubusercontent.com/dominictarr/random-name/master/names.txt",
+    "credit": "US Census Bureau, public domain"
+  },
+  {
+    "key": "beale",
+    "name": "Beale",
+    "category": "standard",
+    "count": 7727,
+    "bitsPerWord": 12.92,
+    "source": "https://theworld.com/~reinhold/beale.wordlist.asc",
+    "credit": "Alan Beale, distributed with Arnold G. Reinhold's Diceware"
+  },
+  {
+    "key": "diceware",
+    "name": "Diceware (Arnold G. Reinhold's Original)",
+    "category": "standard",
+    "count": 7726,
+    "bitsPerWord": 12.92,
+    "source": "https://theworld.com/~reinhold/diceware.wordlist.asc",
+    "credit": "Arnold G. Reinhold, CC BY 3.0"
+  },
+  {
+    "key": "eff-large",
+    "name": "EFF Large",
+    "category": "standard",
+    "count": 7776,
+    "bitsPerWord": 12.92,
+    "source": "https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt",
+    "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
+  },
+  {
+    "key": "eff-short-1",
+    "name": "EFF Short (v1.0)",
+    "category": "standard",
+    "count": 1296,
+    "bitsPerWord": 10.34,
+    "source": "https://www.eff.org/files/2016/09/08/eff_short_wordlist_1.txt",
+    "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
+  },
+  {
+    "key": "eff-short-2",
+    "name": "EFF Short (v2.0 - More memorable, unique prefix)",
+    "category": "standard",
+    "count": 1296,
+    "bitsPerWord": 10.34,
+    "source": "https://www.eff.org/files/2016/09/08/eff_short_wordlist_2_0.txt",
+    "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
+  },
+  {
+    "key": "google-no-swears",
+    "name": "Google (U.S. English, No Swears)",
+    "category": "standard",
+    "count": 5459,
+    "bitsPerWord": 12.41,
+    "source": "https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-usa-no-swears-medium.txt",
+    "credit": "Josh Kaufman, from Google's Trillion Word Corpus"
+  },
+  {
+    "key": "orchard-street",
+    "name": "Orchard Street Diceware List",
+    "category": "standard",
+    "count": 8192,
+    "bitsPerWord": 13,
+    "source": "https://raw.githubusercontent.com/sts10/orchard-street-wordlists/main/lists/orchard-street-medium.txt",
+    "credit": "Sam Schlinkert, CC BY-SA 4.0"
+  },
+  {
+    "key": "securedrop",
+    "name": "SecureDrop",
+    "category": "standard",
+    "count": 7603,
+    "bitsPerWord": 12.89,
+    "source": "https://raw.githubusercontent.com/freedomofpress/securedrop/develop/securedrop/wordlists/en.txt",
+    "credit": "Freedom of the Press Foundation, AGPL-3.0"
+  }
+]

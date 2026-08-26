@@ -1,0 +1,95 @@
+{
+  "name": "ironvault",
+  "productName": "Ironvault",
+  "version": "1.0.0",
+  "description": "A KeePass (.kdbx) password manager for Windows",
+  "main": "src/main/main.js",
+  "author": {
+    "name": "Johnathan Russom"
+  },
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "node scripts/selftest.js",
+    "icon": "node scripts/make-icon.js",
+    "shots": "electron scripts/shot.js",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win",
+    "wordlists": "node scripts/fetch-wordlists.js"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "hash-wasm": "^4.12.0",
+    "kdbxweb": "^2.1.1",
+    "qrcode": "^1.5.4",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.dronelogs.ironvault",
+    "productName": "Ironvault",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "wordlists/**/*",
+      "build/icon*.ico",
+      "build/icon.png",
+      "package.json",
+      "!**/*.md"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ironvault",
+      "uninstallDisplayName": "Ironvault",
+      "artifactName": "Ironvault-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "Ironvault-${version}-portable.exe"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://ironvault.invalid/updates/",
+        "channel": "latest"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Ironvault",
+        "schemes": [
+          "ironvault"
+        ]
+      }
+    ]
+  }
+}

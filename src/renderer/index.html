@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none';"
+    />
+    <title>Ironvault</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body class="theme-dark">
+    <header id="titlebar">
+      <div class="titlebar-brand">
+        <img class="brand-mark" src="icons/app.png" alt="" />
+        <span class="brand-name">Ironvault</span>
+        <span id="titlebar-db" class="titlebar-db"></span>
+        <span id="titlebar-dirty" class="dot-dirty" hidden title="Unsaved changes"></span>
+        <span id="titlebar-readonly" class="ro-badge" hidden title="Read only">read only</span>
+      </div>
+    </header>
+
+    <!-- ------------------------------------------------------- lock screen -->
+    <main id="screen-lock" class="screen">
+      <div class="lock-wrap">
+        <div class="lock-hero">
+          <img class="lock-logo" src="icons/app.png" alt="" />
+          <h1>Ironvault</h1>
+          <p class="muted">Your KeePass databases, on Windows.</p>
+        </div>
+
+        <section id="db-picker" class="card">
+          <div class="card-head">
+            <h2>Databases</h2>
+            <div class="row-gap">
+              <button id="btn-open-db" class="btn ghost">Open...</button>
+              <button id="btn-new-db" class="btn primary">New database</button>
+            </div>
+          </div>
+          <ul id="db-list" class="db-list"></ul>
+          <p id="db-empty" class="empty-note" hidden>
+            No databases yet. Open an existing .kdbx file or create a new one.
+          </p>
+        </section>
+
+        <section id="unlock-panel" class="card" hidden>
+          <div class="card-head">
+            <h2 id="unlock-title">Unlock</h2>
+            <button id="btn-unlock-back" class="btn ghost small">Back</button>
+          </div>
+          <p id="unlock-path" class="path-line"></p>
+          <form id="unlock-form" autocomplete="off">
+            <label class="field">
+              <span class="field-label">Master password</span>
+              <span class="input-with-action">
+                <input id="unlock-password" type="password" spellcheck="false" autocomplete="off" />
+                <button type="button" class="icon-btn reveal" data-reveal="unlock-password" title="Show password"></button>
+              </span>
+            </label>
+            <div class="field">
+              <span class="field-label">Key file (optional)</span>
+              <div class="row-gap">
+                <input id="unlock-keyfile" type="text" readonly placeholder="None" />
+                <button type="button" id="btn-pick-keyfile" class="btn ghost small">Choose</button>
+                <button type="button" id="btn-clear-keyfile" class="btn ghost small">Clear</button>
+              </div>
+            </div>
+            <label class="checkline">
+              <input id="unlock-remember" type="checkbox" />
+              <span>Remember this password on this Windows account</span>
+            </label>
+            <label class="checkline">
+              <input id="unlock-readonly" type="checkbox" />
+              <span>Open read only</span>
+            </label>
+            <div id="unlock-pin-row" class="row-gap" hidden>
+              <input id="unlock-pin" type="password" inputmode="numeric" maxlength="16" placeholder="PIN" />
+              <button type="button" id="btn-pin-unlock" class="btn ghost small">Unlock with PIN</button>
+            </div>
+            <p id="unlock-error" class="error-line" hidden></p>
+            <div class="row-gap end">
+              <button type="button" id="btn-hello-unlock" class="btn ghost" hidden>Windows Hello</button>
+              <button type="button" id="btn-quick-unlock" class="btn ghost" hidden>Quick unlock</button>
+              <button type="submit" id="btn-unlock" class="btn primary">Unlock</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+
+    <!-- ------------------------------------------------------- main screen -->
+    <main id="screen-main" class="screen" hidden>
+      <nav id="sidebar">
+        <div class="search-wrap">
+          <input id="search-input" type="search" placeholder="Search" spellcheck="false" />
+        </div>
+        <ul id="smart-list" class="nav-list"></ul>
+        <div class="nav-head">
+          <span>Groups</span>
+          <button id="btn-add-group" class="icon-btn plus" title="New group"></button>
+        </div>
+        <ul id="group-tree" class="nav-list tree"></ul>
+        <div class="sidebar-foot">
+          <button id="btn-generator" class="btn ghost small">Generator</button>
+          <button id="btn-audit" class="btn ghost small">Audit</button>
+          <button id="btn-settings" class="icon-btn gear" title="Settings"></button>
+          <button id="btn-lock" class="icon-btn lock" title="Lock (Ctrl+L)"></button>
+        </div>
+      </nav>
+
+      <section id="list-pane">
+        <div class="pane-head">
+          <h2 id="list-title">All entries</h2>
+          <div class="row-gap">
+            <select id="sort-select" class="select small" title="Sort">
+              <option value="title">Title</option>
+              <option value="username">Username</option>
+              <option value="modified">Recently changed</option>
+              <option value="created">Newest</option>
+            </select>
+            <button id="btn-add-entry" class="btn primary small">New entry</button>
+          </div>
+        </div>
+        <ul id="entry-list" class="entry-list"></ul>
+        <p id="list-empty" class="empty-note" hidden>Nothing here yet.</p>
+      </section>
+
+      <section id="detail-pane">
+        <div id="detail-empty" class="detail-empty">
+          <div class="detail-empty-mark" aria-hidden="true"></div>
+          <p>Select an entry</p>
+        </div>
+        <article id="detail" hidden></article>
+      </section>
+    </main>
+
+    <div id="modal-root"></div>
+    <div id="toast-root" class="toast-root"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dom.js"></script>
+    <script src="js/markdown.js"></script>
+    <script src="js/generator.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/detail.js"></script>
+    <script src="js/audit.js"></script>
+    <script src="js/tools.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

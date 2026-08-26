@@ -1,0 +1,193 @@
+'use strict';
+
+/**
+ * Draws the Ironvault mark and writes build/icon.ico (plus a 512px PNG for the
+ * readme). No image libraries involved: the shapes are sampled directly and the
+ * PNG and ICO containers are assembled by hand.
+ *
+ *   node scripts/make-icon.js
+ */
+
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
+
+const SIZES = [16, 24, 32, 48, 64, 128, 256];
+const SAMPLES = 4; // supersampling factor per axis
+
+/** The default pair, plus the alternates offered in Settings. */
+const THEMES = {
+  default: [[0x5b, 0x8d, 0xfb], [0x8f, 0x6b, 0xff]],
+  green: [[0x35, 0xc4, 0x8a], [0x1f, 0x9d, 0xb4]],
+  amber: [[0xf5, 0xa6, 0x23], [0xf0, 0x6a, 0x3a]],
+  crimson: [[0xf2, 0x5f, 0x7c], [0xb0, 0x2b, 0x6a]],
+  slate: [[0x7d, 0x89, 0xa3], [0x46, 0x51, 0x66]]
+};
+
+let COLOR_A = THEMES.default[0];
+let COLOR_B = THEMES.default[1];
+
+/* ------------------------------------------------------------------ shapes */
+
+function insideRoundedSquare(x, y) {
+  const inset = 0.035;
+  const radius = 0.225;
+  const min = inset;
+  const max = 1 - inset;
+  if (x < min || x > max || y < min || y > max) return false;
+  const cx = Math.min(Math.max(x, min + radius), max - radius);
+  const cy = Math.min(Math.max(y, min + radius), max - radius);
+  const dx = x - cx;
+  const dy = y - cy;
+  return dx * dx + dy * dy <= radius * radius;
+}
+
+function insideKeyhole(x, y) {
+  const headX = 0.5;
+  const headY = 0.415;
+  const headR = 0.125;
+  const dx = x - headX;
+  const dy = y - headY;
+  if (dx * dx + dy * dy <= headR * headR) return true;
+
+  const top = 0.44;
+  const bottom = 0.72;
+  if (y < top || y > bottom) return false;
+  const t = (y - top) / (bottom - top);
+  const halfWidth = 0.052 + t * 0.042;
+  return Math.abs(x - headX) <= halfWidth;
+}
+
+function pixel(u, v) {
+  // u, v are 0..1 across the icon. Returns [r, g, b, a].
+  if (!insideRoundedSquare(u, v)) return [0, 0, 0, 0];
+  if (insideKeyhole(u, v)) return [255, 255, 255, 255];
+  const t = Math.min(1, Math.max(0, (u * 0.45 + v * 0.55)));
+  return [
+    Math.round(COLOR_A[0] + (COLOR_B[0] - COLOR_A[0]) * t),
+    Math.round(COLOR_A[1] + (COLOR_B[1] - COLOR_A[1]) * t),
+    Math.round(COLOR_A[2] + (COLOR_B[2] - COLOR_A[2]) * t),
+    255
+  ];
+}
+
+function render(size) {
+  const data = Buffer.alloc(size * size * 4);
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      for (let sy = 0; sy < SAMPLES; sy++) {
+        for (let sx = 0; sx < SAMPLES; sx++) {
+          const u = (px + (sx + 0.5) / SAMPLES) / size;
+          const v = (py + (sy + 0.5) / SAMPLES) / size;
+          const [pr, pg, pb, pa] = pixel(u, v);
+          const weight = pa / 255;
+          r += pr * weight;
+          g += pg * weight;
+          b += pb * weight;
+          a += pa;
+        }
+      }
+      const total = SAMPLES * SAMPLES;
+      const alpha = a / total;
+      const cover = alpha / 255;
+      const offset = (py * size + px) * 4;
+      data[offset] = cover ? Math.round(r / total / cover) : 0;
+      data[offset + 1] = cover ? Math.round(g / total / cover) : 0;
+      data[offset + 2] = cover ? Math.round(b / total / cover) : 0;
+      data[offset + 3] = Math.round(alpha);
+    }
+  }
+  return data;
+}
+
+/* --------------------------------------------------------------------- PNG */
+
+const CRC_TABLE = (() => {
+  const table = new Int32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c;
+  }
+  return table;
+})();
+
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function chunk(type, payload) {
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(payload.length, 0);
+  const typeBuf = Buffer.from(type, 'ascii');
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, payload])), 0);
+  return Buffer.concat([length, typeBuf, payload, crc]);
+}
+
+function encodePng(rgba, size) {
+  const raw = Buffer.alloc((size * 4 + 1) * size);
+  for (let y = 0; y < size; y++) {
+    raw[y * (size * 4 + 1)] = 0; // filter: none
+    rgba.copy(raw, y * (size * 4 + 1) + 1, y * size * 4, (y + 1) * size * 4);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 6; // truecolour with alpha
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
+    chunk('IEND', Buffer.alloc(0))
+  ]);
+}
+
+/* --------------------------------------------------------------------- ICO */
+
+function buildIco(images) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2); // type: icon
+  header.writeUInt16LE(images.length, 4);
+
+  const directory = Buffer.alloc(16 * images.length);
+  let offset = header.length + directory.length;
+  images.forEach((image, index) => {
+    const at = index * 16;
+    directory[at] = image.size >= 256 ? 0 : image.size;
+    directory[at + 1] = image.size >= 256 ? 0 : image.size;
+    directory[at + 2] = 0; // palette size
+    directory[at + 3] = 0; // reserved
+    directory.writeUInt16LE(1, at + 4); // colour planes
+    directory.writeUInt16LE(32, at + 6); // bits per pixel
+    directory.writeUInt32BE(0, at + 8);
+    directory.writeUInt32LE(image.png.length, at + 8);
+    directory.writeUInt32LE(offset, at + 12);
+    offset += image.png.length;
+  });
+
+  return Buffer.concat([header, directory, ...images.map((i) => i.png)]);
+}
+
+/* -------------------------------------------------------------------- main */
+
+const buildDir = path.join(__dirname, '..', 'build');
+fs.mkdirSync(buildDir, { recursive: true });
+
+for (const [name, [a, b]] of Object.entries(THEMES)) {
+  COLOR_A = a;
+  COLOR_B = b;
+  const images = SIZES.map((size) => ({ size, png: encodePng(render(size), size) }));
+  const suffix = name === 'default' ? '' : '-' + name;
+  fs.writeFileSync(path.join(buildDir, 'icon' + suffix + '.ico'), buildIco(images));
+  if (name === 'default') fs.writeFileSync(path.join(buildDir, 'icon.png'), encodePng(render(512), 512));
+  console.log('wrote build/icon' + suffix + '.ico');
+}

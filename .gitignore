@@ -4,3 +4,6 @@ dist/
 *.kdbx
 *.kdbx.bak
 shots/
+
+# The handoff document stays on this machine. Never commit it to GitHub.
+HANDOFF.md

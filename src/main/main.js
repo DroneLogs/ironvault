@@ -18,20 +18,40 @@ registerArgon2();
 /**
  * The app was called Ironvault until the rename, and Electron derives the
  * profile directory from the product name, so everything written before the
- * rename sits in the Ironvault folder under %APPDATA%. Copy it across once, the first time the
- * new name starts with no profile of its own. The old directory is left alone,
- * so an older build still opens as it always did.
+ * rename sits in the Ironvault folder under %APPDATA%. Carry it across once, on
+ * the first start that finds no settings of its own.
+ *
+ * SETTINGS AND BACKUPS ONLY. The rest of that directory is Chromium cache,
+ * which an older build still running holds locks on, and copying the whole
+ * thing fails part way through on a locked file. These two are everything the
+ * app itself writes. The originals are left in place, so an older build still
+ * opens as it always did.
+ *
+ * The test is settings.json rather than the directory, because Chromium has
+ * usually created the directory and filled it before this runs.
  */
 function adoptPreviousProfile() {
+  const target = app.getPath('userData');
+  const previous = path.join(app.getPath('appData'), 'Ironvault');
   try {
-    const target = app.getPath('userData');
-    if (fs.existsSync(target)) return;
-    const previous = path.join(app.getPath('appData'), 'Ironvault');
-    if (!fs.existsSync(previous)) return;
-    fs.cpSync(previous, target, { recursive: true });
-    console.log('Carried the Ironvault profile over to ' + target);
+    // A harness running against a throwaway profile must not inherit real
+    // databases, so only the default profile location ever adopts anything.
+    const standard = path.join(app.getPath('appData'), app.getName());
+    if (path.resolve(target) !== path.resolve(standard)) return;
+    if (fs.existsSync(path.join(target, 'settings.json'))) return;
+    if (!fs.existsSync(path.join(previous, 'settings.json'))) return;
+    fs.mkdirSync(target, { recursive: true });
+    fs.copyFileSync(path.join(previous, 'settings.json'), path.join(target, 'settings.json'));
+    console.log('Carried the Ironvault settings over to ' + target);
   } catch (err) {
-    console.error('Could not carry the previous profile over: ' + err.message);
+    console.error('Could not carry the previous settings over: ' + err.message);
+    return;
+  }
+  try {
+    const backups = path.join(previous, 'backups');
+    if (fs.existsSync(backups)) fs.cpSync(backups, path.join(target, 'backups'), { recursive: true, force: false, errorOnExist: false });
+  } catch (err) {
+    console.error('Could not carry the previous backups over: ' + err.message);
   }
 }
 

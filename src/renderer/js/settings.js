@@ -93,6 +93,53 @@ window.IV = window.IV || {};
    * The in app logo and name change at once; the taskbar icon is held by
    * Windows against the running process, so that part needs a restart.
    */
+  /**
+   * Light, dark, or follow the device. Three buttons rather than a switch,
+   * because a switch cannot say "whatever Windows is set to" as a third state.
+   */
+  function appearanceField(prefs) {
+    const options = [
+      ['light', 'Light'],
+      ['dark', 'Dark'],
+      ['system', 'Device']
+    ];
+    const buttons = new Map();
+    const group = h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Appearance' });
+
+    function mark(value) {
+      for (const [key, button] of buttons) {
+        const on = key === value;
+        button.classList.toggle('active', on);
+        button.setAttribute('aria-checked', on ? 'true' : 'false');
+        button.tabIndex = on ? 0 : -1;
+      }
+    }
+
+    for (const [value, label] of options) {
+      const button = h('button', {
+        class: 'seg-btn',
+        role: 'radio',
+        text: label,
+        onClick: async () => {
+          mark(value);
+          await apply({ appearance: value });
+        }
+      });
+      buttons.set(value, button);
+      group.append(button);
+    }
+
+    mark(prefs.appearance === 'light' || prefs.appearance === 'system' ? prefs.appearance : 'dark');
+
+    return h(
+      'div',
+      { class: 'field' },
+      h('span', { class: 'field-label', text: 'Appearance' }),
+      group,
+      h('p', { class: 'hint', text: 'Device follows the light or dark setting in Windows, and changes with it.' })
+    );
+  }
+
   function themeField(prefs) {
     const select = h('select', {
       onChange: async () => {
@@ -173,10 +220,8 @@ window.IV = window.IV || {};
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
+      appearanceField(prefs),
       themeField(prefs),
-      toggle('Light background', prefs.appearance === 'light', (v) =>
-        apply({ appearance: v ? 'light' : 'dark' })
-      ),
       h('div', { class: 'detail-section' }, h('h3', { text: 'Accessibility' })),
       selectField(
         'Typeface',

@@ -69,6 +69,16 @@ const STARTUP_COLORS = {
   light: { color: '#eef0f5', symbolColor: '#1a1e28' }
 };
 
+/**
+ * Light, dark, or whatever Windows is set to. 'system' is a value Electron
+ * already understands, so it is stored as the preference verbatim.
+ */
+function darkNow(appearance) {
+  if (appearance === 'light') return false;
+  if (appearance === 'dark') return true;
+  return nativeTheme.shouldUseDarkColors;
+}
+
 /** The alternate window icons offered in Settings. */
 function iconPathFor(name) {
   if (!name || name === 'default') return APP_ICON;
@@ -121,7 +131,7 @@ function applyTitleBarColors(colors) {
 
 /** Native menus, dialogs and scrollbars follow the same light or dark choice. */
 function applyAppearance(appearance) {
-  nativeTheme.themeSource = appearance === 'light' ? 'light' : 'dark';
+  nativeTheme.themeSource = appearance === 'light' || appearance === 'system' ? appearance : 'dark';
 }
 
 /**
@@ -198,7 +208,7 @@ function handlePropolisUrl(raw) {
 
 function createWindow() {
   const bounds = settings.getWindowBounds();
-  const startup = STARTUP_COLORS[settings.getPrefs().appearance === 'light' ? 'light' : 'dark'];
+  const startup = STARTUP_COLORS[darkNow(settings.getPrefs().appearance) ? 'dark' : 'light'];
   mainWindow = new BrowserWindow({
     width: bounds.width || 1180,
     height: bounds.height || 760,
@@ -467,6 +477,13 @@ if (!gotLock) {
 
   app.whenReady().then(() => {
     applyAppearance(settings.getPrefs().appearance);
+
+    // Following the device means reacting while the app is open, not only at
+    // startup. The renderer decides what to do with it; the preference may
+    // well be a fixed light or dark, in which case it ignores this.
+    nativeTheme.on('updated', () => {
+      send('system-theme', { dark: nativeTheme.shouldUseDarkColors });
+    });
 
     // Register propolis:// so links can point at a database or a search.
     for (const scheme of URL_SCHEMES) {

@@ -39,7 +39,7 @@ const THEMES = {
     key: 'amber-cb',
     name: PRODUCT_NAME,
     label: 'Amber CB, honey and resin with colourblind safe meanings',
-    icon: 'default',
+    icon: 'amber',
     colourblind: true,
     tagline: TAGLINE
   },
@@ -47,7 +47,7 @@ const THEMES = {
     key: 'amber',
     name: PRODUCT_NAME,
     label: 'Amber, honey and resin',
-    icon: 'default',
+    icon: 'amber',
     colourblind: false,
     tagline: TAGLINE
   }
@@ -83,7 +83,10 @@ function taglineFor(key) {
   return themeFor(key).tagline;
 }
 
-/** Which icon file a palette uses. Both blues share one, as do both ambers. */
+/**
+ * Which icon file a palette uses. Both blues share one, as do both ambers.
+ * The name is the suffix: build/icon-<key>.ico and renderer/icons/app-<key>.png.
+ */
 function iconKeyFor(key) {
   return themeFor(key).icon;
 }

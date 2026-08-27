@@ -44,6 +44,8 @@ window.IV = window.IV || {};
     state.prefs = info.prefs;
     state.wordLists = info.wordLists || [];
     state.productName = info.productName || 'Propolis';
+    state.iconKey = info.iconKey || 'blue';
+    state.systemDark = info.systemDark !== false;
     state.tagline = info.tagline || '';
     state.quickUnlockAvailable = info.quickUnlockAvailable;
     applyTheme();
@@ -71,12 +73,11 @@ window.IV = window.IV || {};
 
   /** Title bar name, lock screen name and logo, all from the chosen theme. */
   function applyBrand() {
-    const honey = String(state.prefs.theme || '').startsWith('amber');
-    const suffix = honey ? '' : '-blue';
     const name = state.productName || 'Propolis';
+    const icon = state.iconKey || 'blue';
 
     for (const node of $$('.brand-name, .lock-title')) node.textContent = name;
-    for (const img of $$('.brand-mark, .lock-logo')) img.src = 'icons/app' + suffix + '.png';
+    for (const img of $$('.brand-mark, .lock-logo')) img.src = 'icons/app-' + icon + '.png';
     const tagline = $('.lock-tagline');
     if (tagline && state.tagline) tagline.textContent = state.tagline;
     document.title = name;
@@ -126,7 +127,10 @@ window.IV = window.IV || {};
     for (const key of ['blue', 'blue-cb', 'amber', 'amber-cb']) {
       body.classList.toggle('scheme-' + key, theme === key);
     }
-    body.classList.toggle('theme-light', prefs.appearance === 'light');
+    const dark =
+      prefs.appearance === 'dark' ||
+      (prefs.appearance !== 'light' && state.systemDark !== false);
+    body.classList.toggle('theme-light', !dark);
     body.classList.toggle('font-dyslexic', prefs.uiFont === 'dyslexic');
     body.classList.toggle('font-hyperlegible', prefs.uiFont === 'hyperlegible');
     body.classList.toggle('large-text', Number(prefs.zoom || 1) >= 1.25);
@@ -848,6 +852,12 @@ window.IV = window.IV || {};
   /* ------------------------------------------------------ global wiring */
 
   function wireGlobalEvents() {
+    // Only matters while the appearance is left to the device.
+    IV.api.on('system-theme', (state2) => {
+      state.systemDark = Boolean(state2 && state2.dark);
+      if (state.prefs.appearance !== 'light' && state.prefs.appearance !== 'dark') applyTheme();
+    });
+
     $('#btn-open-db').addEventListener('click', openExisting);
     $('#btn-new-db').addEventListener('click', newDatabase);
     $('#btn-unlock-back').addEventListener('click', () => {

@@ -16,6 +16,7 @@ const listeners = {
   'ssh-agent': new Set(),
   'autotype-result': new Set(),
   'url-search': new Set(),
+  'system-theme': new Set(),
   menu: new Set()
 };
 

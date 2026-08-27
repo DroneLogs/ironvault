@@ -261,6 +261,21 @@ async function main() {
     })()
   `, 'dark title bar colours');
 
+  // Following the device is a third state, not a second one: what it resolves
+  // to has to track what Windows reports rather than a stored light or dark.
+  const systemAppearance = await run(`
+    IV.api.setPrefs({appearance:'system'})
+      .then(p => { IV.state.prefs = p; IV.app.applyTheme(); })
+      .then(() => ({
+        stored: IV.state.prefs.appearance,
+        light: document.body.classList.contains('theme-light'),
+        systemDark: IV.state.systemDark
+      }))
+  `, 'device appearance');
+  await wait(270);
+  await run(`IV.api.setPrefs({appearance:'dark'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'back to dark');
+  await wait(180);
+
   await run(`IV.settings.openSettings(); true`, 'settings for a11y');
   await wait(315);
   await run(`
@@ -391,6 +406,16 @@ async function main() {
     })
   `, 'read locked state');
   const lockedState = JSON.parse(locked || '{}');
+  check(
+    'appearance can be left to the device',
+    Boolean(systemAppearance && systemAppearance.stored === 'system'),
+    systemAppearance ? String(systemAppearance.stored) : 'not read'
+  );
+  check(
+    'following the device matches what the device reports',
+    Boolean(systemAppearance && systemAppearance.light === !systemAppearance.systemDark),
+    systemAppearance ? 'light ' + systemAppearance.light + ', system dark ' + systemAppearance.systemDark : 'not read'
+  );
   // Windows draws the window controls from the colours the renderer reports,
   // so what the title bar computes to has to actually change with the theme.
   check(

@@ -16,13 +16,15 @@ const SIZES = [16, 24, 32, 48, 64, 128, 256];
 const SAMPLES = 4; // supersampling factor per axis
 
 /**
- * Honey amber by default, with the alternates offered in Settings.
+ * Blue and violet by default, because that is what the default palette shows
+ * inside the app, and an executable whose icon does not match the window it
+ * opens looks like a different program.
  *
- * Propolis is the resin bees seal the hive with, so its colours are the deep
+ * Propolis is the resin bees seal the hive with, so the honey pair is the deep
  * reddish brown of the real thing rather than the gold of honey.
  */
 const THEMES = {
-  default: [[0xf7, 0xc1, 0x2e], [0xdd, 0x76, 0x00]],
+  default: [[0x5b, 0x8d, 0xfb], [0x8f, 0x6b, 0xff]],
   amber: [[0xd5, 0x5e, 0x00], [0x6b, 0x2d, 0x0c]],
   blue: [[0x5b, 0x8d, 0xfb], [0x8f, 0x6b, 0xff]],
   green: [[0x35, 0xc4, 0x8a], [0x1f, 0x9d, 0xb4]],

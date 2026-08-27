@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ipcMain, dialog, clipboard, shell, app, safeStorage } = require('electron');
+const { ipcMain, dialog, clipboard, shell, app, safeStorage, nativeTheme } = require('electron');
 
 const vault = require('./vault');
 const settings = require('./settings');
@@ -142,6 +142,8 @@ const handlers = {
     quickUnlockAvailable: quickUnlockAvailable(),
     wordLists: wordlists.catalogue(),
     productName: brand.productNameFor(settings.getPrefs().theme),
+    iconKey: brand.iconKeyFor(settings.getPrefs().theme),
+    systemDark: nativeTheme.shouldUseDarkColors,
     tagline: brand.taglineFor(settings.getPrefs().theme),
     openWith: ctx.takePendingFile()
   }),

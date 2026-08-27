@@ -1663,10 +1663,51 @@ kbd {
   padding: 1px 6px;
 }
 
+/* Explanatory line under a control. It used to be pulled up hard against the
+   box above it, which read as one crowded lump. */
 .hint {
   font-size: 12px;
+  line-height: 1.5;
   color: var(--muted);
-  margin: -6px 0 14px;
+  margin: 6px 0 16px;
+}
+
+/* Three mutually exclusive choices in one pill, the shape a switch cannot
+   take once there are more than two states. */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+
+.seg-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.seg-btn:hover {
+  color: var(--text);
+  background: var(--panel-3);
+}
+
+.seg-btn.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* The active one is not signalled by colour alone. */
+.seg-btn.active::before {
+  content: "\2713\00a0";
 }
 
 /* ------------------------------------------------------------ explanations */

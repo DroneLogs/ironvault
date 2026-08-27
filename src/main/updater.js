@@ -19,16 +19,22 @@ let wired = false;
 const DEFAULT_FEED = 'https://github.com/DroneLogs/ironvault/releases/latest/download/';
 
 /**
- * A private GitHub repository answers an unauthenticated request for a release
- * asset with a 404, which reads like a broken URL. Say what it actually means.
+ * A feed that is not there answers with a 404, which reads like a broken URL.
+ * There are three reasons for it and nothing here can tell them apart, so all
+ * three are named rather than one being asserted.
+ *
+ * This used to claim the repository must be private. It sent a real diagnosis
+ * down the wrong path: the repository was public and the release was simply
+ * missing the latest.yml that a check actually asks for.
  */
 function explain(message, url) {
   const text = String(message || '');
   if (/github\.com/i.test(url) && /(404|401|403)|not found|cannot find/i.test(text)) {
     return (
-      'The update feed could not be read. If the repository is still private, update ' +
-      'checks cannot reach it: the app sends no credentials. Make the repository public, ' +
-      'or point the feed somewhere unauthenticated.'
+      'The update feed could not be read. Either the newest release has no latest.yml ' +
+      'attached, which is the file a check actually asks for, or there is no release yet, ' +
+      'or the repository is private, since the app sends no credentials. Opening the feed ' +
+      'URL in a browser tells you which.'
     );
   }
   return text;

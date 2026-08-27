@@ -546,7 +546,10 @@ window.IV = window.IV || {};
         ),
         h('p', {
           class: 'hint',
-          text: 'This points at the Propolis releases by default. While the repository is private, update checks cannot read it, because the app sends no credentials.'
+          text:
+            'This points at the Propolis releases by default. A check asks for latest.yml beside ' +
+            'the installer, so a release published without that file cannot be seen however public ' +
+            'the repository is. The app sends no credentials, so a private repository cannot be seen either.'
         }),
         h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Release notes page (optional)' }), pageInput),
         h('p', {

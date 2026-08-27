@@ -19,6 +19,7 @@ window.IV = window.IV || {};
     themes: () => call('app.themes'),
     getPrefs: () => call('prefs.get'),
     setPrefs: (patch) => call('prefs.set', patch),
+    titleBarColors: (colors) => call('ui.titleBarColors', colors),
 
     listDatabases: () => call('db.list'),
     forgetDatabase: (filePath) => call('db.forget', { filePath }),

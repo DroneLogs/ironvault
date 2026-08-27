@@ -95,6 +95,29 @@ window.IV = window.IV || {};
     }
   }
 
+  /**
+   * Windows draws the minimise, maximise and close buttons itself, so they do
+   * not follow a stylesheet. Read back what the title bar actually resolved to
+   * and hand those two colours to the main process. Reading them rather than
+   * listing them here means every palette, light and dark, and high contrast on
+   * top, all come out right without a lookup table to keep in step.
+   */
+  function hex(colour) {
+    const parts = String(colour).match(/\d+/g);
+    if (!parts || parts.length < 3) return null;
+    return '#' + parts.slice(0, 3).map((n) => Number(n).toString(16).padStart(2, '0')).join('');
+  }
+
+  function reportTitleBarColors() {
+    const bar = $('#titlebar');
+    if (!bar) return;
+    const barStyle = getComputedStyle(bar);
+    const color = hex(barStyle.backgroundColor);
+    const symbolColor = hex(getComputedStyle(document.body).color);
+    if (!color || !symbolColor) return;
+    IV.api.titleBarColors({ color, symbolColor }).catch(() => {});
+  }
+
   function applyTheme() {
     const body = document.body;
     const prefs = state.prefs;
@@ -111,6 +134,9 @@ window.IV = window.IV || {};
     body.classList.toggle('strong-focus', Boolean(prefs.strongFocus));
     body.classList.toggle('big-targets', Boolean(prefs.bigTargets));
     body.classList.toggle('high-contrast', Boolean(prefs.highContrast));
+
+    // After the classes, so the computed colours are the ones now in force.
+    reportTitleBarColors();
   }
 
   /* ------------------------------------------------------- lock screen */

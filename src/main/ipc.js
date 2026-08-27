@@ -22,6 +22,8 @@ let ctx = {
   lockNow: () => {},
   takePendingFile: () => null,
   applyAppIcon: () => {},
+  applyTitleBarColors: () => {},
+  applyAppearance: () => {},
   applyZoom: () => {},
   relaunch: () => {},
   registerHotkeys: () => {}
@@ -151,6 +153,7 @@ const handlers = {
   'prefs.set': (patch) => {
     const prefs = settings.setPrefs(patch);
     if ('theme' in patch) ctx.applyAppIcon(prefs.theme);
+    if ('appearance' in patch) ctx.applyAppearance(prefs.appearance);
     if ('zoom' in patch) ctx.applyZoom(prefs.zoom);
     if ('autoTypeHotkey' in patch) ctx.registerHotkeys();
     return prefs;
@@ -542,6 +545,15 @@ const handlers = {
       noLink: true
     });
     return { confirmed: result.response === 0 };
+  },
+  /**
+   * The window controls are drawn by Windows. The renderer reports what the
+   * title bar actually computed to after a theme change, and it is passed on
+   * unchanged, so the buttons never sit on the wrong colour.
+   */
+  'ui.titleBarColors': ({ color, symbolColor }) => {
+    ctx.applyTitleBarColors({ color, symbolColor });
+    return { ok: true };
   },
   'ui.error': async ({ title, message }) => {
     await dialog.showMessageBox(win(), {

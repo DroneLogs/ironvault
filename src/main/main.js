@@ -60,6 +60,15 @@ adoptPreviousProfile();
 const isDev = process.argv.includes('--dev');
 const APP_ICON = path.join(__dirname, '..', '..', 'build', 'icon.ico');
 
+/** Matches --titlebar-h in app.css. */
+const TITLEBAR_HEIGHT = 40;
+
+/** The first paint happens before the renderer can report anything. */
+const STARTUP_COLORS = {
+  dark: { color: '#12141a', symbolColor: '#c9cede' },
+  light: { color: '#eef0f5', symbolColor: '#1a1e28' }
+};
+
 /** The alternate window icons offered in Settings. */
 function iconPathFor(name) {
   if (!name || name === 'default') return APP_ICON;
@@ -86,6 +95,33 @@ function applyAppIcon(themeKey) {
   } catch (err) {
     console.error('Could not set the window icon: ' + err.message);
   }
+}
+
+/**
+ * The minimise, maximise and close buttons are drawn by Windows, not by the
+ * page, so a light background in CSS leaves them sitting on a dark strip. The
+ * renderer reports the colours it actually computed for the title bar after
+ * every theme change, and they are handed straight back to Windows. Reading
+ * them from the page rather than mapping them here means every palette, light
+ * and dark, and high contrast on top, all come out right without a table.
+ */
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+function applyTitleBarColors(colors) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const color = colors && colors.color;
+  const symbolColor = colors && colors.symbolColor;
+  if (!HEX.test(color || "") || !HEX.test(symbolColor || "")) return;
+  try {
+    mainWindow.setTitleBarOverlay({ color, symbolColor, height: TITLEBAR_HEIGHT });
+  } catch (err) {
+    console.error('Could not recolour the window controls: ' + err.message);
+  }
+}
+
+/** Native menus, dialogs and scrollbars follow the same light or dark choice. */
+function applyAppearance(appearance) {
+  nativeTheme.themeSource = appearance === 'light' ? 'light' : 'dark';
 }
 
 /**
@@ -162,6 +198,7 @@ function handlePropolisUrl(raw) {
 
 function createWindow() {
   const bounds = settings.getWindowBounds();
+  const startup = STARTUP_COLORS[settings.getPrefs().appearance === 'light' ? 'light' : 'dark'];
   mainWindow = new BrowserWindow({
     width: bounds.width || 1180,
     height: bounds.height || 760,
@@ -171,13 +208,13 @@ function createWindow() {
     icon: fs.existsSync(iconPathFor(brand.iconKeyFor(settings.getPrefs().theme)))
       ? iconPathFor(brand.iconKeyFor(settings.getPrefs().theme))
       : undefined,
-    backgroundColor: '#12141a',
+    backgroundColor: startup.color,
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: '#12141a',
-      symbolColor: '#c9cede',
-      height: 40
+      color: startup.color,
+      symbolColor: startup.symbolColor,
+      height: TITLEBAR_HEIGHT
     },
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
@@ -429,7 +466,7 @@ if (!gotLock) {
   });
 
   app.whenReady().then(() => {
-    nativeTheme.themeSource = 'dark';
+    applyAppearance(settings.getPrefs().appearance);
 
     // Register propolis:// so links can point at a database or a search.
     for (const scheme of URL_SCHEMES) {
@@ -444,6 +481,8 @@ if (!gotLock) {
       getWindow: () => mainWindow,
       lockNow,
       applyAppIcon,
+      applyTitleBarColors,
+      applyAppearance,
       applyZoom,
       relaunch,
       registerHotkeys,

@@ -240,7 +240,26 @@ async function main() {
   await run(`IV.api.setPrefs({appearance:'light'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);
   await wait(405);
   await shot('13-light');
+  const lightTitleBar = await run(`
+    (function () {
+      const bar = document.querySelector('#titlebar');
+      return {
+        bar: getComputedStyle(bar).backgroundColor,
+        text: getComputedStyle(document.body).color
+      };
+    })()
+  `, 'light title bar colours');
   await run(`IV.api.setPrefs({appearance:'dark'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);
+  await wait(270);
+  const darkTitleBar = await run(`
+    (function () {
+      const bar = document.querySelector('#titlebar');
+      return {
+        bar: getComputedStyle(bar).backgroundColor,
+        text: getComputedStyle(document.body).color
+      };
+    })()
+  `, 'dark title bar colours');
 
   await run(`IV.settings.openSettings(); true`, 'settings for a11y');
   await wait(315);
@@ -372,6 +391,23 @@ async function main() {
     })
   `, 'read locked state');
   const lockedState = JSON.parse(locked || '{}');
+  // Windows draws the window controls from the colours the renderer reports,
+  // so what the title bar computes to has to actually change with the theme.
+  check(
+    'the title bar goes light in light mode',
+    Boolean(lightTitleBar && lightTitleBar.bar === 'rgb(238, 240, 245)'),
+    lightTitleBar ? lightTitleBar.bar : 'not read'
+  );
+  check(
+    'the title bar symbols go dark in light mode',
+    Boolean(lightTitleBar && lightTitleBar.text === 'rgb(26, 30, 40)'),
+    lightTitleBar ? lightTitleBar.text : 'not read'
+  );
+  check(
+    'the title bar goes back to dark',
+    Boolean(darkTitleBar && darkTitleBar.bar === 'rgb(18, 20, 26)'),
+    darkTitleBar ? darkTitleBar.bar : 'not read'
+  );
   check(
     'change master key offers a generated passphrase',
     Boolean(masterKeyDialog && masterKeyDialog.generated.split('-').length >= 6),

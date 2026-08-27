@@ -6,16 +6,16 @@ const crypto = require('crypto');
 /**
  * An SSH agent backed by keys kept in the database.
  *
- * Ironvault listens on its own Windows named pipe and speaks the OpenSSH agent
+ * Propolis listens on its own Windows named pipe and speaks the OpenSSH agent
  * protocol, so `ssh` can borrow a key without it ever being written to disk.
  * Point a shell at it with:
  *
- *   $env:SSH_AUTH_SOCK = '\\.\pipe\ironvault-ssh-agent'
+ *   $env:SSH_AUTH_SOCK = '\\.\pipe\propolis-ssh-agent'
  *
  * The built-in Windows agent keeps its own pipe, so the two do not collide.
  */
 
-const PIPE_NAME = '\\\\.\\pipe\\ironvault-ssh-agent';
+const PIPE_NAME = '\\\\.\\pipe\\propolis-ssh-agent';
 
 const SSH_AGENT_FAILURE = 5;
 const SSH_AGENTC_REQUEST_IDENTITIES = 11;
@@ -179,7 +179,7 @@ function refreshKeys() {
         keyObject,
         algorithm: pub.algorithm,
         blob: pub.blob,
-        comment: candidate.comment || 'ironvault'
+        comment: candidate.comment || 'propolis'
       });
     } catch (err) {
       problems.push((candidate.comment || 'key') + ': ' + err.message);

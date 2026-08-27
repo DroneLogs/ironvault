@@ -1,4 +1,4 @@
-# Ironvault
+# Propolis
 
 A KeePass password manager for Windows, built to work the way Strongbox does on iPhone.
 
@@ -6,7 +6,7 @@ It reads and writes ordinary `.kdbx` files, so the same database opens in Strong
 KeePassXC, KeePass, and anything else that speaks the format. Nothing is uploaded anywhere,
 and the only features that touch the network are ones you ask for.
 
-![Ironvault](build/icon.png)
+![Propolis](build/icon.png)
 
 ## Download
 
@@ -81,11 +81,11 @@ anything found in it.
 - An SSH agent serving keys kept in the database
 - WebDAV and SFTP sync, with offline editing and merge
 - Favicon downloader
-- `ironvault://` links
+- `propolis://` links
 - Update checking, pointed at this repository
 
 **Accessibility**
-- Four themes: IronvaultCB (default), Ironvault, PropolisCB, Propolis. The CB pair swaps out
+- Four palettes: Blue CB (default), Blue, Amber CB and Amber. The CB pair swaps out
   the colours that merge under colour blindness
 - Nothing depends on colour alone: strength meters fill a count of blocks, character colours
   are labelled, comparisons are marked with a minus and a plus

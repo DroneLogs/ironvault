@@ -15,7 +15,7 @@ const { URL } = require('url');
 
 const MAX_BYTES = 128 * 1024;
 const TIMEOUT_MS = 12000;
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Ironvault/1.0';
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Propolis/1.0';
 
 function get(target, { redirects = 0, maxBytes = MAX_BYTES } = {}) {
   return new Promise((resolve, reject) => {

@@ -107,13 +107,13 @@ window.IV = window.IV || {};
           title: 'Restart to finish',
           message: 'Restart now so the taskbar and window icon change too?',
           detail:
-            'The colours, the name and the logo inside the app have already changed. Windows holds the ' +
+            'The colours and the logo inside the app have already changed. Windows holds the ' +
             'taskbar icon against the running program, so only that part needs a restart. Any open ' +
             'database is locked first.',
           confirmLabel: 'Restart now'
         });
         if (!ok) {
-          toast('Theme changed. The taskbar icon follows next time you start the app.');
+          toast('Palette changed. The taskbar icon follows next time you start the app.');
           return;
         }
         await IV.api.lock().catch(() => {});
@@ -129,7 +129,7 @@ window.IV = window.IV || {};
           select.append(
             h('option', {
               value: theme.key,
-              selected: theme.key === (prefs.theme || 'ironvault-cb'),
+              selected: theme.key === (prefs.theme || 'blue-cb'),
               text: theme.name
             })
           );
@@ -140,14 +140,14 @@ window.IV = window.IV || {};
     return h(
       'label',
       { class: 'field' },
-      h('span', { class: 'field-label', text: 'Theme' }),
+      h('span', { class: 'field-label', text: 'Palette' }),
       select,
       h('p', {
         class: 'hint',
         text:
-          'The two CB themes swap the colours that merge under colour blindness, mainly green against red. ' +
-          'Propolis also renames the running app. The installed shortcut and the executable keep the name ' +
-          'the build was made with.'
+          'The two CB palettes swap the colours that merge under colour blindness, mainly green against red. ' +
+          'Amber changes the accent and the window icon as well. The installed shortcut and the executable ' +
+          'keep the icon the build was made with.'
       })
     );
   }
@@ -215,7 +215,7 @@ window.IV = window.IV || {};
           text: 'Reset accessibility to defaults',
           onClick: async () => {
             await apply({
-              theme: 'ironvault-cb',
+              theme: 'blue-cb',
               uiFont: 'system',
               zoom: 1,
               reduceMotion: false,
@@ -347,10 +347,10 @@ window.IV = window.IV || {};
   function describe(update) {
     switch (update.status) {
       case 'unconfigured':
-        return 'No update source is set, so Ironvault never checks.';
+        return 'No update source is set, so Propolis never checks.';
       case 'idle':
         return update.usingDefaultFeed
-          ? 'Set to check the Ironvault repository. Version ' + update.currentVersion + '.'
+          ? 'Set to check the Propolis repository. Version ' + update.currentVersion + '.'
           : 'Version ' + update.currentVersion + '.';
       case 'checking':
         return 'Checking...';
@@ -379,14 +379,14 @@ window.IV = window.IV || {};
       type: 'text',
       value: prefs.updateFeedUrl || '',
       spellcheck: 'false',
-      placeholder: 'https://example.com/ironvault/updates/',
+      placeholder: 'https://example.com/propolis/updates/',
       onChange: () => apply({ updateFeedUrl: feedInput.value.trim() })
     });
     const pageInput = h('input', {
       type: 'text',
       value: prefs.updateReleasePageUrl || '',
       spellcheck: 'false',
-      placeholder: 'https://example.com/ironvault/releases',
+      placeholder: 'https://example.com/propolis/releases',
       onChange: () => apply({ updateReleasePageUrl: pageInput.value.trim() })
     });
 
@@ -440,7 +440,7 @@ window.IV = window.IV || {};
             onClick: async () => {
               const ok = await IV.api.confirm({
                 title: 'Install update',
-                message: 'Install version ' + update.version + ' and restart Ironvault?',
+                message: 'Install version ' + update.version + ' and restart Propolis?',
                 detail: 'Any open database is locked first. Unsaved changes are saved automatically.',
                 confirmLabel: 'Install'
               });
@@ -471,7 +471,7 @@ window.IV = window.IV || {};
         notes,
         actions,
         h('div', { class: 'detail-section' }, h('h3', { text: 'Where to check' })),
-        toggle('Check automatically when Ironvault starts', prefs.autoCheckUpdates, (v) =>
+        toggle('Check automatically when Propolis starts', prefs.autoCheckUpdates, (v) =>
           apply({ autoCheckUpdates: v })
         ),
         h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Update feed URL' }), feedInput),
@@ -480,12 +480,12 @@ window.IV = window.IV || {};
           { class: 'row-gap' },
           h('button', {
             class: 'btn ghost small',
-            text: 'Use the Ironvault repository',
+            text: 'Use the Propolis repository',
             onClick: async () => {
               const state = await IV.api.updateState();
               feedInput.value = state.defaultFeedUrl;
               await apply({ updateFeedUrl: state.defaultFeedUrl });
-              toast('Feed reset to the Ironvault repository', 'good');
+              toast('Feed reset to the Propolis repository', 'good');
             }
           }),
           h('button', {
@@ -501,12 +501,12 @@ window.IV = window.IV || {};
         ),
         h('p', {
           class: 'hint',
-          text: 'This points at the Ironvault releases by default. While the repository is private, update checks cannot read it, because the app sends no credentials.'
+          text: 'This points at the Propolis releases by default. While the repository is private, update checks cannot read it, because the app sends no credentials.'
         }),
         h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Release notes page (optional)' }), pageInput),
         h('p', {
           class: 'hint',
-          text: 'Leave the feed URL empty and Ironvault never contacts anything.'
+          text: 'Leave the feed URL empty and Propolis never contacts anything.'
         })
       ),
       footer: [h('button', { class: 'btn primary', text: 'Done', onClick: () => handle.close() })],
@@ -571,11 +571,11 @@ window.IV = window.IV || {};
   function openAbout() {
     const app = IV.state.app;
     modal({
-      title: 'About Ironvault',
+      title: 'About Propolis',
       body: h(
         'div',
         null,
-        h('p', { text: 'Ironvault ' + app.version }),
+        h('p', { text: 'Propolis ' + app.version }),
         h('p', {
           class: 'muted',
           text: 'A KeePass client for Windows. Reads and writes KDBX 3.1 and KDBX 4 files with AES or ChaCha20 and Argon2 or AES-KDF.'

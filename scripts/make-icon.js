@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Draws the Ironvault mark and writes build/icon.ico (plus a 512px PNG for the
+ * Draws the Propolis mark and writes build/icon.ico (plus a 512px PNG for the
  * readme). No image libraries involved: the shapes are sampled directly and the
  * PNG and ICO containers are assembled by hand.
  *
@@ -23,7 +23,7 @@ const SAMPLES = 4; // supersampling factor per axis
  */
 const THEMES = {
   default: [[0xf7, 0xc1, 0x2e], [0xdd, 0x76, 0x00]],
-  propolis: [[0xd5, 0x5e, 0x00], [0x6b, 0x2d, 0x0c]],
+  amber: [[0xd5, 0x5e, 0x00], [0x6b, 0x2d, 0x0c]],
   blue: [[0x5b, 0x8d, 0xfb], [0x8f, 0x6b, 0xff]],
   green: [[0x35, 0xc4, 0x8a], [0x1f, 0x9d, 0xb4]],
   crimson: [[0xf2, 0x5f, 0x7c], [0xb0, 0x2b, 0x6a]],

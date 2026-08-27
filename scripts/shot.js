@@ -25,10 +25,10 @@ app.commandLine.appendSwitch('high-dpi-support', '1');
 
 // Keep the harness out of the real profile so it never touches the user's
 // recent database list or preferences.
-app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'ironvault-profile-')));
+app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'propolis-profile-')));
 
-const outDir = process.argv[2] && !process.argv[2].startsWith('-') ? process.argv[2] : path.join(os.tmpdir(), 'ironvault-shots');
-const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ironvault-demo-'));
+const outDir = process.argv[2] && !process.argv[2].startsWith('-') ? process.argv[2] : path.join(os.tmpdir(), 'propolis-shots');
+const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'propolis-demo-'));
 const demoPath = path.join(workDir, 'Demo Vault.kdbx');
 const PASSWORD = 'demo-master-password';
 
@@ -260,25 +260,25 @@ async function main() {
   await run(`IV.api.setPrefs({uiFont:'system'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset font');
   await wait(180);
 
-  await run(`IV.api.setPrefs({theme:'ironvault'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'ironvault theme');
+  await run(`IV.api.setPrefs({theme:'blue'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'blue theme');
   await wait(315);
-  await shot('18-ironvault-theme');
-  await run(`IV.api.setPrefs({theme:'ironvault-cb'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset theme');
+  await shot('18-blue-theme');
+  await run(`IV.api.setPrefs({theme:'blue-cb'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`, 'reset theme');
   await wait(180);
 
   await run(`
-    IV.api.setPrefs({theme:'propolis-cb'}).then(async p => {
+    IV.api.setPrefs({theme:'amber-cb'}).then(async p => {
       IV.state.prefs = p;
       const info = await IV.api.appInfo();
       IV.state.productName = info.productName;
       IV.app.applyTheme();
       IV.app.applyBrand();
     }); true
-  `, 'propolis brand');
+  `, 'amber brand');
   await wait(495);
-  await shot('19-propolis');
+  await shot('19-amber');
   await run(`
-    IV.api.setPrefs({theme:'ironvault-cb'}).then(async p => {
+    IV.api.setPrefs({theme:'blue-cb'}).then(async p => {
       IV.state.prefs = p;
       const info = await IV.api.appInfo();
       IV.state.productName = info.productName;
@@ -292,6 +292,19 @@ async function main() {
   await wait(180);
   await shot('14-shortcuts');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close shortcuts');
+
+  await run(`IV.editor.openMasterKeyDialog(); true`, 'change master key');
+  await wait(600);
+  await shot('22-change-master-key');
+  const masterKeyDialog = await run(`
+    (function () {
+      const preview = document.querySelector('[role="dialog"] .gen-preview-text');
+      const buttons = Array.from(document.querySelectorAll('[role="dialog"] button')).map((b) => b.textContent.trim());
+      return { generated: preview ? preview.textContent.trim() : '', buttons: buttons };
+    })()
+  `, 'read change master key');
+  await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`, 'close change master key');
+  await wait(180);
 
   /* ------------------------------------------------------- flow checks */
 
@@ -359,6 +372,21 @@ async function main() {
     })
   `, 'read locked state');
   const lockedState = JSON.parse(locked || '{}');
+  check(
+    'change master key offers a generated passphrase',
+    Boolean(masterKeyDialog && masterKeyDialog.generated.split('-').length >= 6),
+    masterKeyDialog ? masterKeyDialog.generated : 'no dialog'
+  );
+  check(
+    'change master key offers the generator',
+    Boolean(masterKeyDialog && masterKeyDialog.buttons.includes('Other options...')),
+    masterKeyDialog ? masterKeyDialog.buttons.join(', ') : 'no dialog'
+  );
+  check(
+    'change master key still allows typing your own',
+    Boolean(masterKeyDialog && masterKeyDialog.buttons.includes('Type my own')),
+    masterKeyDialog ? masterKeyDialog.buttons.join(', ') : 'no dialog'
+  );
   check('locking returns to the database list', lockedState.lockVisible === true, locked);
   check('main screen is hidden while locked', lockedState.mainHidden === true, locked);
   await shot('15-locked');

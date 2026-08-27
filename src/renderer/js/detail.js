@@ -384,7 +384,7 @@ window.IV = window.IV || {};
           class: 'hint',
           text:
             'Stored and kept safe here, and it travels with the database. Signing in with it needs a browser ' +
-            'extension, which Ironvault does not have yet.'
+            'extension, which Propolis does not have yet.'
         })
       );
       detail.append(wrap);

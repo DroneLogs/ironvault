@@ -6,7 +6,7 @@ const { execFile } = require('child_process');
  * Auto-Type: the Windows equivalent of AutoFill.
  *
  * You focus the app or page you are signing into, press the hotkey, and
- * Ironvault matches the foreground window against your entries and types the
+ * Propolis matches the foreground window against your entries and types the
  * credentials into it. Nothing is injected into other processes: the keystrokes
  * go through the same SendKeys path a macro would use, so the target sees
  * ordinary typing.

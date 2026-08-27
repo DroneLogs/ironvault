@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
+const brand = require('./brand');
 
 const DEFAULTS = {
   databases: [],
@@ -13,7 +14,7 @@ const DEFAULTS = {
     lockOnMinimize: false,
     lockOnSuspend: true,
     concealPasswords: true,
-    theme: 'ironvault-cb',
+    theme: 'blue-cb',
     appearance: 'dark',
     uiFont: 'system',
     zoom: 1,
@@ -87,6 +88,11 @@ function migrate(settings) {
     }
     settings.migrations.defaultUpdateFeed = true;
   }
+
+  // Palettes were named after products before the rename. Translate the keys.
+  const palette = brand.migrateThemeKey(settings.prefs.theme);
+  if (palette !== settings.prefs.theme) settings.prefs.theme = palette;
+
   return settings;
 }
 
@@ -118,6 +124,8 @@ function getPrefs() {
 function setPrefs(patch) {
   const s = load();
   s.prefs = deepMerge(s.prefs, patch || {});
+  // An old palette key can arrive from anywhere. Normalise it on the way in.
+  s.prefs.theme = brand.migrateThemeKey(s.prefs.theme);
   persist();
   return s.prefs;
 }

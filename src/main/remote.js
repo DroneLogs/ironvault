@@ -12,7 +12,7 @@ const settings = require('./settings');
  * Remote storage for a database: WebDAV (which covers Nextcloud, ownCloud, and
  * most NAS boxes) and SFTP.
  *
- * A remote database is still a local file. Ironvault opens the local copy, and
+ * A remote database is still a local file. Propolis opens the local copy, and
  * syncing pulls the remote version, merges the two, and pushes the result back.
  * That is what makes offline editing work: with no connection you keep editing
  * the local copy, and the merge happens on the next successful sync.
@@ -108,7 +108,7 @@ function webdavRequest(config, method, { body, headers = {}, expect = [200, 201,
         method,
         timeout: TIMEOUT_MS,
         headers: {
-          'User-Agent': 'Ironvault',
+          'User-Agent': 'Propolis',
           ...(auth ? { Authorization: auth } : {}),
           ...(body ? { 'Content-Length': Buffer.byteLength(body) } : {}),
           ...headers

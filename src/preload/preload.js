@@ -31,9 +31,9 @@ for (const channel of Object.keys(listeners)) {
   });
 }
 
-contextBridge.exposeInMainWorld('ironvault', {
+contextBridge.exposeInMainWorld('propolis', {
   async call(method, args) {
-    const response = await ipcRenderer.invoke('ironvault', method, args);
+    const response = await ipcRenderer.invoke('propolis', method, args);
     if (response && response.ok) return response.result;
     const error = new Error(response && response.error ? response.error.message : 'Request failed');
     if (response && response.error && response.error.code) error.code = response.error.code;

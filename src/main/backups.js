@@ -21,7 +21,7 @@ try {
 function rootDir() {
   // Outside Electron (the self test) fall back to a temp folder rather than
   // throwing, so a save still succeeds without a backup.
-  const base = app && app.getPath ? app.getPath('userData') : path.join(require('os').tmpdir(), 'ironvault');
+  const base = app && app.getPath ? app.getPath('userData') : path.join(require('os').tmpdir(), 'propolis');
   return path.join(base, 'backups');
 }
 

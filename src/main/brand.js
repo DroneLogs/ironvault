@@ -1,70 +1,89 @@
 'use strict';
 
 /**
- * The four themes, and the identity each one carries.
+ * The four palettes, and the identity the app carries.
  *
- * A theme is a name, an icon and a palette together, because switching to
- * Propolis is meant to feel like a different product rather than a recolour.
- * The two CB themes keep their sibling's accent, since blue and amber are both
- * already distinguishable under every common form of colour blindness. What
- * they replace is the meaning colours, because green against red is the pair
- * that merges.
+ * The product is Propolis. A palette is a look and an icon together, not a
+ * different product, so the name on the window is the same whichever one is
+ * chosen. The two CB palettes keep their sibling's accent, since blue and amber
+ * are both already distinguishable under every common form of colour blindness.
+ * What they replace is the meaning colours, because green against red is the
+ * pair that merges.
  *
- * What a theme cannot change is anything Windows fixed when the app was built:
- * the executable's name, the Start menu shortcut, and the entry under
+ * What a palette cannot change is anything Windows fixed when the app was
+ * built: the executable's name, the Start menu shortcut, and the entry under
  * Installed apps.
  */
 
+const PRODUCT_NAME = 'Propolis';
+const TAGLINE = 'Your KeePass databases, on Windows.';
+
 const THEMES = {
-  'ironvault-cb': {
-    key: 'ironvault-cb',
-    name: 'Ironvault',
-    label: 'IronvaultCB, the original with colourblind safe meanings',
+  'blue-cb': {
+    key: 'blue-cb',
+    name: PRODUCT_NAME,
+    label: 'Blue CB, the original with colourblind safe meanings',
     icon: 'blue',
     colourblind: true,
-    tagline: 'Your KeePass databases, on Windows.'
+    tagline: TAGLINE
   },
-  ironvault: {
-    key: 'ironvault',
-    name: 'Ironvault',
-    label: 'Ironvault, the original blue and violet',
+  blue: {
+    key: 'blue',
+    name: PRODUCT_NAME,
+    label: 'Blue, the original blue and violet',
     icon: 'blue',
     colourblind: false,
-    tagline: 'Your KeePass databases, on Windows.'
+    tagline: TAGLINE
   },
-  'propolis-cb': {
-    key: 'propolis-cb',
-    name: 'Propolis',
-    label: 'PropolisCB, honey and resin with colourblind safe meanings',
+  'amber-cb': {
+    key: 'amber-cb',
+    name: PRODUCT_NAME,
+    label: 'Amber CB, honey and resin with colourblind safe meanings',
     icon: 'default',
     colourblind: true,
-    tagline: 'The resin that seals the hive.'
+    tagline: TAGLINE
   },
-  propolis: {
-    key: 'propolis',
-    name: 'Propolis',
-    label: 'Propolis, honey and resin',
+  amber: {
+    key: 'amber',
+    name: PRODUCT_NAME,
+    label: 'Amber, honey and resin',
     icon: 'default',
     colourblind: false,
-    tagline: 'The resin that seals the hive.'
+    tagline: TAGLINE
   }
 };
 
-const DEFAULT_THEME = 'ironvault-cb';
+const DEFAULT_THEME = 'blue-cb';
 
-function themeFor(key) {
-  return THEMES[key] || THEMES[DEFAULT_THEME];
+/**
+ * Palettes used to be named after two products, Ironvault and Propolis, back
+ * when picking one renamed the running app. Profiles written then still hold
+ * the old keys, so they are translated on the way in.
+ */
+const RENAMED = {
+  'ironvault-cb': 'blue-cb',
+  ironvault: 'blue',
+  'propolis-cb': 'amber-cb',
+  propolis: 'amber'
+};
+
+function migrateThemeKey(key) {
+  return RENAMED[key] || key;
 }
 
-function productNameFor(key) {
-  return themeFor(key).name;
+function themeFor(key) {
+  return THEMES[migrateThemeKey(key)] || THEMES[DEFAULT_THEME];
+}
+
+function productNameFor() {
+  return PRODUCT_NAME;
 }
 
 function taglineFor(key) {
   return themeFor(key).tagline;
 }
 
-/** Which icon file a theme uses. Both Ironvault themes share one, as do both Propolis. */
+/** Which icon file a palette uses. Both blues share one, as do both ambers. */
 function iconKeyFor(key) {
   return themeFor(key).icon;
 }
@@ -79,8 +98,10 @@ function choices() {
 }
 
 module.exports = {
+  PRODUCT_NAME,
   THEMES,
   DEFAULT_THEME,
+  migrateThemeKey,
   themeFor,
   productNameFor,
   taglineFor,

@@ -43,7 +43,7 @@ window.IV = window.IV || {};
     state.app = info;
     state.prefs = info.prefs;
     state.wordLists = info.wordLists || [];
-    state.productName = info.productName || 'Ironvault';
+    state.productName = info.productName || 'Propolis';
     state.tagline = info.tagline || '';
     state.quickUnlockAvailable = info.quickUnlockAvailable;
     applyTheme();
@@ -71,9 +71,9 @@ window.IV = window.IV || {};
 
   /** Title bar name, lock screen name and logo, all from the chosen theme. */
   function applyBrand() {
-    const honey = String(state.prefs.theme || '').startsWith('propolis');
+    const honey = String(state.prefs.theme || '').startsWith('amber');
     const suffix = honey ? '' : '-blue';
-    const name = state.productName || 'Ironvault';
+    const name = state.productName || 'Propolis';
 
     for (const node of $$('.brand-name, .lock-title')) node.textContent = name;
     for (const img of $$('.brand-mark, .lock-logo')) img.src = 'icons/app' + suffix + '.png';
@@ -98,9 +98,9 @@ window.IV = window.IV || {};
   function applyTheme() {
     const body = document.body;
     const prefs = state.prefs;
-    const theme = prefs.theme || 'ironvault-cb';
+    const theme = prefs.theme || 'blue-cb';
 
-    for (const key of ['ironvault', 'ironvault-cb', 'propolis', 'propolis-cb']) {
+    for (const key of ['blue', 'blue-cb', 'amber', 'amber-cb']) {
       body.classList.toggle('scheme-' + key, theme === key);
     }
     body.classList.toggle('theme-light', prefs.appearance === 'light');
@@ -320,6 +320,7 @@ window.IV = window.IV || {};
           onClick: () =>
             IV.generator.openGenerator({
               title: 'Choose a master password',
+              mode: 'diceware',
               onUse: async (value) => {
                 generated = value;
                 IV.generator.colorize(generated, previewText);
@@ -952,7 +953,7 @@ window.IV = window.IV || {};
       if (IV.settings.onUpdateState) IV.settings.onUpdateState(update);
       // A background check only speaks up when there is something to say.
       if (update.status === 'available') {
-        toast('Ironvault ' + update.version + ' is available');
+        toast('Propolis ' + update.version + ' is available');
       }
     });
 

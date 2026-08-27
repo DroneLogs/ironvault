@@ -15,6 +15,28 @@ const brand = require('./brand');
 
 registerArgon2();
 
+/**
+ * The app was called Ironvault until the rename, and Electron derives the
+ * profile directory from the product name, so everything written before the
+ * rename sits in the Ironvault folder under %APPDATA%. Copy it across once, the first time the
+ * new name starts with no profile of its own. The old directory is left alone,
+ * so an older build still opens as it always did.
+ */
+function adoptPreviousProfile() {
+  try {
+    const target = app.getPath('userData');
+    if (fs.existsSync(target)) return;
+    const previous = path.join(app.getPath('appData'), 'Ironvault');
+    if (!fs.existsSync(previous)) return;
+    fs.cpSync(previous, target, { recursive: true });
+    console.log('Carried the Ironvault profile over to ' + target);
+  } catch (err) {
+    console.error('Could not carry the previous profile over: ' + err.message);
+  }
+}
+
+adoptPreviousProfile();
+
 const isDev = process.argv.includes('--dev');
 const APP_ICON = path.join(__dirname, '..', '..', 'build', 'icon.ico');
 
@@ -79,20 +101,25 @@ function kdbxFromArgv(argv) {
 pendingFile = kdbxFromArgv(process.argv);
 
 /**
- * Custom URL handling. `ironvault://open?db=<path>` picks a database on the
- * unlock screen, and `ironvault://search?q=<text>` jumps straight to a search.
+ * Custom URL handling. `propolis://open?db=<path>` picks a database on the
+ * unlock screen, and `propolis://search?q=<text>` jumps straight to a search.
  * Only these two verbs are honoured, and neither can unlock anything.
+ *
+ * `ironvault://` is the name the app shipped under before the rename, and it
+ * still works, so links written against the old build do not quietly do nothing.
  */
-function ironvaultUrlFromArgv(argv) {
+const URL_SCHEMES = ['propolis', 'ironvault'];
+
+function propolisUrlFromArgv(argv) {
   for (const arg of (argv || []).slice(1)) {
-    if (/^ironvault:\/\//i.test(arg)) return arg;
+    if (/^(propolis|ironvault):\/\//i.test(arg)) return arg;
   }
   return null;
 }
 
-let pendingUrl = ironvaultUrlFromArgv(process.argv);
+let pendingUrl = propolisUrlFromArgv(process.argv);
 
-function handleIronvaultUrl(raw) {
+function handlePropolisUrl(raw) {
   let parsed;
   try {
     parsed = new URL(raw);
@@ -224,7 +251,7 @@ function lockNow(reason) {
 }
 
 /**
- * Auto-type runs from a global hotkey, so the window Ironvault types into is
+ * Auto-type runs from a global hotkey, so the window Propolis types into is
  * whatever the user was already looking at. The window is never focused here.
  */
 async function runAutoType() {
@@ -346,7 +373,7 @@ function buildMenu() {
         { label: 'Keyboard Shortcuts', click: () => send('menu', 'app:shortcuts') },
         { label: 'Check for Updates...', click: () => send('menu', 'app:updates') },
         { type: 'separator' },
-        { label: 'About Ironvault', click: () => send('menu', 'app:about') }
+        { label: 'About Propolis', click: () => send('menu', 'app:about') }
       ]
     }
   ];
@@ -360,12 +387,12 @@ if (!gotLock) {
   app.quit();
 } else {
   app.on('second-instance', (_event, argv) => {
-    const url = ironvaultUrlFromArgv(argv);
+    const url = propolisUrlFromArgv(argv);
     if (url) {
       if (mainWindow) {
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.focus();
-        handleIronvaultUrl(url);
+        handlePropolisUrl(url);
       } else {
         pendingUrl = url;
       }
@@ -384,12 +411,14 @@ if (!gotLock) {
   app.whenReady().then(() => {
     nativeTheme.themeSource = 'dark';
 
-    // Register ironvault:// so links can point at a database or a search.
-    try {
-      if (app.isPackaged) app.setAsDefaultProtocolClient('ironvault');
-      else app.setAsDefaultProtocolClient('ironvault', process.execPath, [path.resolve(process.argv[1] || '.')]);
-    } catch (err) {
-      console.error('Could not register the ironvault:// handler: ' + err.message);
+    // Register propolis:// so links can point at a database or a search.
+    for (const scheme of URL_SCHEMES) {
+      try {
+        if (app.isPackaged) app.setAsDefaultProtocolClient(scheme);
+        else app.setAsDefaultProtocolClient(scheme, process.execPath, [path.resolve(process.argv[1] || '.')]);
+      } catch (err) {
+        console.error('Could not register the ' + scheme + ':// handler: ' + err.message);
+      }
     }
     registerIpc({
       getWindow: () => mainWindow,
@@ -414,7 +443,7 @@ if (!gotLock) {
     if (pendingUrl) {
       const url = pendingUrl;
       pendingUrl = null;
-      setTimeout(() => handleIronvaultUrl(url), 2500);
+      setTimeout(() => handlePropolisUrl(url), 2500);
     }
 
     powerMonitor.on('suspend', () => {

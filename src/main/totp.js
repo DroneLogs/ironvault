@@ -159,7 +159,7 @@ function generateCode(config, atMs = Date.now()) {
 }
 
 function buildOtpAuthUri({ secret, issuer, account, digits, period, algorithm, steam }) {
-  const label = issuer ? `${issuer}:${account || ''}` : account || 'Ironvault';
+  const label = issuer ? `${issuer}:${account || ''}` : account || 'Propolis';
   const params = new URLSearchParams({
     secret: String(secret).toUpperCase().replace(/[\s-]/g, ''),
     digits: String(steam ? 5 : digits || 6),

@@ -256,7 +256,7 @@ async function create({ filePath, password, keyFilePath, name, format = 4 }) {
   const { credentials, protectedPassword } = await buildCredentials(password, keyFilePath);
   const db = kdbxweb.Kdbx.create(credentials, name || path.basename(filePath, path.extname(filePath)));
   db.setVersion(format === 3 ? 3 : 4);
-  db.meta.generator = 'Ironvault';
+  db.meta.generator = 'Propolis';
   db.meta.recycleBinEnabled = true;
 
   const root = db.getDefaultGroup();

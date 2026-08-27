@@ -82,7 +82,7 @@ function fetchRange(prefix) {
         host: HIBP_HOST,
         path: '/range/' + prefix,
         headers: {
-          'User-Agent': 'Ironvault-Password-Manager',
+          'User-Agent': 'Propolis-Password-Manager',
           'Add-Padding': 'true' // pads the reply so its size leaks nothing
         },
         timeout: 20000

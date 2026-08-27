@@ -5,7 +5,7 @@ window.IV = window.IV || {};
 (function (IV) {
   'use strict';
 
-  const bridge = window.ironvault;
+  const bridge = window.propolis;
 
   function call(method, args) {
     return bridge.call(method, args);

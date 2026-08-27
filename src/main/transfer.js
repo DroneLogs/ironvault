@@ -288,7 +288,7 @@ async function importFile(filePath) {
   if (extension === '.xml') {
     return { xmlDb: await importKeePassXml(await fsp.readFile(filePath, 'utf8')), source: 'keepass-xml' };
   }
-  throw new Error('Ironvault can import .csv, .xml, and .1pux files');
+  throw new Error('Propolis can import .csv, .xml, and .1pux files');
 }
 
 module.exports = { parseCsv, importCsv, exportCsv, importKeePassXml, importOnePux, importFile, escapeCsv };

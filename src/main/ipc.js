@@ -536,7 +536,7 @@ const handlers = {
       buttons: [confirmLabel || 'OK', 'Cancel'],
       defaultId: destructive ? 1 : 0,
       cancelId: 1,
-      title: title || 'Ironvault',
+      title: title || 'Propolis',
       message: message || '',
       detail: detail || '',
       noLink: true
@@ -547,7 +547,7 @@ const handlers = {
     await dialog.showMessageBox(win(), {
       type: 'error',
       buttons: ['OK'],
-      title: title || 'Ironvault',
+      title: title || 'Propolis',
       message: message || ''
     });
     return { ok: true };
@@ -557,7 +557,7 @@ const handlers = {
 function registerIpc(context) {
   ctx = { ...ctx, ...context };
 
-  ipcMain.handle('ironvault', async (event, method, args) => {
+  ipcMain.handle('propolis', async (event, method, args) => {
     const handler = handlers[method];
     if (!handler) throw new Error('Unknown method: ' + method);
     try {

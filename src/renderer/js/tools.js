@@ -332,7 +332,7 @@ window.IV = window.IV || {};
     const ok = await IV.api.confirm({
       title: 'Download favicons',
       message: 'Fetch website icons for every entry that has a URL?',
-      detail: 'Ironvault will contact each site to download its icon. Entries that already have an icon are skipped.',
+      detail: 'Propolis will contact each site to download its icon. Entries that already have an icon are skipped.',
       confirmLabel: 'Download'
     });
     if (!ok) return;
@@ -497,7 +497,7 @@ window.IV = window.IV || {};
       body: h(
         'div',
         null,
-        h('p', { class: 'hint', text: 'Ironvault keeps the most recent saves. Older ones drop off automatically.' }),
+        h('p', { class: 'hint', text: 'Propolis keeps the most recent saves. Older ones drop off automatically.' }),
         rows
       )
     });
@@ -913,7 +913,7 @@ window.IV = window.IV || {};
         h('p', {
           class: 'hint',
           text:
-            'Ironvault keeps working on the local copy when the remote is unreachable, and merges the two the next ' +
+            'Propolis keeps working on the local copy when the remote is unreachable, and merges the two the next ' +
             'time a sync succeeds. Credentials are encrypted with Windows DPAPI.'
         })
       ),
@@ -1101,7 +1101,7 @@ window.IV = window.IV || {};
           sequence,
           h('p', { class: 'hint', text: 'Leave empty to use {USERNAME}{TAB}{PASSWORD}{ENTER}.' })
         ),
-        field('Window title contains', window, 'Optional. Helps Ironvault pick this entry over a similar one.'),
+        field('Window title contains', window, 'Optional. Helps Propolis pick this entry over a similar one.'),
         h('p', {
           class: 'hint',
           text: 'Placeholders: {USERNAME} {PASSWORD} {URL} {TITLE} {NOTES} {TOTP} {TAB} {ENTER} {DELAY 500}'

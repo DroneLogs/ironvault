@@ -15,7 +15,7 @@ const generator = require('../src/main/generator');
 const strength = require('../src/main/strength');
 const wordlists = require('../src/main/wordlists');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ironvault-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'propolis-test-'));
 const dbPath = path.join(tmpDir, 'Test.kdbx');
 const keyFilePath = path.join(tmpDir, 'Test.keyx');
 const attachPath = path.join(tmpDir, 'note.txt');
@@ -34,7 +34,7 @@ function check(label, condition, detail) {
 }
 
 async function main() {
-  console.log('Ironvault self test');
+  console.log('Propolis self test');
   console.log('workspace: ' + tmpDir);
 
   fs.writeFileSync(attachPath, 'attachment contents\n');

@@ -25,13 +25,13 @@ window.IV = window.IV || {};
       body: [
         'Bits count how many guesses an attacker would need. Each extra bit doubles that number, so 60 bits is not twice 30 bits, it is a billion times more work.',
         'The line reads: how many characters, how many bits, and how long a well equipped attacker would take at a billion guesses a second. Anything under 40 bits is worth changing. Sixty and up is comfortable for an account that also has two factor authentication.',
-        'For a password Ironvault generated, the bits are exact, because it knows precisely how many random choices it made. For a password you typed, they are an estimate.'
+        'For a password Propolis generated, the bits are exact, because it knows precisely how many random choices it made. For a password you typed, they are an estimate.'
       ]
     },
     wordlist: {
       title: 'Which word list should I pick?',
       body: [
-        'It barely matters for safety, so pick the one you find easiest to read. What matters is the number of words in the list, which the line underneath shows, and Ironvault counts that honestly.',
+        'It barely matters for safety, so pick the one you find easiest to read. What matters is the number of words in the list, which the line underneath shows, and Propolis counts that honestly.',
         'EFF Large is the sensible default: 7,776 common English words chosen so no two start with the same four letters, which makes typos obvious. The Short lists trade a little strength for shorter words. Fandom and language lists are the same idea with different vocabulary.'
       ]
     },
@@ -53,7 +53,7 @@ window.IV = window.IV || {};
       title: 'What is a one time code?',
       body: [
         'The six digit code that changes every thirty seconds, which a site asks for after your password. Also called TOTP, two factor, or an authenticator code.',
-        'When a site offers you a QR code to scan, that image is really just a short web address containing a secret. Paste that address here, or type the secret the site shows underneath it, and Ironvault produces the same codes your phone would.',
+        'When a site offers you a QR code to scan, that image is really just a short web address containing a secret. Paste that address here, or type the secret the site shows underneath it, and Propolis produces the same codes your phone would.',
         'Worth thinking about: keeping the codes in the same place as the passwords is convenient, and it does mean one lock rather than two. Many people accept that. If you would rather not, keep them on your phone.'
       ]
     },
@@ -68,7 +68,7 @@ window.IV = window.IV || {};
     placeholders: {
       title: 'What are placeholders?',
       body: [
-        'Text in braces that Ironvault fills in. {USERNAME} becomes the username of the entry, {TITLE} its title, {S:Account number} a custom field of yours.',
+        'Text in braces that Propolis fills in. {USERNAME} becomes the username of the entry, {TITLE} its title, {S:Account number} a custom field of yours.',
         'They can also point at another entry, so several entries can share one password without you copying it around: {REF:P@T:GitHub} means the password of the entry titled GitHub.',
         'The same braces drive auto-type, where {TAB} and {ENTER} are the keys themselves.'
       ]
@@ -76,7 +76,7 @@ window.IV = window.IV || {};
     pwned: {
       title: 'Is this safe to run?',
       body: [
-        'Yes, and the reason is worth knowing. Your password is never sent. Ironvault hashes it, sends only the first five characters of that hash, and gets back every leaked hash starting with those five, usually several hundred. The comparison happens on your machine.',
+        'Yes, and the reason is worth knowing. Your password is never sent. Propolis hashes it, sends only the first five characters of that hash, and gets back every leaked hash starting with those five, usually several hundred. The comparison happens on your machine.',
         'So the service learns that somebody asked about one of a few hundred possibilities, and nothing else. Not the password, not the site, not who you are.'
       ]
     },
@@ -90,7 +90,7 @@ window.IV = window.IV || {};
     remote: {
       title: 'How does syncing work?',
       body: [
-        'Ironvault always works on the local copy of the file. Syncing fetches the remote copy, merges the two, and sends the result back.',
+        'Propolis always works on the local copy of the file. Syncing fetches the remote copy, merges the two, and sends the result back.',
         'That is what makes editing offline safe: with no connection you carry on, and the merge happens the next time a sync succeeds. Nothing is thrown away, and newer changes win where both sides edited the same entry.',
         'WebDAV covers Nextcloud, ownCloud, and most NAS boxes. If you use OneDrive, Google Drive, or Dropbox, their desktop app already syncs a folder for you, so just keep the database in it.'
       ]

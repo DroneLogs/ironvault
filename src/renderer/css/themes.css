@@ -1,23 +1,23 @@
-/* The four themes.
+/* The four palettes.
  *
- *   IronvaultCB   the default: the original look, with the ambiguous colours
- *                 replaced by ones that survive colour blindness
- *   Ironvault     the original exactly, blue and violet, red against green
- *   PropolisCB    honey and resin, with the same safe substitutions
- *   Propolis      honey and resin as first drawn
+ *   Blue CB    the default: the original look, with the ambiguous colours
+ *              replaced by ones that survive colour blindness
+ *   Blue       the original exactly, blue and violet, red against green
+ *   Amber CB   honey and resin, with the same safe substitutions
+ *   Amber      honey and resin as first drawn
  *
- * The two CB themes keep the accent of their sibling, because blue and amber
+ * The two CB palettes keep the accent of their sibling, because blue and amber
  * are both already distinguishable under every common form of colour blindness.
  * What changes is the meaning colours: nothing says "good" in green and "bad"
  * in red, since those are the pair that merges.
  *
- * app.css holds the base tokens, which are IronvaultCB. Everything below is an
+ * app.css holds the base tokens, which are Blue CB. Everything below is an
  * override on top of that.
  */
 
-/* ------------------------------------------------------- Ironvault, original */
+/* ------------------------------------------------------------ Blue, original */
 
-body.scheme-ironvault {
+body.scheme-blue {
   --good: #3fcf8e;
   --warn: #f0b429;
   --danger: #f2686a;
@@ -36,7 +36,7 @@ body.scheme-ironvault {
   --level-5: #2fb3a6;
 }
 
-body.scheme-ironvault.theme-light {
+body.scheme-blue.theme-light {
   --good: #129a68;
   --warn: #b7791f;
   --danger: #d13b3f;
@@ -48,18 +48,18 @@ body.scheme-ironvault.theme-light {
   --pw-latin1: #b32b6d;
 }
 
-/* --------------------------------------------------------- Propolis, honeyed */
+/* ------------------------------------------------------------ Amber, honeyed */
 
 /* Amber accent, and a ground the colour of resin in shadow. */
-body.scheme-propolis,
-body.scheme-propolis-cb {
+body.scheme-amber,
+body.scheme-amber-cb {
   --accent: #e69f00;
   --accent-soft: rgba(230, 159, 0, 0.18);
   --accent-text: #1b1400;
 }
 
-body.scheme-propolis:not(.theme-light),
-body.scheme-propolis-cb:not(.theme-light) {
+body.scheme-amber:not(.theme-light),
+body.scheme-amber-cb:not(.theme-light) {
   --bg: #17120e;
   --panel: #1e1813;
   --panel-2: #241d17;
@@ -68,8 +68,8 @@ body.scheme-propolis-cb:not(.theme-light) {
   --border-soft: #2a2119;
 }
 
-body.scheme-propolis.theme-light,
-body.scheme-propolis-cb.theme-light {
+body.scheme-amber.theme-light,
+body.scheme-amber-cb.theme-light {
   --accent: #b07000;
   --accent-soft: rgba(176, 112, 0, 0.14);
   --accent-text: #ffffff;
@@ -81,8 +81,8 @@ body.scheme-propolis-cb.theme-light {
   --border-soft: #e4dacb;
 }
 
-/* Propolis without the safe substitutions keeps the warm green and red. */
-body.scheme-propolis {
+/* Amber without the safe substitutions keeps the warm green and red. */
+body.scheme-amber {
   --good: #3fcf8e;
   --warn: #f0b429;
   --danger: #f2686a;
@@ -101,19 +101,19 @@ body.scheme-propolis {
   --level-5: #2fb3a6;
 }
 
-body.scheme-propolis.theme-light {
+body.scheme-amber.theme-light {
   --good: #129a68;
   --warn: #b7791f;
   --danger: #d13b3f;
   --pw-lower: #241a0e;
 }
 
-/* PropolisCB inherits the safe meaning colours from the base, and only needs
+/* Amber CB inherits the safe meaning colours from the base, and only needs
    its lower case glyphs warmed to match the ground. */
-body.scheme-propolis-cb:not(.theme-light) {
+body.scheme-amber-cb:not(.theme-light) {
   --pw-lower: #f3ead9;
 }
 
-body.scheme-propolis-cb.theme-light {
+body.scheme-amber-cb.theme-light {
   --pw-lower: #241a0e;
 }

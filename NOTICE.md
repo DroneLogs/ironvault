@@ -1,6 +1,6 @@
 # Third party notices
 
-Ironvault is MIT licensed. It bundles the following, each under its own licence.
+Propolis is MIT licensed. It bundles the following, each under its own licence.
 
 ## Code
 
@@ -49,5 +49,5 @@ accompanies the font and the font is not sold on its own.
 
 The password generator's options, character sets, and strength summary format follow
 [Strongbox](https://github.com/strongbox-password-safe/Strongbox) (AGPL-3.0) so that a
-password made in Ironvault matches one made in Strongbox. No Strongbox code was copied; the
+password made in Propolis matches one made in Strongbox. No Strongbox code was copied; the
 implementation is original. See [LICENSING.md](LICENSING.md).

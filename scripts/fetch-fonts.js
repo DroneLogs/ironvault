@@ -43,7 +43,7 @@ const FONTS = [
 function download(url, redirects = 0) {
   return new Promise((resolve, reject) => {
     if (redirects > 5) return reject(new Error('too many redirects'));
-    const request = https.get(url, { headers: { 'User-Agent': 'ironvault-build' }, timeout: 45000 }, (res) => {
+    const request = https.get(url, { headers: { 'User-Agent': 'propolis-build' }, timeout: 45000 }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
         return resolve(download(new URL(res.headers.location, url).toString(), redirects + 1));

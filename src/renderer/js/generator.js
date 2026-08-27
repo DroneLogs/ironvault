@@ -149,11 +149,18 @@ window.IV = window.IV || {};
 
   /* ------------------------------------------------------------ the modal */
 
-  function openGenerator({ onUse, title } = {}) {
+  /**
+   * `mode` opens on a given tab without that counting as a choice. A master
+   * password is typed from memory, so those callers ask for Diceware even when
+   * the saved preference is Basic, and the preference is left as it was.
+   */
+  function openGenerator({ onUse, title, mode: openOn } = {}) {
     const catalogue = IV.state.wordLists || [];
     const config = JSON.parse(JSON.stringify(IV.state.prefs.generator || {}));
+    const savedAlgorithm = config.algorithm === 'diceware' ? 'diceware' : 'basic';
+    let chosenByHand = !openOn;
     let current = '';
-    let mode = config.algorithm === 'diceware' ? 'diceware' : 'basic';
+    let mode = openOn === 'diceware' || openOn === 'basic' ? openOn : savedAlgorithm;
 
     const previewText = h('div', { class: 'gen-preview-text' });
     const preview = h(
@@ -377,13 +384,14 @@ window.IV = window.IV || {};
 
     /* ---- tabs ---- */
 
-    const tabBasic = h('button', { class: 'tab', text: 'Basic', onClick: () => setMode('basic') });
-    const tabDiceware = h('button', { class: 'tab', text: 'Diceware', onClick: () => setMode('diceware') });
+    const tabBasic = h('button', { class: 'tab', text: 'Basic', onClick: () => setMode('basic', true) });
+    const tabDiceware = h('button', { class: 'tab', text: 'Diceware', onClick: () => setMode('diceware', true) });
     const tabHelp = IV.glossary.badge('diceware', { label: 'What is Diceware?' });
 
-    function setMode(next) {
+    function setMode(next, byHand) {
       mode = next;
       config.algorithm = next;
+      if (byHand) chosenByHand = true;
       tabBasic.classList.toggle('active', next === 'basic');
       tabDiceware.classList.toggle('active', next === 'diceware');
       basicPanel.hidden = next !== 'basic';
@@ -419,8 +427,9 @@ window.IV = window.IV || {};
           : null
       ].filter(Boolean),
       onClose: () => {
+        const saved = { ...config, algorithm: chosenByHand ? config.algorithm : savedAlgorithm };
         IV.api
-          .setPrefs({ generator: config })
+          .setPrefs({ generator: saved })
           .then((p) => {
             IV.state.prefs = p;
           })

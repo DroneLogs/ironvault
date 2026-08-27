@@ -1,4 +1,4 @@
-# Licensing: can Ironvault be sold?
+# Licensing: can Propolis be sold?
 
 You asked whether the features here could sit behind a paywall once you had looked at the
 KeePass copyright. Short answer: **KeePass is not the problem. Two of the word lists are.**
@@ -8,12 +8,12 @@ say, checked against each project's own licence file, so you know where to look.
 
 ## KeePass itself: not an issue
 
-KeePass is GPL-2.0, but **Ironvault contains no KeePass code**. It reads and writes the
+KeePass is GPL-2.0, but **Propolis contains no KeePass code**. It reads and writes the
 KDBX file format, and a file format is not a copyrightable work. That is why KeePassXC,
 KeePassium, Strongbox, Bitwarden's importer, and the `kdbxweb` library this app uses all
 implement KDBX independently, several of them commercially.
 
-Nothing about selling Ironvault runs into KeePass.
+Nothing about selling Propolis runs into KeePass.
 
 ## The code: all clear
 
@@ -65,7 +65,7 @@ product after them, or advertising with them, is not.
 ### Share-alike, so read before shipping
 
 **Orchard Street** is **CC BY-SA 4.0**, and the **Icelandic** list is derived from a corpus
-that is also CC BY-SA. Share-alike attaches to derivatives *of the list*. Ironvault ships
+that is also CC BY-SA. Share-alike attaches to derivatives *of the list*. Propolis ships
 Orchard Street unmodified and only reads it, so the app is not a derivative of it, but the
 list must stay under CC BY-SA with attribution wherever it goes. The Icelandic list is a
 derivative I generated, so it must itself be offered under CC BY-SA.
@@ -81,7 +81,7 @@ original author and licence, or drop the Languages category.
 
 ## Strongbox: the part I would actually ask a lawyer about
 
-Ironvault matches Strongbox feature for feature, and I read Strongbox's source to get the
+Propolis matches Strongbox feature for feature, and I read Strongbox's source to get the
 details right: the character sets, the strength categories, the `Strong (22 / 131.1 bits /
 >100m years)` summary format, the five username shapes.
 
@@ -90,7 +90,7 @@ US law, functionality, behaviour, and interfaces are generally not protected the
 expression is, which is the ground *Google v. Oracle* was decided on. That is the honest
 legal position and it is a reasonable one.
 
-It is also the position with the most money at stake if someone disagrees. If Ironvault is
+It is also the position with the most money at stake if someone disagrees. If Propolis is
 free, this is close to a non-issue. If you charge for it, and it is a feature-for-feature
 Windows version of a paid AGPL app, that is worth an hour of a software lawyer's time before
 you take a payment. I would not skip that step.

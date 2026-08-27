@@ -283,6 +283,12 @@ function titleCase(word) {
 /**
  * The same five shapes Strongbox offers: dotted handle, full name, bare first
  * name, an email address, and a single random word.
+ *
+ * The email is a suggestion for what to type when signing up, nothing more. No
+ * mailbox is created, the domain belongs to somebody else, and the address may
+ * already be a real person. A working alias needs a provider that issues them,
+ * a catch-all on a domain you own, Apple Hide My Email, DuckDuckGo, SimpleLogin
+ * and so on, which means an account and an API call. That is not built yet.
  */
 function generateUsernames() {
   const word = pick(wordlists.pool(['eff-large'])).toLowerCase();

@@ -135,6 +135,20 @@ npm start         # run it
 npm run dist      # build the installer and portable exe into dist/
 ```
 
+## Version numbers
+
+Three parts, and each one answers a different question.
+
+| Part | Bumped when | Examples |
+| --- | --- | --- |
+| **X** | KeePass itself moves and this has to follow | a new KDBX format version |
+| **Y** | a new capability arrives | YubiKey unlock, passkeys that sign you in |
+| **Z** | fixes and small additions | a palette, a help badge, spacing, an icon |
+
+The number lives in one place, `version` in `package.json`. Everything else follows from
+it: the installer and portable file names, the version Windows shows on the executable, and
+what the updater compares against the release feed. Set it, commit it, then tag `vX.Y.Z`.
+
 ## Licence
 
 MIT, with the exceptions set out in [LICENSING.md](LICENSING.md). Third party notices are in

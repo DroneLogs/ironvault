@@ -473,7 +473,7 @@ window.IV = window.IV || {};
 
     const handle = modal({
       title: 'Suggested usernames',
-      body: h('div', null, h('p', { class: 'hint', text: 'Pick one, or shuffle for a new set.' }), list),
+      body: h('div', null, h('p', { class: 'hint', text: 'Pick one, or shuffle for a new set. The email is a name to register with, not an alias: nothing is created for you, and that mailbox may belong to someone else.' }), list),
       footer: [
         h('button', { class: 'btn ghost', text: 'Shuffle', onClick: refresh }),
         h('button', { class: 'btn primary', text: 'Close', onClick: () => handle.close() })

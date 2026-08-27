@@ -41,16 +41,17 @@ window.IV = window.IV || {};
     return { row, valueNode, actions };
   }
 
-  function renderPasswordField(entry) {
+  function renderPasswordField(entry, itemType) {
     const concealed = IV.state.prefs.concealPasswords !== false;
     let revealed = false;
     let cached = null;
 
-    const { row, valueNode, actions } = field('Password', '••••••••••••', { mono: true });
+    const label = IV.itemTypes.labelFor(itemType, 'password', 'Password');
+    const { row, valueNode, actions } = field(label, '••••••••••••', { mono: true });
 
     const revealBtn = h('button', {
       class: 'icon-btn reveal',
-      title: 'Show password',
+      title: 'Show ' + label.toLowerCase(),
       onClick: async () => {
         revealed = !revealed;
         revealBtn.classList.toggle('on', revealed);
@@ -65,9 +66,13 @@ window.IV = window.IV || {};
 
     if (!concealed) revealBtn.click();
 
-    actions.append(revealBtn, copyButton('Copy password', () => IV.api.copyField(entry.id, 'Password')));
+    actions.append(revealBtn, copyButton('Copy ' + label.toLowerCase(), () => IV.api.copyField(entry.id, 'Password')));
 
-    if (entry.passwordStrength) {
+    // Strength only means something for a password. A card number is a fixed
+    // length number issued by a bank, and calling it Very Weak is both useless
+    // and alarming, so a type that has renamed the field gets no meter.
+    const renamed = Boolean(itemType && itemType.labels && itemType.labels.password);
+    if (entry.passwordStrength && !renamed) {
       const meter = IV.dom.strengthMeter(entry.passwordStrength);
       return h('div', null, row, h('div', { class: 'strength-holder' }, meter));
     }
@@ -305,15 +310,21 @@ window.IV = window.IV || {};
     }
 
     /* core fields */
+
+    // A card calls its number a number, not a password. The type only renames
+    // and omits; every value is still the same built in field underneath.
+    const itemType = IV.itemTypes.get(IV.itemTypes.of(entry));
     const core = h('div');
     if (entry.username) {
-      const f = field('Username', entry.username);
-      f.actions.append(copyButton('Copy username', () => IV.api.copyField(entry.id, 'UserName')));
+      const f = field(IV.itemTypes.labelFor(itemType, 'username', 'Username'), entry.username);
+      f.actions.append(copyButton('Copy ' + IV.itemTypes.labelFor(itemType, 'username', 'username').toLowerCase(), () => IV.api.copyField(entry.id, 'UserName')));
       core.append(f.row);
     }
-    core.append(renderPasswordField(entry));
+    if (entry.hasPassword || !IV.itemTypes.hides(itemType, 'password')) {
+      core.append(renderPasswordField(entry, itemType));
+    }
     if (entry.url) {
-      const f = field('URL', entry.url);
+      const f = field(IV.itemTypes.labelFor(itemType, 'url', 'URL'), entry.url);
       f.valueNode.classList.add('link');
       f.valueNode.addEventListener('click', () => IV.api.openUrl(entry.url).catch((err) => toast(err.message, 'error')));
       f.actions.append(
@@ -367,7 +378,11 @@ window.IV = window.IV || {};
     );
     if (entry.totp) totpSection.append(renderTotp(entry));
     else totpSection.append(h('p', { class: 'hint', text: 'No one time code on this entry yet.' }));
-    detail.append(totpSection);
+    // A one time code belongs to something you sign in to. A card or an identity
+    // has nothing to offer it, so the section is left out rather than sitting
+    // there empty. An existing code is always shown, whatever the type says.
+    const signsIn = !IV.itemTypes.hides(itemType, 'password') && !(itemType.labels && itemType.labels.password);
+    if (entry.totp || signsIn) detail.append(totpSection);
 
     // Passkeys are stored as the KeePassXC style KPEX_PASSKEY_* fields.
     const passkeyFields = (entry.customFields || []).filter((f) => /^KPEX_PASSKEY_/i.test(f.key));
@@ -390,11 +405,20 @@ window.IV = window.IV || {};
       detail.append(wrap);
     }
 
-    if (entry.customFields && entry.customFields.length) {
+    const shownCustom = (entry.customFields || []).filter(
+      (c) =>
+        c.key !== 'otp' &&
+        c.key !== 'TOTP Seed' &&
+        c.key !== 'TOTP Settings' &&
+        !/^KPEX_PASSKEY_/i.test(c.key) &&
+        c.key !== IV.itemTypes.markerField()
+    );
+    if (shownCustom.length) {
       const wrap = h('div', { class: 'detail-section' }, h('h3', { text: 'Custom fields' }));
       for (const custom of entry.customFields) {
         if (custom.key === 'otp' || custom.key === 'TOTP Seed' || custom.key === 'TOTP Settings') continue;
         if (/^KPEX_PASSKEY_/i.test(custom.key)) continue;
+        if (custom.key === IV.itemTypes.markerField()) continue;
         const f = field(custom.key, custom.protected ? '••••••••' : custom.value, { mono: custom.protected });
         if (custom.protected) {
           let shown = false;

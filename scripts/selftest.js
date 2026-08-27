@@ -11,6 +11,7 @@ const path = require('path');
 
 require('../src/main/argon2').registerArgon2();
 const vault = require('../src/main/vault');
+const itemtypes = require('../src/main/itemtypes');
 const generator = require('../src/main/generator');
 const strength = require('../src/main/strength');
 const wordlists = require('../src/main/wordlists');
@@ -304,6 +305,46 @@ async function main() {
   check('password survived the round trip', vault.getSecret(reopened.id, 'Password') === 'S3cret-Passw0rd!');
   check('attachment survived the round trip', vault.getEntry(reopened.id).attachments.length === 1);
   check('history survived the round trip', vault.getEntry(reopened.id).history.length >= 1);
+
+  console.log('\nitem types');
+  const card = vault.createEntry({
+    title: 'A Card',
+    username: 'J RUSSOM',
+    password: '4111111111111111',
+    customFields: [
+      { key: itemtypes.TYPE_FIELD, value: 'card', protected: false },
+      { key: 'Expiry', value: '11/29', protected: false },
+      { key: 'Security code', value: '123', protected: true }
+    ],
+    icon: 66
+  });
+  check('a card is a card', itemtypes.typeOfEntry(card) === 'card', itemtypes.typeOfEntry(card));
+  check('an ordinary entry is a login', itemtypes.typeOfEntry(created) === 'login', itemtypes.typeOfEntry(created));
+  check('an unknown marker falls back to a login', itemtypes.typeOfEntry({ customFields: [{ key: itemtypes.TYPE_FIELD, value: 'spaceship' }] }) === 'login');
+  check('a card takes the money icon', card.icon === 66, String(card.icon));
+  check('the card number is withheld like a password', !JSON.stringify(card).includes('4111111111111111'));
+  await vault.save();
+  vault.lock();
+  info = await vault.open({ filePath: dbPath, password: 'master-pass-1' });
+  const cardAgain = vault.search('A Card')[0];
+  check('the card survived the round trip', Boolean(cardAgain));
+  check(
+    'it is still a card after the round trip',
+    cardAgain && itemtypes.typeOfEntry(vault.getEntry(cardAgain.id)) === 'card'
+  );
+  check(
+    'the card number survived the round trip',
+    cardAgain && vault.getSecret(cardAgain.id, 'Password') === '4111111111111111'
+  );
+  check(
+    'the protected security code survived',
+    cardAgain && vault.getSecret(cardAgain.id, 'Security code') === '123'
+  );
+  check(
+    'every type declares a name and an icon',
+    itemtypes.choices().every((t) => t.name && typeof t.icon === 'number'),
+    itemtypes.choices().map((t) => t.key).join(', ')
+  );
 
   console.log('\nkey file and password change');
   await vault.changeCredentials({ password: 'master-pass-2', keyFilePath });

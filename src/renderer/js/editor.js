@@ -243,7 +243,13 @@ window.IV = window.IV || {};
       fieldsWrap.append(row);
     }
 
-    for (const field of entry.customFields || []) addFieldRow(field);
+    // The type marker is machinery, not a field somebody should be editing by
+    // hand, so it never gets a row. It is written back on save.
+    const markerKey = IV.itemTypes.markerField();
+    for (const field of entry.customFields || []) {
+      if (field.key === markerKey) continue;
+      addFieldRow(field);
+    }
 
     /* expiry */
     const expiresCheck = h('input', {
@@ -261,24 +267,87 @@ window.IV = window.IV || {};
 
     const groupSelect = h('select', null, groupOptions(entry.groupId || defaultGroupId));
 
+    /* item type */
+
+    // KDBX has no types, so this is a marker plus a set of field names. What it
+    // really changes is which of the built in fields are shown, what they are
+    // called, and which extra fields come ready made.
+    const startingType = IV.itemTypes.of(entry);
+    let currentType = startingType;
+
+    const userLabel = h('span', { class: 'field-label', text: 'Username' });
+    const passLabel = h('span', { class: 'field-label', text: 'Password' });
+    const urlLabel = h('span', { class: 'field-label', text: 'URL' });
+    const typeHint = h('p', { class: 'hint' });
+
+    const typeSelect = h('select', {
+      onChange: () => applyType(typeSelect.value)
+    });
+    for (const type of IV.itemTypes.all()) {
+      typeSelect.append(h('option', { value: type.key, selected: type.key === startingType, text: type.name }));
+    }
+
+    function applyType(key) {
+      const type = IV.itemTypes.get(key);
+      currentType = type.key;
+
+      userLabel.textContent = IV.itemTypes.labelFor(type, 'username', 'Username');
+      passLabel.textContent = IV.itemTypes.labelFor(type, 'password', 'Password');
+      urlLabel.textContent = IV.itemTypes.labelFor(type, 'url', 'URL');
+      // Hidden means not offered, never not there. A field with something in
+      // it stays visible whatever the type says, so switching type can never
+      // make real data disappear from view.
+      userBlock.hidden = IV.itemTypes.hides(type, 'username') && !userInput.value;
+      passBlock.hidden = IV.itemTypes.hides(type, 'password') && !passInput.value;
+      urlBlock.hidden = IV.itemTypes.hides(type, 'url') && !urlInput.value;
+      typeHint.textContent = type.hint || '';
+
+      // A type that has renamed a field is no longer using it as a credential.
+      // Suggesting a username for a cardholder, or generating a card number, is
+      // nonsense, and so is a strength meter on one.
+      userSuggestBtn.hidden = Boolean(type.labels && type.labels.username);
+      genBtn.hidden = Boolean(type.labels && type.labels.password);
+      meter.hidden = Boolean(type.labels && type.labels.password);
+
+      // Only add what is missing, so switching type twice does not duplicate
+      // rows and nothing already filled in is disturbed.
+      for (const field of type.fields || []) {
+        const already = fieldRows.some((r) => r.state.key.trim().toLowerCase() === field.key.toLowerCase());
+        if (already) continue;
+        addFieldRow({ key: field.key, value: '', protected: Boolean(field.protected), isNew: true });
+      }
+    }
+
+    const typeBlock = h(
+      'div',
+      { class: 'field' },
+      h('span', { class: 'field-label', text: 'Type' }),
+      typeSelect,
+      typeHint
+    );
+    const userBlock = h(
+      'div',
+      { class: 'field' },
+      userLabel,
+      h('span', { class: 'input-with-action' }, userInput, userSuggestBtn)
+    );
+    const passBlock = h(
+      'div',
+      { class: 'field' },
+      passLabel,
+      h('span', { class: 'input-with-action' }, passInput, revealBtn, genBtn),
+      meter
+    );
+    const urlBlock = h('label', { class: 'field' }, urlLabel, urlInput);
+
     const body = h(
       'div',
       null,
+      typeBlock,
       h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Title' }), titleInput),
-      h(
-        'div',
-        { class: 'field' },
-        h('span', { class: 'field-label', text: 'Username' }),
-        h('span', { class: 'input-with-action' }, userInput, userSuggestBtn)
-      ),
-      h(
-        'div',
-        { class: 'field' },
-        h('span', { class: 'field-label', text: 'Password' }),
-        h('span', { class: 'input-with-action' }, passInput, revealBtn, genBtn),
-        meter
-      ),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'URL' }), urlInput),
+      userBlock,
+      passBlock,
+      urlBlock,
       h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Notes' }), notesInput),
       h(
         'div',
@@ -318,6 +387,19 @@ window.IV = window.IV || {};
       )
     );
 
+    /**
+     * A type brings its fields ready made. The ones left empty are noise, so
+     * they are dropped rather than written as blanks. A field the user named
+     * themselves is kept whatever is in it.
+     */
+    function isUnusedTemplateField(row) {
+      if (row.state.value || row.state.unchanged) return false;
+      const key = row.state.key.trim().toLowerCase();
+      return IV.itemTypes.all().some((type) =>
+        (type.fields || []).some((field) => field.key.toLowerCase() === key)
+      );
+    }
+
     let saving = false;
 
     async function submit() {
@@ -341,6 +423,7 @@ window.IV = window.IV || {};
         expiryTime: expiresCheck.checked && expiryDate.value ? new Date(expiryDate.value + 'T23:59:59').getTime() : null,
         customFields: fieldRows
           .filter((r) => r.state.key.trim())
+          .filter((r) => !isUnusedTemplateField(r))
           .map((r) => ({
             key: r.state.key.trim(),
             value: r.state.value,
@@ -348,6 +431,19 @@ window.IV = window.IV || {};
             unchanged: r.state.unchanged
           }))
       };
+
+      // A type that is not Login says so in a field of its own. Login is the
+      // absence of a marker rather than a marker saying login, so an ordinary
+      // entry carries nothing extra and reads the same in any other client.
+      if (currentType !== 'login') {
+        payload.customFields.push({ key: markerKey, value: currentType, protected: false });
+      }
+
+      // The icon follows the type, but only when the type is actually being
+      // set, so it never overwrites one the user picked or a downloaded favicon.
+      if (isNew || currentType !== startingType) {
+        payload.icon = IV.itemTypes.get(currentType).icon;
+      }
 
       try {
         let saved;
@@ -383,6 +479,7 @@ window.IV = window.IV || {};
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit();
     });
 
+    applyType(startingType);
     titleInput.focus();
     refreshStrength();
     refreshTags();

@@ -43,6 +43,8 @@ window.IV = window.IV || {};
     state.app = info;
     state.prefs = info.prefs;
     state.wordLists = info.wordLists || [];
+    state.itemTypes = info.itemTypes || [];
+    state.itemTypeField = info.itemTypeField || 'PROPOLIS_TYPE';
     state.productName = info.productName || 'Propolis';
     state.iconKey = info.iconKey || 'blue';
     state.systemDark = info.systemDark !== false;

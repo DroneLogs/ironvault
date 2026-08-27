@@ -16,6 +16,7 @@ const sshagent = require('./sshagent');
 const autotype = require('./autotype');
 const hello = require('./hello');
 const brand = require('./brand');
+const itemtypes = require('./itemtypes');
 
 let ctx = {
   getWindow: () => null,
@@ -144,6 +145,8 @@ const handlers = {
     productName: brand.productNameFor(settings.getPrefs().theme),
     iconKey: brand.iconKeyFor(settings.getPrefs().theme),
     systemDark: nativeTheme.shouldUseDarkColors,
+    itemTypes: itemtypes.choices(),
+    itemTypeField: itemtypes.TYPE_FIELD,
     tagline: brand.taglineFor(settings.getPrefs().theme),
     openWith: ctx.takePendingFile()
   }),

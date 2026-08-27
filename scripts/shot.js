@@ -231,6 +231,66 @@ async function main() {
   await wait(360);
   await shot('11-editor');
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
+  await wait(180);
+
+  // A type renames the built in fields and brings its own. Nothing here is a
+  // new place to put data, which is what keeps a card readable elsewhere.
+  await run(`IV.editor.openEntryEditor(null); true`, 'open new entry');
+  await wait(360);
+  const cardEditor = await run(`
+    (async () => {
+      const dialog = IV.dom.topModal().dialog;
+      const select = dialog.querySelector('select');
+      select.value = 'card';
+      select.dispatchEvent(new Event('change'));
+      await new Promise(r => setTimeout(r, 200));
+      return {
+        labels: Array.from(dialog.querySelectorAll('.field-label')).map(n => n.textContent),
+        keys: Array.from(dialog.querySelectorAll('.custom-field-row .key')).map(i => i.value),
+        urlHidden: Array.from(dialog.querySelectorAll('.field')).some(f => f.hidden)
+      };
+    })()
+  `, 'switch to card');
+  await wait(240);
+  await shot('23-card-type');
+  await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
+  await wait(180);
+
+  // Written, read back, and rendered. The KDBX round trip for the marker itself
+  // is covered in npm test, since it is an ordinary custom field down there.
+  const cardEntry = await run(`
+    (async () => {
+      // the search filter is still on from an earlier step, and a new entry that
+      // does not match it can never be selected
+      document.querySelector('#search-input').value = '';
+      document.querySelector('#search-input').dispatchEvent(new Event('input'));
+      await new Promise(r => setTimeout(r, 300));
+      const created = await IV.api.createEntry({
+        title: 'Test Card',
+        username: 'J RUSSOM',
+        password: '4111111111111111',
+        url: '',
+        notes: '',
+        tags: [],
+        groupId: IV.state.tree.root.id,
+        customFields: [
+          { key: 'PROPOLIS_TYPE', value: 'card', protected: false },
+          { key: 'Expiry', value: '11/29', protected: false },
+          { key: 'Security code', value: '123', protected: true }
+        ],
+        icon: 66
+      });
+      await IV.app.refresh({ selectEntryId: created.id });
+      await new Promise(r => setTimeout(r, 400));
+      const reopened = await IV.api.entry(created.id);
+      return {
+        type: IV.itemTypes.of(reopened),
+        detailText: (document.querySelector('#detail') || {}).textContent || ''
+      };
+    })()
+  `, 'card entry');
+  await wait(360);
+  await shot('24-card-detail');
 
   await run(`document.querySelector('#btn-settings').click(); true`);
   await wait(225);
@@ -406,6 +466,44 @@ async function main() {
     })
   `, 'read locked state');
   const lockedState = JSON.parse(locked || '{}');
+  check(
+    'a saved card is still a card when it is read back',
+    Boolean(cardEntry && cardEntry.type === 'card'),
+    cardEntry ? String(cardEntry.type) : 'not read'
+  );
+  check(
+    'the detail pane calls a card number a card number',
+    Boolean(cardEntry && /Card number/.test(cardEntry.detailText)),
+    cardEntry ? cardEntry.detailText.slice(0, 100) : 'not read'
+  );
+  check(
+    'the type marker is not shown as a field',
+    Boolean(cardEntry && !/PROPOLIS_TYPE/.test(cardEntry.detailText)),
+    cardEntry ? 'marker hidden' : 'not read'
+  );
+  check(
+    'a card renames the password field to the card number',
+    Boolean(cardEditor && cardEditor.labels.includes('Card number')),
+    cardEditor ? cardEditor.labels.join(', ') : 'not read'
+  );
+  check(
+    'a card renames the username field to the cardholder',
+    Boolean(cardEditor && cardEditor.labels.includes('Cardholder')),
+    cardEditor ? cardEditor.labels.join(', ') : 'not read'
+  );
+  check(
+    'a card brings its own fields ready made',
+    Boolean(
+      cardEditor &&
+        ['Expiry', 'Security code', 'PIN', 'Issuer'].every((k) => cardEditor.keys.includes(k))
+    ),
+    cardEditor ? cardEditor.keys.join(', ') : 'not read'
+  );
+  check(
+    'a card hides the fields it has no use for',
+    Boolean(cardEditor && cardEditor.urlHidden),
+    cardEditor ? String(cardEditor.urlHidden) : 'not read'
+  );
   check(
     'appearance can be left to the device',
     Boolean(systemAppearance && systemAppearance.stored === 'system'),

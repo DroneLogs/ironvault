@@ -48,6 +48,9 @@ anything found in it.
 - Rolling local backups, and restore from any of them
 
 **Entries**
+- Item types: Login, Password, Secure note, Card, Identity and Email alias, each with the fields
+  it needs and the built in ones named for it. A type is a marker in a custom field, so a card
+  opened in another KeePass client is still an entry with sensible fields
 - Groups, tags, favourites, attachments, custom fields, expiry dates
 - Full text search across every field
 - Per entry history, with view and restore

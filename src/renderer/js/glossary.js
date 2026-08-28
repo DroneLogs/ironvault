@@ -25,7 +25,8 @@ window.IV = window.IV || {};
       body: [
         'Bits count how many guesses an attacker would need. Each extra bit doubles that number, so 60 bits is not twice 30 bits, it is a billion times more work.',
         'The line reads: how many characters, how many bits, and how long a well equipped attacker would take at a billion guesses a second. Anything under 40 bits is worth changing. Sixty and up is comfortable for an account that also has two factor authentication.',
-        'For a password Propolis generated, the bits are exact, because it knows precisely how many random choices it made. For a password you typed, they are an estimate.'
+        'For a password Propolis generated, the bits are exact, because it knows precisely how many random choices it made. For a password you typed, they are an estimate.',
+        'A passphrase is counted by its words, not its letters. Six words from a list of 7,776 are 77.5 bits whether they run to thirty characters or sixty, because somebody guessing works through the word list rather than the alphabet. If Propolis recognises the words it says so in the smaller number, which is the one that matters.'
       ]
     },
     wordlist: {

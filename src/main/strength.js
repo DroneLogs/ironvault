@@ -11,6 +11,8 @@
  * typed passwords get an estimate.
  */
 
+const wordlists = require('./wordlists');
+
 const GUESSES_PER_SECOND = 1e9;
 
 const SECONDS_IN_HOUR = 60 * 60;
@@ -40,6 +42,107 @@ const COMMON = new Set([
 const KEYBOARD_RUNS = [
   'qwertyuiop', 'asdfghjkl', 'zxcvbnm', '1234567890', 'abcdefghijklmnopqrstuvwxyz'
 ];
+
+/* ------------------------------------------------------------- passphrases */
+
+/**
+ * A passphrase is not a random string of characters, and scoring it as one is
+ * wrong in the direction that matters. Six words from the EFF list are 77.5
+ * bits however many letters they run to; counting the characters says 338 and
+ * calls it Overkill. An attacker who suspects a word list searches the words,
+ * so the honest number is the smaller one, and this goes looking for it.
+ *
+ * Only the lists the generator can draw from are searched, and the smallest
+ * list that covers every word wins, because that is the cheapest attack
+ * available to somebody guessing.
+ *
+ * Words run together with no separator are not detected. Splitting
+ * correcthorsebatterystaple needs segmentation, and a wrong split would
+ * understate a real password, which is the one error worse than this one.
+ */
+const DICTIONARY_LISTS = [
+  'eff-short-1',
+  'eff-short-2',
+  'eff-large',
+  'diceware',
+  'beale',
+  'google-no-swears',
+  'securedrop',
+  'orchard-street'
+];
+
+let dictionaries = null;
+
+function loadDictionaries() {
+  if (dictionaries) return dictionaries;
+  dictionaries = [];
+  for (const key of DICTIONARY_LISTS) {
+    try {
+      if (!wordlists.has(key)) continue;
+      const list = wordlists.words(key);
+      if (!list.length) continue;
+      dictionaries.push({ key, size: list.length, set: new Set(list.map((w) => w.toLowerCase())) });
+    } catch {
+      /* a list that will not load is simply one fewer place to look */
+    }
+  }
+  dictionaries.sort((a, b) => a.size - b.size);
+
+  // Words picked from more than one list, which the generator can do, are not
+  // covered by any single list. The union is the honest fallback: still far
+  // below what counting the characters would say, and above any one list.
+  const union = new Set();
+  for (const d of dictionaries) for (const w of d.set) union.add(w);
+  if (union.size) dictionaries.push({ key: 'every list', size: union.size, set: union });
+
+  return dictionaries;
+}
+
+/**
+ * What the words cost, plus what the characters around them cost. The
+ * separator is charged once rather than per occurrence, since five hyphens in
+ * a row is one decision, not five. Casing is charged nothing: Title Case is a
+ * pattern, and there is no way from here to tell it from a random one.
+ */
+function passphraseEntropy(password) {
+  const tokens = password.split(/[^A-Za-z]+/).filter(Boolean);
+  if (tokens.length < 2) return null;
+
+  // Two letter fragments are not words, whatever a list containing xk and mq
+  // says, and Xk9$mQ2!vZ7# is a random password rather than a phrase. Requiring
+  // real words, and requiring them to be most of what is there, keeps a strong
+  // password from being read as a weak phrase.
+  if (tokens.some((w) => w.length < 3)) return null;
+  const letterCount = tokens.reduce((sum, w) => sum + w.length, 0);
+  if (letterCount < password.length * 0.6) return null;
+
+  const lower = tokens.map((w) => w.toLowerCase());
+  const covering = loadDictionaries().find((d) => lower.every((w) => d.set.has(w)));
+  if (!covering) return null;
+
+  const extras = password.replace(/[A-Za-z]+/g, '');
+  let extraBits = 0;
+  if (extras.length) {
+    const counts = new Map();
+    for (const ch of extras) counts.set(ch, (counts.get(ch) || 0) + 1);
+    const commonest = Math.max(...counts.values());
+    const beyondSeparator = extras.length - commonest;
+    const perCharacter = Math.log(poolSizeFor(extras)) / Math.LN2;
+    // The separator itself is charged nothing. Somebody guessing tries a hyphen,
+    // a dot, a space and nothing at all, which is worth a bit or two, and rounding
+    // that down to zero keeps this estimate at or below the exact figure the
+    // generator reports for the same phrase rather than above it. Anything beyond
+    // the separator, an added digit or symbol, is charged in full.
+    extraBits = beyondSeparator * perCharacter;
+  }
+
+  return {
+    bits: tokens.length * (Math.log(covering.size) / Math.LN2) + extraBits,
+    words: tokens.length,
+    list: covering.key,
+    listSize: covering.size
+  };
+}
 
 /* --------------------------------------------------------------- estimation */
 
@@ -104,7 +207,18 @@ function estimateEntropy(password) {
   }
   if (password.length < 8) issues.push('Shorter than 8 characters');
 
-  return { bits: Math.max(0, bits), issues };
+  // An attacker takes the cheapest route, so the estimate has to as well.
+  const phrase = passphraseEntropy(password);
+  let basis = null;
+  if (phrase && phrase.bits < bits) {
+    bits = phrase.bits;
+    basis = phrase;
+    issues.push(
+      'Reads as ' + phrase.words + ' words from a published list, so it is worth what the words cost, not what the letters do'
+    );
+  }
+
+  return { bits: Math.max(0, bits), issues, basis };
 }
 
 /* ------------------------------------------------------------- presentation */
@@ -143,7 +257,7 @@ function crackTime(bits, guessesPerSecond = GUESSES_PER_SECOND) {
   return 'instantly';
 }
 
-function build(password, bits, issues) {
+function build(password, bits, issues, basis) {
   const text = String(password || '');
   const rounded = Math.round(bits * 10) / 10;
   const category = categoryFor(bits);
@@ -159,7 +273,11 @@ function build(password, bits, issues) {
     crackTime: time,
     summary: `${category.label} (${text.length} / ${rounded.toFixed(1)} bits / ${time})`,
     fraction: Math.min(bits / 128, 1), // meter fill, saturating at 128 bits
-    issues: issues || []
+    issues: issues || [],
+    // Which reading produced the number, for anything that wants to say so.
+    basis: basis ? 'words' : 'characters',
+    words: basis ? basis.words : 0,
+    wordList: basis ? basis.list : null
   };
 }
 
@@ -172,8 +290,8 @@ function fromEntropy(password, bits) {
 function estimate(password) {
   const text = String(password || '');
   if (!text) return build('', 0, ['No password set']);
-  const { bits, issues } = estimateEntropy(text);
-  return build(text, bits, issues);
+  const { bits, issues, basis } = estimateEntropy(text);
+  return build(text, bits, issues, basis);
 }
 
 module.exports = { estimate, fromEntropy, crackTime, categoryFor, GUESSES_PER_SECOND };

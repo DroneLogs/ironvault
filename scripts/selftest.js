@@ -12,8 +12,8 @@ const path = require('path');
 require('../src/main/argon2').registerArgon2();
 const vault = require('../src/main/vault');
 const itemtypes = require('../src/main/itemtypes');
-const generator = require('../src/main/generator');
 const strength = require('../src/main/strength');
+const generator = require('../src/main/generator');
 const wordlists = require('../src/main/wordlists');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'propolis-test-'));
@@ -305,6 +305,37 @@ async function main() {
   check('password survived the round trip', vault.getSecret(reopened.id, 'Password') === 'S3cret-Passw0rd!');
   check('attachment survived the round trip', vault.getEntry(reopened.id).attachments.length === 1);
   check('history survived the round trip', vault.getEntry(reopened.id).history.length >= 1);
+
+  console.log('\nstrength');
+  const phrase = 'Proactive-Detection-Unviable-Candied-Sarcastic-Brussels';
+  const exact = strength.fromEntropy(phrase, 6 * (Math.log(7776) / Math.LN2));
+  const guessed = strength.estimate(phrase);
+  check(
+    'a generated passphrase estimates to what it actually cost',
+    Math.abs(guessed.bits - exact.bits) < 0.5,
+    exact.bits + ' exact vs ' + guessed.bits + ' estimated'
+  );
+  check('and is scored on its words', guessed.basis === 'words' && guessed.words === 6, guessed.basis);
+  check(
+    'a random password is still scored on its characters',
+    strength.estimate('Xk9$mQ2!vZ7#pL4@wR8').basis === 'characters',
+    strength.estimate('Xk9$mQ2!vZ7#pL4@wR8').basis
+  );
+  check(
+    'two short words are weak however they are punctuated',
+    strength.estimate('hello-world').bits < 40,
+    String(strength.estimate('hello-world').bits)
+  );
+  check(
+    'words from different lists fall back to the whole vocabulary',
+    strength.estimate('correct-horse-battery-staple').basis === 'words',
+    strength.estimate('correct-horse-battery-staple').wordList || 'none'
+  );
+  check(
+    'a phrase never estimates above what counting the letters would say',
+    strength.estimate(phrase).bits < phrase.length * 6,
+    String(strength.estimate(phrase).bits)
+  );
 
   console.log('\nitem types');
   const card = vault.createEntry({

@@ -124,27 +124,48 @@ window.IV = window.IV || {};
     return h('label', { class: 'field' }, h('span', { class: 'field-label', text: label }), el);
   }
 
-  function wordListSelect(catalogue, value, onChange) {
+  /**
+   * Any number of lists, not one. The words are drawn from the union of
+   * everything ticked, deduplicated, and the entropy follows the size of that
+   * union rather than being assumed, so mixing Harry Potter into EFF Large
+   * genuinely buys the bits it looks like it buys.
+   *
+   * Words are not dealt out evenly between lists. Every word is an independent
+   * draw from the combined pool, so a big list contributes more of them than a
+   * small one. That is what makes each draw worth log2(pool) bits; sharing them
+   * out per list would be a pattern, and a pattern is worth fewer bits.
+   */
+  function wordListChooser(catalogue, selected, onChange) {
+    const chosen = new Set(selected && selected.length ? selected : ['eff-large']);
     const groups = [
       ['standard', 'Standard'],
       ['fandom', 'Fandom'],
       ['languages', 'Languages']
     ];
-    const el = h('select', { onChange: () => onChange(el.value) });
+    const wrap = h('div', { class: 'list-picker' });
+
     for (const [key, title] of groups) {
       const items = catalogue.filter((c) => c.category === key);
       if (!items.length) continue;
-      el.append(
-        h(
-          'optgroup',
-          { label: title },
-          items.map((item) =>
-            h('option', { value: item.key, selected: item.key === value, text: item.name })
-          )
-        )
-      );
+      wrap.append(h('div', { class: 'list-picker-head', text: title }));
+      const grid = h('div', { class: 'gen-grid' });
+      for (const item of items) {
+        const box = checkbox(item.name, chosen.has(item.key), (on) => {
+          if (on) chosen.add(item.key);
+          else chosen.delete(item.key);
+          // Never leave it with nothing to draw from.
+          if (!chosen.size) {
+            chosen.add(item.key);
+            box.input.checked = true;
+            return;
+          }
+          onChange([...chosen]);
+        });
+        grid.append(box.row);
+      }
+      wrap.append(grid);
     }
-    return el;
+    return wrap;
   }
 
   /* ------------------------------------------------------------ the modal */
@@ -200,8 +221,12 @@ window.IV = window.IV || {};
           colorize(current, previewText);
           clear(meter).append(strengthLine(result.strength));
           if (mode === 'diceware') {
+            const lists = (config.wordLists || []).length || 1;
             listInfo.textContent =
-              result.poolSize.toLocaleString() + ' words in the list, ' + result.bitsPerWord + ' bits per word';
+              result.poolSize.toLocaleString() +
+              (lists > 1 ? ' words across ' + lists + ' lists, ' : ' words in the list, ') +
+              result.bitsPerWord +
+              ' bits per word';
           } else {
             listInfo.textContent = result.poolSize + ' characters available';
           }
@@ -293,8 +318,8 @@ window.IV = window.IV || {};
       regenerate();
     });
 
-    const listSelect = wordListSelect(catalogue, (config.wordLists || [])[0] || 'eff-large', (v) => {
-      config.wordLists = [v];
+    const listSelect = wordListChooser(catalogue, config.wordLists || [], (keys) => {
+      config.wordLists = keys;
       regenerate();
     });
 
@@ -377,7 +402,7 @@ window.IV = window.IV || {};
       'div',
       { hidden: true },
       wordSlider.row,
-      h('label', { class: 'field' }, IV.glossary.label('Word list', 'wordlist'), listSelect),
+      h('div', { class: 'field' }, IV.glossary.label('Word lists', 'wordlist'), listSelect),
       h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Separator' }), separatorInput),
       dicewareAdvanced
     );

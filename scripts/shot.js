@@ -194,6 +194,34 @@ async function main() {
   await run(`document.querySelectorAll('.modal details.adv').forEach(d => d.open = true); true`, 'expand advanced');
   await wait(150);
   await shot('08-generator-diceware');
+
+  // Ticking a second list has to widen the pool and buy real bits, not just
+  // change which words appear.
+  const mixedLists = await run(`
+    (async () => {
+      const dialog = IV.dom.topModal().dialog;
+      const boxes = Array.from(dialog.querySelectorAll('.list-picker input[type=checkbox]'));
+      const before = await IV.api.generate({
+        ...IV.state.prefs.generator,
+        algorithm: 'diceware',
+        wordCount: 6,
+        wordLists: ['eff-large']
+      });
+      const after = await IV.api.generate({
+        ...IV.state.prefs.generator,
+        algorithm: 'diceware',
+        wordCount: 6,
+        wordLists: ['eff-large', 'fandom-harrypotter']
+      });
+      return {
+        boxes: boxes.length,
+        onePool: before.poolSize,
+        twoPool: after.poolSize,
+        oneBits: before.strength.bits,
+        twoBits: after.strength.bits
+      };
+    })()
+  `, 'mixing word lists');
   await run(`document.querySelector('.tab-row .help-badge').click(); true`, 'open explanation');
   await wait(500);
   await shot('08b-what-is-diceware');
@@ -480,6 +508,21 @@ async function main() {
     'the type marker is not shown as a field',
     Boolean(cardEntry && !/PROPOLIS_TYPE/.test(cardEntry.detailText)),
     cardEntry ? 'marker hidden' : 'not read'
+  );
+  check(
+    'every word list is offered as a checkbox',
+    Boolean(mixedLists && mixedLists.boxes >= 20),
+    mixedLists ? mixedLists.boxes + ' boxes' : 'not read'
+  );
+  check(
+    'mixing two lists widens the pool',
+    Boolean(mixedLists && mixedLists.twoPool > mixedLists.onePool),
+    mixedLists ? mixedLists.onePool + ' -> ' + mixedLists.twoPool : 'not read'
+  );
+  check(
+    'and the extra words are worth extra bits',
+    Boolean(mixedLists && mixedLists.twoBits > mixedLists.oneBits),
+    mixedLists ? mixedLists.oneBits + ' -> ' + mixedLists.twoBits : 'not read'
   );
   check(
     'a card renames the password field to the card number',

@@ -62,7 +62,9 @@ anything found in it.
 
 **Password generator**
 - Basic and Diceware, with the output tinted by character type
-- 26 word lists in three groups: standard, fandom, and twelve languages
+- 26 word lists in three groups: standard, fandom, and twelve languages, and any number of
+  them at once. Words are drawn from the combined pool and the entropy follows its real size,
+  so mixing Harry Potter into EFF Large buys the bits it looks like it buys
 - Length, character groups, lookalike and ambiguous filtering, excluded characters
 - Casing, leetspeak, salt, and added characters for passphrases
 - Strength shown as `Strong (22 / 131.1 bits / >100m years)`

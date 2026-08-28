@@ -1824,3 +1824,26 @@ span.with-help,
   flex: 1;
   min-width: 0;
 }
+
+/* Word lists are a set, not a choice, so they get checkboxes and a scroll
+   rather than a dropdown that can only hold one answer. */
+.list-picker {
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.list-picker-head {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 8px 0 4px;
+}
+
+.list-picker-head:first-child {
+  margin-top: 0;
+}

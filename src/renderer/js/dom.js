@@ -276,9 +276,9 @@ window.IV = window.IV || {};
    * correctly with no colour vision at all.
    */
   function strengthMeter(estimate, { summary = true } = {}) {
-    const level = Math.max(0, Math.min(5, estimate.level != null ? estimate.level : 0));
+    const level = Math.max(0, Math.min(6, estimate.level != null ? estimate.level : 0));
     const segments = h('div', { class: 'strength-segments', role: 'img' });
-    for (let i = 0; i <= 5; i++) {
+    for (let i = 0; i <= 6; i++) {
       segments.append(h('div', { class: 'strength-seg' + (i <= level ? ' on' : '') }));
     }
 

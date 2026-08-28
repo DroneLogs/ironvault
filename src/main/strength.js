@@ -22,13 +22,40 @@ const SECONDS_IN_CENTURY = 100 * SECONDS_IN_YEAR;
 const SECONDS_IN_THOUSAND_YEARS = 1000 * SECONDS_IN_YEAR;
 const SECONDS_IN_MILLION_YEARS = 1e6 * SECONDS_IN_YEAR;
 
+/**
+ * The scale is pinned to Diceware word counts rather than to round numbers,
+ * because word counts are the decision a person actually makes. Each boundary
+ * is the cost of one more word from a list of about 7,776, so a phrase lands
+ * in the band named after the number of words it took to build it.
+ *
+ *   under 3 words   under 38 bits   Trivial
+ *   3 words         38 to 51        Very Weak
+ *   4 words         51 to 64        Weak
+ *   5 words         64 to 77        Moderate
+ *   6 words         77 to 90        Recommended
+ *   7 to 9 words    90 to 129       Strong
+ *   10 words up     129 and over    Quantum Resistant
+ *
+ * The boundaries sit a little under each exact word figure on purpose. The
+ * lists are not all the same size, and the estimator credits the smallest one
+ * that covers a phrase, so six words can arrive as 77.35 rather than 77.55.
+ * Rounding down means it still lands in the six word band.
+ *
+ * They are bit thresholds, not word counts, so a phrase from a short list
+ * needs more words to reach the same band. That is correct: it is weaker.
+ *
+ * This replaces the Strongbox scale, which was 28/36/60/128/192 with
+ * Very Weak through Overkill. The wording elsewhere still follows Strongbox;
+ * the bands no longer do, because they were not built around passphrases.
+ */
 const CATEGORIES = [
-  { max: 28, label: 'Very Weak', level: 0 },
-  { max: 36, label: 'Weak', level: 1 },
-  { max: 60, label: 'Mediocre', level: 2 },
-  { max: 128, label: 'Strong', level: 3 },
-  { max: 192, label: 'Very Strong', level: 4 },
-  { max: Infinity, label: 'Overkill', level: 5 }
+  { max: 38, label: 'Trivial', level: 0 },
+  { max: 51, label: 'Very Weak', level: 1 },
+  { max: 64, label: 'Weak', level: 2 },
+  { max: 77, label: 'Moderate', level: 3 },
+  { max: 90, label: 'Recommended', level: 4 },
+  { max: 129, label: 'Strong', level: 5 },
+  { max: Infinity, label: 'Quantum Resistant', level: 6 }
 ];
 
 const COMMON = new Set([
@@ -317,11 +344,11 @@ function build(password, bits, issues, basis) {
     bits: rounded,
     entropy: Math.round(bits), // whole number, for callers that want one
     level: category.level,
-    score: Math.min(4, category.level), // the old 0 to 4 scale, used by the audit
+    score: Math.min(4, category.level), // the old 0 to 4 scale, kept for callers that want it
     label: category.label,
     crackTime: time,
     summary: `${category.label} (${text.length} / ${rounded.toFixed(1)} bits / ${time})`,
-    fraction: Math.min(bits / 128, 1), // meter fill, saturating at 128 bits
+    fraction: Math.min(bits / 129, 1), // meter fill, full at the ten word mark
     issues: issues || [],
     // Which reading produced the number, for anything that wants to say so.
     basis: basis ? 'words' : 'characters',

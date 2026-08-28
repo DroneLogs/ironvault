@@ -23,12 +23,13 @@
 
   /* Strength ladder, dark to light and back, so the six levels differ in
      lightness as well as hue. */
-  --level-0: #d55e00;
-  --level-1: #e69f00;
-  --level-2: #f0e442;
-  --level-3: #56b4e9;
-  --level-4: #009e73;
-  --level-5: #0072b2;
+  --level-0: #8c3b00;
+  --level-1: #d55e00;
+  --level-2: #e69f00;
+  --level-3: #f0e442;
+  --level-4: #56b4e9;
+  --level-5: #009e73;
+  --level-6: #0072b2;
   --pw-upper: #009e73;
   --pw-lower: #e7eaf2;
   --pw-digit: #56b4e9;
@@ -59,12 +60,13 @@ body.theme-light {
   --warn: #8a6d00;
   --danger: #b34700;
 
-  --level-0: #b34700;
-  --level-1: #8a6d00;
-  --level-2: #9a8c00;
-  --level-3: #0072b2;
-  --level-4: #007a5a;
-  --level-5: #004c78;
+  --level-0: #7a3000;
+  --level-1: #b34700;
+  --level-2: #8a6d00;
+  --level-3: #9a8c00;
+  --level-4: #0072b2;
+  --level-5: #007a5a;
+  --level-6: #004c78;
   --pw-upper: #007a5a;
   --pw-lower: #1a1e28;
   --pw-digit: #005f96;
@@ -1066,6 +1068,7 @@ summary:focus-visible {
 .strength[data-level="3"] .strength-fill { background: var(--level-3); }
 .strength[data-level="4"] .strength-fill { background: var(--level-4); }
 .strength[data-level="5"] .strength-fill { background: var(--level-5); }
+.strength[data-level="6"] .strength-fill { background: var(--level-6); }
 
 .strength-summary {
   white-space: nowrap;

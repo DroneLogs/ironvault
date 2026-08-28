@@ -28,12 +28,13 @@ body.scheme-blue {
   --pw-symbol: #f5a05a;
   --pw-latin1: #f07fb0;
 
-  --level-0: #f2686a;
+  --level-0: #c0392b;
   --level-1: #f2686a;
   --level-2: #f0b429;
-  --level-3: #6cc24a;
-  --level-4: #3fcf8e;
-  --level-5: #2fb3a6;
+  --level-3: #e8d44d;
+  --level-4: #6cc24a;
+  --level-5: #3fcf8e;
+  --level-6: #2fb3a6;
 }
 
 body.scheme-blue.theme-light {
@@ -93,12 +94,13 @@ body.scheme-amber {
   --pw-symbol: #f5a05a;
   --pw-latin1: #f07fb0;
 
-  --level-0: #f2686a;
+  --level-0: #c0392b;
   --level-1: #f2686a;
   --level-2: #f0b429;
-  --level-3: #6cc24a;
-  --level-4: #3fcf8e;
-  --level-5: #2fb3a6;
+  --level-3: #e8d44d;
+  --level-4: #6cc24a;
+  --level-5: #3fcf8e;
+  --level-6: #2fb3a6;
 }
 
 body.scheme-amber.theme-light {

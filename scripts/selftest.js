@@ -258,15 +258,33 @@ async function main() {
   check('mixing lists grows the pool', mixed.poolSize > 7776, String(mixed.poolSize));
 
   console.log('\nstrength reporting');
-  check('empty password is Very Weak', strength.estimate('').label === 'Very Weak');
-  check('common password is Very Weak', strength.estimate('password').label === 'Very Weak');
+  check('empty password is Trivial', strength.estimate('').label === 'Trivial');
+  check('common password is Trivial', strength.estimate('password').label === 'Trivial');
+
+  // The bands are pinned to Diceware word counts, so the test that matters is
+  // that each word count lands in the band named after it.
+  const perWord = Math.log(7776) / Math.LN2;
+  const bandFor = (words) => strength.categoryFor(words * perWord).label;
   check(
-    'categories match Strongbox',
-    strength.categoryFor(30).label === 'Weak' &&
-      strength.categoryFor(50).label === 'Mediocre' &&
-      strength.categoryFor(100).label === 'Strong' &&
-      strength.categoryFor(150).label === 'Very Strong' &&
-      strength.categoryFor(200).label === 'Overkill'
+    'the scale is pinned to word counts',
+    bandFor(2) === 'Trivial' &&
+      bandFor(3) === 'Very Weak' &&
+      bandFor(4) === 'Weak' &&
+      bandFor(5) === 'Moderate' &&
+      bandFor(6) === 'Recommended' &&
+      bandFor(7) === 'Strong' &&
+      bandFor(10) === 'Quantum Resistant',
+    [2, 3, 4, 5, 6, 7, 10].map((n) => n + ':' + bandFor(n)).join(', ')
+  );
+  check(
+    'a six word phrase reads as recommended even from the smallest matching list',
+    strength.estimate('Steep-Papyrus-Disarray-Squint-Showpiece-Variably').label === 'Recommended',
+    strength.estimate('Steep-Papyrus-Disarray-Squint-Showpiece-Variably').summary
+  );
+  check(
+    'the levels run 0 to 6 with no gaps',
+    [0, 40, 55, 70, 80, 100, 200].map((b) => strength.categoryFor(b).level).join() ===
+      '0,1,2,3,4,5,6'
   );
   check('crack time caps out', strength.crackTime(200) === '>100m years', strength.crackTime(200));
   check('weak crack time is instant', strength.crackTime(10) === 'instantly', strength.crackTime(10));

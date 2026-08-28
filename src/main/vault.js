@@ -850,7 +850,8 @@ function audit() {
       noPassword.push(summary);
     } else {
       const est = strength.estimate(pw);
-      if (est.score <= 1) weak.push({ ...summary, strength: est });
+      // Anything the scale calls Weak or worse, which is under five words.
+      if (est.level <= 2) weak.push({ ...summary, strength: est });
       const list = byPassword.get(pw) || [];
       list.push(summary);
       byPassword.set(pw, list);

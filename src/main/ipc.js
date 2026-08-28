@@ -32,6 +32,21 @@ let ctx = {
 let clipboardTimer = null;
 let clipboardValue = null;
 
+/**
+ * Above this, adding a file asks first. A .kdbx carries its attachments inside
+ * itself and is rewritten whole on every save, so the cost is paid again on
+ * each change and again for each backup kept. Five megabytes is small enough
+ * to be harmless and large enough that nobody meets this by accident.
+ */
+const ATTACHMENT_WARN_BYTES = 5 * 1024 * 1024;
+
+function formatSize(bytes) {
+  if (bytes >= 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  if (bytes >= 1024) return Math.round(bytes / 1024) + ' KB';
+  return bytes + ' bytes';
+}
+
 /* -------------------------------------------------------------- clipboard */
 
 function clearClipboardNow() {
@@ -350,6 +365,45 @@ const handlers = {
       properties: ['openFile', 'multiSelections']
     });
     if (result.canceled || !result.filePaths.length) return null;
+
+    let incoming = 0;
+    for (const filePath of result.filePaths) {
+      try {
+        incoming += fs.statSync(filePath).size;
+      } catch {
+        /* an unreadable file fails properly a moment later */
+      }
+    }
+    if (incoming >= ATTACHMENT_WARN_BYTES) {
+      const existing = vault.attachmentTotal();
+      const already =
+        existing.count === 0
+          ? 'This database carries no attachments yet.'
+          : 'This database already carries ' +
+            formatSize(existing.bytes) +
+            ' across ' +
+            existing.count +
+            ' attachment' +
+            (existing.count === 1 ? '' : 's') +
+            '.';
+      const answer = await dialog.showMessageBox(win(), {
+        type: 'warning',
+        buttons: ['Attach anyway', 'Cancel'],
+        defaultId: 1,
+        cancelId: 1,
+        title: 'Large attachment',
+        message: 'Attach ' + formatSize(incoming) + ' to this entry?',
+        detail:
+          'Attachments are stored inside the database file itself. ' +
+          already +
+          ' The whole file is written out again every time anything changes, and once ' +
+          'more for each backup kept beside it, so anything large is usually better off ' +
+          'somewhere else on disk.',
+        noLink: true
+      });
+      if (answer.response !== 0) return null;
+    }
+
     let entry = null;
     for (const filePath of result.filePaths) {
       entry = await vault.addAttachment(id, filePath);

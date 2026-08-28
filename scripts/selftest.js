@@ -337,6 +337,55 @@ async function main() {
     String(strength.estimate(phrase).bits)
   );
 
+  // Every list the generator offers has to be recognised, or a phrase from it
+  // falls back to the character estimate and is reported as far stronger than
+  // it is. That was true of sixteen of them until 1.5.3.
+  let unrecognised = [];
+  let overstated = [];
+  for (const listed of wordlists.catalogue()) {
+    const words = wordlists.words(listed.key);
+    const sample = [];
+    for (let i = 0; i < 6; i++) sample.push(words[Math.floor(words.length / (i + 2))]);
+    const made = sample.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join('-');
+    const read = strength.estimate(made);
+    const cost = 6 * (Math.log(words.length) / Math.LN2);
+    if (read.basis !== 'words') unrecognised.push(listed.key);
+    else if (read.bits > cost + 1) overstated.push(listed.key);
+  }
+  check('every word list is recognised as words', unrecognised.length === 0, unrecognised.join(', '));
+  check('no list overstates what its phrase cost', overstated.length === 0, overstated.join(', '));
+
+  // Reading a random password as a phrase understates it, which is harmless.
+  // Failing to read a real phrase overstates it, which is not. Even so, the
+  // rule that words must be most of the password should keep this at zero.
+  let misread = 0;
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-=_@#$%^&;:,.<>/~';
+  for (let i = 0; i < 200; i++) {
+    let made = '';
+    for (let n = 0; n < 18; n++) made += alphabet[Math.floor(Math.random() * alphabet.length)];
+    if (strength.estimate(made).basis === 'words') misread += 1;
+  }
+  check('random passwords are not read as phrases', misread === 0, misread + ' of 200');
+
+  // Real accented entries, taken from the list rather than invented, since the
+  // point is that a non ASCII word is not cut in half by the tokeniser.
+  const accented = wordlists.words('lang-icelandic').filter((x) => /[^\x00-\x7f]/.test(x));
+  const accentedPhrase = accented
+    .slice(0, 6)
+    .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
+    .join('-');
+  check(
+    'an accented phrase is recognised as words',
+    accented.length === 0 || strength.estimate(accentedPhrase).basis === 'words',
+    accentedPhrase + ' -> ' + strength.estimate(accentedPhrase).bits + ' bits'
+  );
+
+  check(
+    'a hyphenated list entry counts as one word',
+    strength.estimate('Absent-mindedly-Absent-mindedly-Absent-mindedly').words <= 4,
+    String(strength.estimate('Absent-mindedly-Absent-mindedly-Absent-mindedly').words)
+  );
+
   console.log('\nitem types');
   const card = vault.createEntry({
     title: 'A Card',

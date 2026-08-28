@@ -793,6 +793,25 @@ async function addAttachment(entryId, filePath) {
   return serializeEntry(entry, { full: true });
 }
 
+/**
+ * Every attachment lives inside the .kdbx, and the whole file is rewritten on
+ * every save, so a large one is paid for again on each change and again for
+ * each rolling backup kept beside it. Callers use this to say so with real
+ * numbers before somebody puts a video in their password database.
+ */
+function attachmentTotal() {
+  const db = requireOpen();
+  let bytes = 0;
+  let count = 0;
+  for (const entry of allEntries(db.getDefaultGroup())) {
+    for (const binary of entry.binaries.values()) {
+      bytes += binarySize(binary);
+      count += 1;
+    }
+  }
+  return { bytes, count };
+}
+
 function removeAttachment(entryId, name) {
   const entry = findEntry(entryId);
   if (!entry) throw new Error('Entry not found');
@@ -897,6 +916,7 @@ module.exports = {
   moveGroup,
   emptyRecycleBin,
   addAttachment,
+  attachmentTotal,
   removeAttachment,
   extractAttachment,
   audit,

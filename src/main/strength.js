@@ -60,23 +60,20 @@ const KEYBOARD_RUNS = [
  * correcthorsebatterystaple needs segmentation, and a wrong split would
  * understate a real password, which is the one error worse than this one.
  */
-const DICTIONARY_LISTS = [
-  'eff-short-1',
-  'eff-short-2',
-  'eff-large',
-  'diceware',
-  'beale',
-  'google-no-swears',
-  'securedrop',
-  'orchard-street'
-];
-
+/**
+ * Every list the generator offers, taken from the catalogue rather than typed
+ * out here. A hardcoded eight left the sixteen fandom and language lists
+ * invisible, so a six word Star Wars phrase worth 71.8 bits was still being
+ * reported as 295.8: the same bug, surviving in two thirds of the lists.
+ */
 let dictionaries = null;
 
 function loadDictionaries() {
   if (dictionaries) return dictionaries;
   dictionaries = [];
-  for (const key of DICTIONARY_LISTS) {
+  for (const entry of wordlists.catalogue()) {
+    const key = entry && entry.key;
+    if (!key) continue;
     try {
       if (!wordlists.has(key)) continue;
       const list = wordlists.words(key);
@@ -104,41 +101,93 @@ function loadDictionaries() {
  * a row is one decision, not five. Casing is charged nothing: Title Case is a
  * pattern, and there is no way from here to tell it from a random one.
  */
-function passphraseEntropy(password) {
-  const tokens = password.split(/[^A-Za-z]+/).filter(Boolean);
-  if (tokens.length < 2) return null;
+/**
+ * Greedy longest match first, so a list entry that contains the separator is
+ * read as the one word it is. absent-mindedly is a single Harry Potter entry,
+ * and splitting it in two counted it twice and reported more entropy than the
+ * phrase actually cost. Fewer words is also the lower number, which is the side
+ * to err on.
+ */
+function segmentCount(tokens, joiner, set) {
+  let index = 0;
+  let words = 0;
+  while (index < tokens.length) {
+    let matched = 0;
+    for (let span = Math.min(4, tokens.length - index); span >= 1; span--) {
+      if (set.has(tokens.slice(index, index + span).join(joiner))) {
+        matched = span;
+        break;
+      }
+    }
+    if (!matched) return null;
+    index += matched;
+    words += 1;
+  }
+  return words;
+}
 
-  // Two letter fragments are not words, whatever a list containing xk and mq
-  // says, and Xk9$mQ2!vZ7# is a random password rather than a phrase. Requiring
-  // real words, and requiring them to be most of what is there, keeps a strong
-  // password from being read as a weak phrase.
-  if (tokens.some((w) => w.length < 3)) return null;
+/**
+ * What the words cost, plus what the characters around them cost.
+ *
+ * Tokens are runs of letters in any script, not just A to Z, because half the
+ * lists are not English and splitting Þórður or Grüße down the middle of a word
+ * means never recognising it.
+ *
+ * Two letter tokens are allowed even though the original Diceware and Beale
+ * lists are full of fragments like xk and mq. Reading a random password as a
+ * phrase understates it, which is harmless; failing to read a real phrase
+ * overstates it, which is the mistake this whole function exists to prevent.
+ * Given the choice, take the safe error.
+ *
+ * The separator is charged nothing. Somebody guessing tries a hyphen, a dot, a
+ * space and nothing at all, which is worth a bit or two, and rounding that down
+ * keeps this at or below the exact figure the generator reports for the same
+ * phrase. Anything beyond the separator, an added digit or symbol, is charged in
+ * full. Casing is charged nothing: Title Case is a pattern, and there is no way
+ * from here to tell it from a random one.
+ */
+function passphraseEntropy(password) {
+  const tokens = password.split(/[^\p{L}]+/u).filter(Boolean);
+  if (tokens.length < 2) return null;
+  if (tokens.some((w) => w.length < 2)) return null;
+
   const letterCount = tokens.reduce((sum, w) => sum + w.length, 0);
   if (letterCount < password.length * 0.6) return null;
 
+  const extras = password.replace(/\p{L}+/gu, '');
+  const counts = new Map();
+  for (const ch of extras) counts.set(ch, (counts.get(ch) || 0) + 1);
+  let separator = '';
+  let commonest = 0;
+  for (const [ch, n] of counts) {
+    if (n > commonest) {
+      commonest = n;
+      separator = ch;
+    }
+  }
+
   const lower = tokens.map((w) => w.toLowerCase());
-  const covering = loadDictionaries().find((d) => lower.every((w) => d.set.has(w)));
+  let covering = null;
+  let words = 0;
+  for (const dictionary of loadDictionaries()) {
+    const count = segmentCount(lower, separator, dictionary.set);
+    if (count) {
+      covering = dictionary;
+      words = count;
+      break;
+    }
+  }
   if (!covering) return null;
 
-  const extras = password.replace(/[A-Za-z]+/g, '');
   let extraBits = 0;
   if (extras.length) {
-    const counts = new Map();
-    for (const ch of extras) counts.set(ch, (counts.get(ch) || 0) + 1);
-    const commonest = Math.max(...counts.values());
     const beyondSeparator = extras.length - commonest;
-    const perCharacter = Math.log(poolSizeFor(extras)) / Math.LN2;
-    // The separator itself is charged nothing. Somebody guessing tries a hyphen,
-    // a dot, a space and nothing at all, which is worth a bit or two, and rounding
-    // that down to zero keeps this estimate at or below the exact figure the
-    // generator reports for the same phrase rather than above it. Anything beyond
-    // the separator, an added digit or symbol, is charged in full.
-    extraBits = beyondSeparator * perCharacter;
+    extraBits = beyondSeparator * (Math.log(poolSizeFor(extras)) / Math.LN2);
   }
 
   return {
-    bits: tokens.length * (Math.log(covering.size) / Math.LN2) + extraBits,
-    words: tokens.length,
+    bits: words * (Math.log(covering.size) / Math.LN2) + extraBits,
+    words,
     list: covering.key,
     listSize: covering.size
   };

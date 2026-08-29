@@ -259,13 +259,6 @@ function generate(config = {}) {
 
 /* -------------------------------------------------------- username suggestions */
 
-const EMAIL_DOMAINS = [
-  'aol.com', 'att.net', 'comcast.net', 'gmail.com', 'gmx.com', 'googlemail.com',
-  'hotmail.com', 'icloud.com', 'live.com', 'mac.com', 'mail.com', 'me.com',
-  'msn.com', 'outlook.com', 'proton.me', 'protonmail.com', 'sbcglobal.net',
-  'verizon.net', 'yahoo.com', 'ymail.com'
-];
-
 function firstName() {
   const list = wordlists.names('first');
   return list.length ? pick(list) : 'Alex';
@@ -281,14 +274,18 @@ function titleCase(word) {
 }
 
 /**
- * The same five shapes Strongbox offers: dotted handle, full name, bare first
- * name, an email address, and a single random word.
+ * Four shapes: dotted handle, full name, bare first name, and a single random
+ * word.
  *
- * The email is a suggestion for what to type when signing up, nothing more. No
- * mailbox is created, the domain belongs to somebody else, and the address may
- * already be a real person. A working alias needs a provider that issues them,
- * a catch-all on a domain you own, Apple Hide My Email, DuckDuckGo, SimpleLogin
- * and so on, which means an account and an API call. That is not built yet.
+ * There was a fifth that built an email address by sticking a random number
+ * between a first name and a real provider's domain. It was removed. Nothing
+ * created that mailbox, the domain belonged to somebody else, and the address
+ * it handed you could easily be a stranger's real one. A suggester that has to
+ * be explained away is not a feature.
+ *
+ * Real forwarding addresses come from a provider that issues them, Apple Hide
+ * My Email, DuckDuckGo, SimpleLogin, or a catch-all on a domain you own. That
+ * means an account and an API call, and it is the only honest way to do this.
  */
 function generateUsernames() {
   const word = pick(wordlists.pool(['eff-large'])).toLowerCase();
@@ -296,7 +293,6 @@ function generateUsernames() {
     { type: 'handle', value: (firstName() + '.' + surname()).toLowerCase() },
     { type: 'name', value: titleCase(firstName()) + ' ' + titleCase(surname()) },
     { type: 'first', value: titleCase(firstName()) },
-    { type: 'email', value: firstName().toLowerCase() + randomInt(1000) + '@' + pick(EMAIL_DOMAINS) },
     { type: 'word', value: word }
   ];
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pull the vocabulary out of a plain text file, in the order it appears.
+"""Pull the vocabulary out of a text file or a PDF, in the order it appears.
 
 Written for building a word list from prose. Two things come out of it:
 
@@ -20,14 +20,18 @@ noun, and the second pass uses that evidence to read the sentence openings
 correctly. Without it, The and But and He end up in your list of names.
 
   python scripts/words-from-text.py book.txt
+  python scripts/words-from-text.py book.pdf
   python scripts/words-from-text.py *.txt --out-dir vocab --min 3 --max 12
-  python scripts/words-from-text.py book.txt --fold-accents --lower
+  python scripts/words-from-text.py book.txt
+  python scripts/words-from-text.py book.pdf --fold-accents --lower
 
 The input is never modified and nothing is sent anywhere.
 """
 
 import argparse
 import re
+import shutil
+import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -67,6 +71,123 @@ def fold(text):
     return "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c))
 
 
+def read_pdf(path):
+    """Text out of a PDF, by whichever route is available.
+
+    pypdf if it is installed, otherwise poppler's pdftotext, which ships with
+    Git for Windows and does a better job of reading order anyway. A PDF with
+    no text layer is a picture of a book and neither route can help: that needs
+    OCR, which is a different tool and a different afternoon.
+    """
+    try:
+        import pypdf
+
+        reader = pypdf.PdfReader(str(path))
+        return "\f".join((page.extract_text() or "") for page in reader.pages)
+    except ImportError:
+        pass
+
+    binary = shutil.which("pdftotext")
+    if not binary:
+        for guess in (
+            r"C:\Program Files\Git\mingw64\bin\pdftotext.exe",
+            r"C:\Program Files\Git\usr\bin\pdftotext.exe",
+        ):
+            if Path(guess).is_file():
+                binary = guess
+                break
+
+    if not binary:
+        raise RuntimeError(
+            "reading a PDF needs either pypdf (pip install pypdf) or pdftotext, "
+            "which comes with Git for Windows and poppler. Neither was found."
+        )
+
+    result = subprocess.run(
+        [binary, "-q", "-enc", "UTF-8", str(path), "-"],
+        capture_output=True,
+    )
+    return result.stdout.decode("utf-8", errors="replace")
+
+
+def decode_text(raw):
+    """Plain text arrives in whatever encoding it arrives in."""
+    for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return None
+
+
+def strip_running_heads(text):
+    """Drops the lines a typeset book repeats on every page.
+
+    A running head is the book's own title printed at the top of two hundred
+    pages, and a naive read turns that into two hundred votes for whatever it
+    says. Page numbers do the same. Anything appearing at the top or bottom of
+    a page often enough is furniture rather than prose, so it goes.
+    """
+    pages = text.split("\f")
+    if len(pages) < 4:
+        return text
+
+    edges = {}
+    for page in pages:
+        lines = [line.strip() for line in page.splitlines() if line.strip()]
+        for line in lines[:2] + lines[-2:]:
+            edges[line] = edges.get(line, 0) + 1
+
+    threshold = max(3, len(pages) // 4)
+    furniture = {line for line, count in edges.items() if count >= threshold}
+
+    kept = []
+    for page in pages:
+        for line in page.splitlines():
+            stripped = line.strip()
+            if stripped in furniture:
+                continue
+            # A line that is only a number is a page number.
+            if re.fullmatch(r"[ivxlcdm]+|\d+", stripped, re.IGNORECASE):
+                continue
+            kept.append(line)
+    return "\n".join(kept)
+
+
+def tidy(text):
+    """Undoes what typesetting did to the words.
+
+    Ligatures first, so ﬁ becomes fi rather than a character no word list
+    wants. Then hyphenation: a book breaks Mor-dor across two lines, and read
+    literally that is two words, neither of which is a word.
+    """
+    text = unicodedata.normalize("NFKC", text)
+    text = re.sub(r"(\w)[-\u2010\u2011]\s*\n\s*(\w)", r"\1\2", text)
+    return text
+
+
+def read_any(path):
+    """One file in, text out, whatever it happens to be."""
+    if path.suffix.lower() == ".pdf":
+        raw = read_pdf(path)
+        # A PDF with no text layer is a picture of a book. It extracts to
+        # nothing at all, and writing two empty files and calling it done
+        # would be the least helpful possible outcome.
+        if len("".join(raw.split())) < 200:
+            raise RuntimeError(
+                str(path)
+                + " has no text layer, so there is nothing to read: it is a scan, "
+                + "a picture of a page rather than the words on it. That needs OCR "
+                + "first, with something like ocrmypdf, and this script can read the "
+                + "result."
+            )
+        return tidy(strip_running_heads(raw))
+    decoded = decode_text(path.read_bytes())
+    if decoded is None:
+        raise RuntimeError("could not decode " + str(path))
+    return tidy(decoded)
+
+
 def sentences(text):
     """Rough sentence split. It only has to be good enough to spot openings."""
     start = 0
@@ -78,7 +199,15 @@ def sentences(text):
 
 
 def is_capitalised(token):
-    return token[:1].isupper()
+    """Title case, which is what a name looks like.
+
+    Deliberately not "starts with a capital", because a PDF hands you the title
+    page and the chapter headings in capitals, and every word of GREENOUGH'S
+    NEW LATIN GRAMMAR then reads as a proper noun. A word in capitals is
+    typography rather than a name, so it is not evidence and cannot join a run.
+    It is still counted as an ordinary word.
+    """
+    return token[:1].isupper() and not token.isupper()
 
 
 def proper_noun_evidence(text):
@@ -177,7 +306,7 @@ def write(path, values, lower, folded):
 
 def main():
     parser = argparse.ArgumentParser(description="Pull vocabulary out of prose, in order of appearance.")
-    parser.add_argument("files", nargs="+", type=Path, help="one or more .txt files")
+    parser.add_argument("files", nargs="+", type=Path, help="one or more .txt or .pdf files")
     parser.add_argument("--out-dir", type=Path, default=None, help="where to write (default: beside the input)")
     parser.add_argument("--min", type=int, default=2, dest="min_len", help="shortest word to keep (default 2)")
     parser.add_argument("--max", type=int, default=20, dest="max_len", help="longest word to keep (default 20)")
@@ -192,16 +321,10 @@ def main():
 
     text = ""
     for path in args.files:
-        # Books arrive in whatever encoding they arrive in.
-        raw = path.read_bytes()
-        for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
-            try:
-                text += raw.decode(encoding) + "\n"
-                break
-            except UnicodeDecodeError:
-                continue
-        else:
-            print("could not decode " + str(path), file=sys.stderr)
+        try:
+            text += read_any(path) + "\n"
+        except RuntimeError as err:
+            print(str(err), file=sys.stderr)
             return 1
 
     print("read {:,} characters from {} file(s)".format(len(text), len(args.files)))

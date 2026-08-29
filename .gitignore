@@ -13,3 +13,4 @@ HANDOFF.md
 /corpus/
 *.names.txt
 *.words.txt
+__pycache__/

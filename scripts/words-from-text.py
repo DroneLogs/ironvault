@@ -56,6 +56,14 @@ SENTENCE_END = re.compile(r"[.!?…]['\"’”)\]]*\s")
 # and allowing them turned Helm's Deep and Éowyn into a single made up place.
 CONNECTORS = {"of", "the", "de", "du", "von", "van"}
 
+# A name is short. Battle of the Five Armies is five words and that is already
+# unusual. A longer run is not a name at all: it is a table of contents or a
+# list of illustrations, where one capitalised title follows another with no
+# punctuation between them, and reading it as a phrase invents something like
+# "Thror's Map The Trolls The Mountain-path The Misty Mountains". Runs past
+# this length are dropped as phrases and their words kept individually.
+MAX_NAME_WORDS = 6
+
 # Nobody wants these as the whole of a name, however they are capitalised.
 NOT_A_NAME = {
     "the", "a", "an", "and", "but", "or", "if", "so", "then", "for", "yet",
@@ -66,9 +74,65 @@ NOT_A_NAME = {
 }
 
 
+# A PDF often sets an accent as its own glyph sitting after the letter rather
+# than as an accented character, so Barad-dûr extracts as Barad-du^r: the mark
+# is a spacing modifier, which NFD will not touch because it is not a combining
+# mark. Worse, a word splits at it, so the trailing r is lost as well. Mapping
+# each modifier onto its combining twin and recomposing puts the word back.
+# Without this every accented Elvish name is quietly destroyed, which on these
+# five books is most of the vocabulary worth having.
+FLOATING_ACCENTS = {
+    "\u02c6": "\u0302",  # circumflex, as in dûr
+    "\u02dc": "\u0303",  # tilde
+    "\u00b4": "\u0301",  # acute, as in Théoden
+    "\u0060": "\u0300",  # grave
+    "\u00a8": "\u0308",  # diaeresis, as in Eärendil
+    "\u02da": "\u030a",  # ring
+    "\u00af": "\u0304",  # macron
+    "\u02c7": "\u030c",  # caron
+}
+
+FLOATING = re.compile("([^\\W\\d_])([" + "".join(FLOATING_ACCENTS) + "])")
+
+# Typographic punctuation, which is not an accent and so survives folding.
+PUNCTUATION = {
+    "\u2018": "'", "\u2019": "'", "\u201a": "'", "\u201b": "'",
+    "\u201c": '"', "\u201d": '"', "\u201e": '"',
+    "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-", "\u2015": "-",
+    "\u2026": "...", "\u00a0": " ",
+    # Dotless and dotted i, which the pronunciation appendix uses for Banazir
+    # and Bralda-him. Neither is an accent, so folding leaves them behind, and
+    # a column called Plain ASCII must not contain them.
+    "\u0131": "i", "\u0130": "I",
+}
+
+
+# Sometimes the accent is set before the letter instead of after it, and the
+# giveaway is a dotless i following it: Gríma extracts as G, r, acute, dotless
+# i, m, a. A dotless i exists precisely so an accent can be placed on it, so an
+# accent sitting in front of one belongs to it and not to the letter behind.
+# Handled first, or the general rule below hangs the accent on the r and gives
+# Gŕıma, which is not a name anybody was looking for.
+BEFORE_DOTLESS = re.compile("([" + "".join(FLOATING_ACCENTS) + "])\u0131")
+
+
+def rejoin_accents(text):
+    """Puts a floating accent back onto the letter it belongs to."""
+    text = BEFORE_DOTLESS.sub(lambda m: "i" + FLOATING_ACCENTS[m.group(1)], text)
+    text = FLOATING.sub(lambda m: m.group(1) + FLOATING_ACCENTS[m.group(2)], text)
+    return unicodedata.normalize("NFC", text)
+
+
 def fold(text):
-    """Strips accents, so Eärendil can be typed as Earendil."""
-    return "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c))
+    """Plain ASCII: accents stripped and curly punctuation straightened.
+
+    A column called Plain ASCII has to actually be ASCII, and a right single
+    quotation mark is neither an accent nor ASCII, so folding alone leaves it.
+    """
+    for fancy, plain_char in PUNCTUATION.items():
+        text = text.replace(fancy, plain_char)
+    stripped = "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c))
+    return unicodedata.normalize("NFC", stripped)
 
 
 def read_pdf(path):
@@ -161,6 +225,12 @@ def tidy(text):
     wants. Then hyphenation: a book breaks Mor-dor across two lines, and read
     literally that is two words, neither of which is a word.
     """
+    # Rejoining comes first. NFKC decomposes a floating acute into a space plus
+    # a combining mark, so The-acute-oden becomes The oden and Theoden is lost
+    # before anything can put it back together. Barad-duhat survived only
+    # because NFKC happens to leave the circumflex alone, which is luck rather
+    # than design.
+    text = rejoin_accents(text)
     text = unicodedata.normalize("NFKC", text)
     text = re.sub(r"(\w)[-\u2010\u2011]\s*\n\s*(\w)", r"\1\2", text)
     return text
@@ -275,7 +345,7 @@ def names_and_words(text, evidence, min_len, max_len):
                         continue
                     break
 
-                if len(run) > 1:
+                if 1 < len(run) <= MAX_NAME_WORDS:
                     phrase = " ".join(run)
                     note(names, phrase.lower(), phrase)
                     index = look
@@ -283,6 +353,16 @@ def names_and_words(text, evidence, min_len, max_len):
                     for part in run:
                         if min_len <= len(part) <= max_len:
                             note(words, part.lower(), part)
+                    continue
+
+                if len(run) > MAX_NAME_WORDS:
+                    # A list, not a name. Keep the words, drop the phrase.
+                    index = look
+                    for part in run:
+                        if min_len <= len(part) <= max_len:
+                            note(words, part.lower(), part)
+                            if is_capitalised(part) and part.lower() not in NOT_A_NAME:
+                                note(names, part.lower(), part)
                     continue
 
                 if min_len <= len(token) <= max_len:

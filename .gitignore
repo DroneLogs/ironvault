@@ -7,3 +7,9 @@ shots/
 
 # The handoff document stays on this machine. Never commit it to GitHub.
 HANDOFF.md
+
+# Book text dropped in for scripts/words-from-text.py, and what it writes.
+# Never committed: the script is ours, the prose is not.
+/corpus/
+*.names.txt
+*.words.txt

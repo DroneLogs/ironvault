@@ -140,7 +140,11 @@ async function main() {
   const catalogue = wordlists.catalogue();
   check('word lists present', catalogue.length >= 20, String(catalogue.length));
   check('standard lists', catalogue.filter((c) => c.category === 'standard').length >= 8);
-  check('fandom lists', catalogue.filter((c) => c.category === 'fandom').length === 4);
+  check('fandom lists', catalogue.filter((c) => c.category === 'fandom').length >= 5);
+  const lotr = wordlists.words('fandom-lotr');
+  check('the Middle-earth list is 4000 words', lotr.length === 4000, String(lotr.length));
+  check('and is plain ASCII, so it can be typed', lotr.every((w) => /^[a-z]{3,12}$/.test(w)));
+  check('with no duplicates', new Set(lotr).size === lotr.length);
   check('language lists', catalogue.filter((c) => c.category === 'languages').length >= 11);
   check('EFF Large is 7776 words', (catalogue.find((c) => c.key === 'eff-large') || {}).count === 7776);
   const effWords = wordlists.words('eff-large');

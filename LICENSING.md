@@ -35,6 +35,13 @@ This is where the actual constraints are.
 
 ### Cannot ship in a paid, closed-source build
 
+The **Middle-earth list** (`fandom-lotr`) is derived from a Fandom wiki and is therefore
+CC BY-SA, not CC BY like the four EFF fandom lists. Share-alike attaches to the list, not
+to this application: shipping it means carrying the attribution and keeping the list itself
+under the same terms. It does not make the app copyleft, and it does not block a paid build
+the way the AGPL and non-commercial lists below do. Tolkien names are not the issue here,
+since individual words and names are not copyrightable; the wiki licence is.
+
 **SecureDrop** (`wordlists/securedrop.txt`) comes from the SecureDrop repository, which is
 **AGPL-3.0**. The AGPL requires that anything distributing the work also offers its complete
 corresponding source. That is incompatible with a closed commercial build.

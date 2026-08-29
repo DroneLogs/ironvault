@@ -18,6 +18,15 @@
     "credit": "Electronic Frontier Foundation, CC BY 3.0 US"
   },
   {
+    "key": "fandom-lotr",
+    "name": "Middle-earth (One Wiki)",
+    "category": "fandom",
+    "count": 4000,
+    "bitsPerWord": 11.97,
+    "source": "https://lotr.fandom.com/",
+    "credit": "The One Wiki to Rule Them All (Fandom), CC BY-SA"
+  },
+  {
     "key": "fandom-startrek",
     "name": "Star Trek (EFF Fandom)",
     "category": "fandom",

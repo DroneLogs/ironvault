@@ -46,6 +46,16 @@ blank lines, and sort. The words themselves are unchanged.
   - Electronic Frontier Foundation, CC BY 3.0 US
   - https://www.eff.org/files/2018/08/29/starwars_8k_2018.txt
 
+- **Middle-earth (One Wiki)** (`fandom-lotr`), 4000 words, 11.97 bits per word
+  - The One Wiki to Rule Them All (Fandom), CC BY-SA
+  - https://lotr.fandom.com/
+  - The EFF never made a Tolkien list. This one is built the same way theirs were, by
+    ranking words from a fan wiki, with `scripts/fetch-lotr-wordlist.js`. Pages about the
+    films and the people who made them are skipped by category, so it is the world rather
+    than the cast sheet. Accents are folded, so Eärendil is stored as earendil.
+  - **Share-alike:** unlike the EFF lists, which are CC BY, this one carries CC BY-SA. It
+    stays under those terms and so does anything derived from it.
+
 ## Languages
 
 - **Catalan** (`lang-catalan`), 7,771 words, 12.92 bits per word

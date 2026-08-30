@@ -19,6 +19,13 @@ const DEFAULTS = {
     // YubiKey has never been run against real hardware, so it stays out of
     // the way until somebody deliberately turns it on. See yubikey.js.
     yubikeyBeta: false,
+    // Email aliases come from a provider that issues them. The keys are
+    // DPAPI sealed, never plain text: see aliases.js.
+    aliasProvider: null,
+    aliasKeys: {},
+    // The old made up address, off unless deliberately asked for.
+    allowInventedEmail: false,
+
     screenCaptureGuard: 'vault',
     screenCaptureYubikeySlot: 2,
     screenCaptureGrantMinutes: 60,

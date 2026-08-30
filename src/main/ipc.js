@@ -6,6 +6,7 @@ const { ipcMain, dialog, clipboard, shell, app, safeStorage, nativeTheme } = req
 
 const vault = require('./vault');
 const capture = require('./capture');
+const aliases = require('./aliases');
 const settings = require('./settings');
 const generator = require('./generator');
 const wordlists = require('./wordlists');
@@ -486,7 +487,18 @@ const handlers = {
   /* tools */
   'audit.run': () => vault.audit(),
   'gen.make': (config) => generator.generate(config),
-  'gen.usernames': () => generator.generateUsernames(),
+  'gen.usernames': () =>
+    generator.generateUsernames({
+      includeInventedEmail: settings.getPrefs().allowInventedEmail === true
+    }),
+
+  /* email aliases from a provider that actually issues them */
+  'alias.status': () => aliases.status(),
+  'alias.verify': ({ provider, apiKey }) => aliases.verify({ provider, apiKey }),
+  'alias.saveKey': ({ provider, apiKey }) => aliases.storeKey(provider, apiKey),
+  'alias.clearKey': ({ provider }) => aliases.clearKey(provider),
+  'alias.create': ({ provider, note, hostname, domain }) =>
+    aliases.create({ provider, note, hostname, domain }),
   'gen.wordLists': () => wordlists.catalogue(),
   'gen.strength': ({ password }) => vault.estimateStrength(password),
 

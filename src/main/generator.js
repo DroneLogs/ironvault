@@ -259,6 +259,14 @@ function generate(config = {}) {
 
 /* -------------------------------------------------------- username suggestions */
 
+// Used only by the invented address shape, which is off by default.
+const INVENTED_DOMAINS = [
+  'aol.com', 'att.net', 'comcast.net', 'gmail.com', 'gmx.com', 'googlemail.com',
+  'hotmail.com', 'icloud.com', 'live.com', 'mac.com', 'mail.com', 'me.com',
+  'msn.com', 'outlook.com', 'proton.me', 'protonmail.com', 'sbcglobal.net',
+  'verizon.net', 'yahoo.com', 'ymail.com'
+];
+
 function firstName() {
   const list = wordlists.names('first');
   return list.length ? pick(list) : 'Alex';
@@ -287,14 +295,26 @@ function titleCase(word) {
  * My Email, DuckDuckGo, SimpleLogin, or a catch-all on a domain you own. That
  * means an account and an API call, and it is the only honest way to do this.
  */
-function generateUsernames() {
+function generateUsernames({ includeInventedEmail = false } = {}) {
   const word = pick(wordlists.pool(['eff-large'])).toLowerCase();
-  return [
+  const shapes = [
     { type: 'handle', value: (firstName() + '.' + surname()).toLowerCase() },
     { type: 'name', value: titleCase(firstName()) + ' ' + titleCase(surname()) },
     { type: 'first', value: titleCase(firstName()) },
     { type: 'word', value: word }
   ];
+
+  // Only when the user has switched it on, having been told what it is. The
+  // address is invented: nothing creates that mailbox and it may already be
+  // somebody's. It is offered because a few people want a plausible looking
+  // address to type into a form that will never send mail to it.
+  if (includeInventedEmail) {
+    shapes.push({
+      type: 'invented email',
+      value: firstName().toLowerCase() + randomInt(1000) + '@' + pick(INVENTED_DOMAINS)
+    });
+  }
+  return shapes;
 }
 
 module.exports = {

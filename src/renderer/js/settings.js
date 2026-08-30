@@ -449,6 +449,139 @@ window.IV = window.IV || {};
     );
   }
 
+  /**
+   * Email aliases. The key is a credential, so it is sealed with DPAPI in the
+   * main process and never comes back out: this screen only ever learns whether
+   * one is stored, not what it is.
+   */
+  async function aliasSection() {
+    let state;
+    try {
+      state = await IV.api.aliasStatus();
+    } catch {
+      return null;
+    }
+
+    const wrap = h('div', { class: 'detail-section' });
+    const chosen = state.provider || 'simplelogin';
+    const rows = h('div', null);
+
+    function renderRows() {
+      IV.dom.clear(rows);
+      const provider = (state.providers || []).find((p) => p.key === chosenRef.value);
+      if (!provider) return;
+
+      const keyInput = h('input', {
+        type: 'password',
+        placeholder: provider.hasKey ? 'A key is saved. Paste a new one to replace it.' : 'Paste your API key'
+      });
+
+      rows.append(
+        // A button rather than a link: this hands the URL to the system browser
+        // instead of navigating, and the app has no anchor styling at all, so a
+        // real link falls back to the browser blue and is unreadable on dark.
+        h('p', { class: 'hint', text: 'You need an API key from ' + provider.name + '.' }),
+        h(
+          'div',
+          { class: 'row-gap' },
+          h('button', {
+            class: 'btn ghost small',
+            text: 'Open the ' + provider.name + ' key page',
+            onClick: () => IV.api.openUrl(provider.keyUrl).catch(() => {})
+          })
+        ),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'API key' }), keyInput),
+        h(
+          'div',
+          { class: 'row-gap' },
+          h('button', {
+            class: 'btn primary small',
+            text: 'Save and test',
+            onClick: async () => {
+              try {
+                if (keyInput.value.trim()) {
+                  await IV.api.aliasSaveKey(provider.key, keyInput.value.trim());
+                }
+                const result = await IV.api.aliasVerify(provider.key);
+                toast(
+                  result.account
+                    ? 'Connected to ' + provider.name + ' as ' + result.account
+                    : 'Connected to ' + provider.name,
+                  'good'
+                );
+                openSettings();
+              } catch (err) {
+                toast(err.message, 'error');
+              }
+            }
+          }),
+          provider.hasKey
+            ? h('button', {
+                class: 'btn ghost small',
+                text: 'Remove the key',
+                onClick: async () => {
+                  await IV.api.aliasClearKey(provider.key);
+                  toast(provider.name + ' key removed', 'good');
+                  openSettings();
+                }
+              })
+            : null
+        )
+      );
+    }
+
+    const chosenRef = { value: chosen };
+    const picker = selectField(
+      'Provider',
+      (state.providers || []).map((p) => ({
+        value: p.key,
+        label: p.name + (p.hasKey ? ' (key saved)' : '')
+      })),
+      chosen,
+      (v) => {
+        chosenRef.value = v;
+        renderRows();
+      },
+      'An alias is a real forwarding address. Mail sent to it reaches you, and you ' +
+        'can switch it off later when it starts getting spam. Propolis asks your ' +
+        'provider for one; it cannot create addresses itself.'
+    );
+
+    wrap.append(h('h3', { text: 'Email aliases' }), picker, rows);
+    renderRows();
+
+    wrap.append(
+      h('div', { class: 'detail-section' }),
+      toggle(
+        'Also suggest a made up email address',
+        state.allowInventedEmail === true,
+        async (v) => {
+          if (v) {
+            const ok = await IV.api.confirm({
+              title: 'Suggest a made up address',
+              message: 'This is not an alias. Nothing creates the mailbox.',
+              detail:
+                'It builds an address from a name, a number and a real provider\'s ' +
+                'domain. No mailbox is created, the domain belongs to somebody else, ' +
+                'and the address may already be a real person\'s. Mail sent to it will ' +
+                'not reach you. Only useful for a form that will never send you anything.',
+              confirmLabel: 'Suggest it anyway',
+              destructive: true
+            });
+            if (!ok) {
+              openSettings();
+              return;
+            }
+          }
+          await apply({ allowInventedEmail: v });
+          openSettings();
+        }
+      )
+    );
+
+    return wrap;
+  }
+
   async function apply(patch) {
     IV.state.prefs = await IV.api.setPrefs(patch);
     IV.app.applyTheme();
@@ -470,6 +603,7 @@ window.IV = window.IV || {};
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
+      await aliasSection(),
       await screenCaptureSection(),
       h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
       h('p', {

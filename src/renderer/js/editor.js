@@ -52,12 +52,24 @@ window.IV = window.IV || {};
       type: 'button',
       class: 'icon-btn dice',
       title: 'Suggest a username',
-      onClick: () =>
+      onClick: () => {
+        // The site is passed through so a created alias carries the name of what
+        // it was made for. That label is the only thing that keeps a list of two
+        // hundred aliases manageable a year later.
+        let hostname = '';
+        try {
+          const raw = (urlInput.value || '').trim();
+          if (raw) hostname = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw).hostname;
+        } catch {
+          /* a half typed URL is not worth complaining about */
+        }
         IV.generator.openUsernamePicker({
+          hostname,
           onUse: (value) => {
             userInput.value = value;
           }
-        })
+        });
+      }
     });
     const urlInput = h('input', { type: 'text', value: entry.url || '', spellcheck: 'false', placeholder: 'https://' });
     const notesInput = h('textarea', { value: entry.notes || '' });

@@ -7,6 +7,8 @@ const { ipcMain, dialog, clipboard, shell, app, safeStorage, nativeTheme } = req
 const vault = require('./vault');
 const capture = require('./capture');
 const aliases = require('./aliases');
+const browserbridge = require('./browserbridge');
+const browserinstall = require('./browserinstall');
 const settings = require('./settings');
 const generator = require('./generator');
 const wordlists = require('./wordlists');
@@ -491,6 +493,22 @@ const handlers = {
     generator.generateUsernames({
       includeInventedEmail: settings.getPrefs().allowInventedEmail === true
     }),
+
+  /* browser extension */
+  'browser.status': async () => ({
+    ...browserbridge.status(),
+    enabled: settings.getPrefs().browserBridge === true,
+    install: await browserinstall.status()
+  }),
+  'browser.enable': ({ enabled }) => {
+    settings.setPrefs({ browserBridge: enabled !== false });
+    return enabled !== false ? browserbridge.start() : browserbridge.stop();
+  },
+  'browser.forget': ({ id }) => browserbridge.forget(id),
+  'browser.register': ({ browser, extensionId }) =>
+    browserinstall.install({ browser, extensionId }),
+  'browser.unregister': ({ browser }) => browserinstall.uninstall({ browser }),
+  'browser.reveal': () => browserinstall.revealExtension(),
 
   /* email aliases from a provider that actually issues them */
   'alias.status': () => aliases.status(),

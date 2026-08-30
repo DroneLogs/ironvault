@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Propolis</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Propolis</h1>
+      <span id="site"></span>
+    </header>
+
+    <p id="message" hidden></p>
+
+    <div id="connect" hidden>
+      <p class="hint">
+        This browser has not been approved yet. Propolis will ask you to confirm
+        it, in the app itself.
+      </p>
+      <button id="connect-button" class="primary">Connect to Propolis</button>
+    </div>
+
+    <ul id="entries" hidden></ul>
+
+    <p id="empty" class="hint" hidden>No entries in your vault match this site.</p>
+
+    <footer>
+      <button id="refresh" class="ghost">Refresh</button>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

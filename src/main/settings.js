@@ -21,6 +21,9 @@ const DEFAULTS = {
     yubikeyBeta: false,
     // Email aliases come from a provider that issues them. The keys are
     // DPAPI sealed, never plain text: see aliases.js.
+    // Extensions the user has approved. Public keys only, no secrets.
+    browserAssociations: [],
+    browserBridge: false,
     aliasProvider: null,
     aliasKeys: {},
     // The old made up address, off unless deliberately asked for.

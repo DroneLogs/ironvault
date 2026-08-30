@@ -96,6 +96,12 @@
         ]
       }
     ],
-    "npmRebuild": false
+    "npmRebuild": false,
+    "extraResources": [
+      {
+        "from": "extension",
+        "to": "extension"
+      }
+    ]
   }
 }

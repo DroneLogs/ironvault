@@ -582,6 +582,142 @@ window.IV = window.IV || {};
     return wrap;
   }
 
+  /**
+   * Setting up the browser extension.
+   *
+   * Three steps, and they have to happen in this order, so the screen shows
+   * them in it: switch the connection on, load the extension and tell Propolis
+   * its id, then approve the browser when it asks. The id cannot be guessed
+   * because the browser invents it for a side loaded extension, which is why
+   * this asks for it rather than doing it silently.
+   */
+  async function browserSection() {
+    let state;
+    try {
+      state = await IV.api.browserStatus();
+    } catch {
+      return null;
+    }
+
+    const wrap = h('div', { class: 'detail-section' });
+    wrap.append(
+      h('h3', { text: 'Browser extension' }),
+      h('p', {
+        class: 'hint',
+        text:
+          'Fills passwords into web pages. The extension talks to Propolis over a ' +
+          'private channel on this machine, encrypted end to end, and nothing is ' +
+          'sent anywhere. Passwords are only ever given out for a site the entry ' +
+          'belongs to, and only while this database is unlocked.'
+      }),
+      toggle('Allow browsers to connect', state.enabled === true, async (v) => {
+        await IV.api.browserEnable(v);
+        openSettings();
+      })
+    );
+
+    if (!state.enabled) return wrap;
+
+    const idInput = h('input', {
+      type: 'text',
+      spellcheck: 'false',
+      placeholder: 'The id from your browser extensions page'
+    });
+    const browserSelect = h(
+      'select',
+      null,
+      (state.install.browsers || []).map((b) =>
+        h('option', { value: b.key, text: b.name + (b.registered ? ' (set up)' : '') })
+      )
+    );
+
+    wrap.append(
+      h('p', {
+        class: 'hint',
+        text:
+          'Step 1. Load the extension. It is in the extension folder where Propolis ' +
+          'is installed. In your browser open the extensions page, switch on ' +
+          'developer mode, and choose Load unpacked.'
+      }),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Open the extension folder',
+          onClick: () => IV.api.browserReveal().catch((err) => toast(err.message, 'error'))
+        })
+      ),
+      h('p', {
+        class: 'hint',
+        text:
+          'Step 2. Copy the id your browser shows on the extension card, pick the ' +
+          'browser below, and press Set up. Then restart the browser.'
+      }),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Browser' }), browserSelect),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Extension id' }), idInput),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', {
+          class: 'btn primary small',
+          text: 'Set up',
+          onClick: async () => {
+            try {
+              await IV.api.browserRegister(browserSelect.value, idInput.value.trim());
+              toast('Set up. Restart the browser, then press the Propolis button in it.', 'good');
+              openSettings();
+            } catch (err) {
+              toast(err.message, 'error');
+            }
+          }
+        }),
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Remove setup',
+          onClick: async () => {
+            await IV.api.browserUnregister(browserSelect.value);
+            toast('Removed');
+            openSettings();
+          }
+        })
+      ),
+      h('p', {
+        class: 'hint',
+        text: 'Step 3. Press the Propolis button in the browser and approve it here when asked.'
+      })
+    );
+
+    const connections = state.connections || [];
+    wrap.append(
+      h('div', { class: 'detail-section' }, h('h3', { text: 'Connected browsers' })),
+      connections.length
+        ? h(
+            'div',
+            null,
+            ...connections.map((c) =>
+              h(
+                'div',
+                { class: 'row-gap' },
+                h('span', { text: c.name }),
+                h('button', {
+                  class: 'btn ghost small',
+                  text: 'Disconnect',
+                  onClick: async () => {
+                    await IV.api.browserForget(c.id);
+                    toast(c.name + ' disconnected');
+                    openSettings();
+                  }
+                })
+              )
+            )
+          )
+        : h('p', { class: 'hint', text: 'None yet. A browser appears here once you approve it.' })
+    );
+
+    return wrap;
+  }
+
   async function apply(patch) {
     IV.state.prefs = await IV.api.setPrefs(patch);
     IV.app.applyTheme();
@@ -603,6 +739,7 @@ window.IV = window.IV || {};
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
+      await browserSection(),
       await aliasSection(),
       await screenCaptureSection(),
       h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),

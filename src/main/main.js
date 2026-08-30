@@ -2,12 +2,13 @@
 
 const fs = require('fs');
 const path = require('path');
-const { app, BrowserWindow, Menu, shell, powerMonitor, nativeTheme, globalShortcut } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, powerMonitor, nativeTheme, globalShortcut } = require('electron');
 
 const { registerArgon2 } = require('./argon2');
 const settings = require('./settings');
 const vault = require('./vault');
 const capture = require('./capture');
+const browserbridge = require('./browserbridge');
 const { registerIpc, clearClipboardNow } = require('./ipc');
 const updater = require('./updater');
 const features = require('./features');
@@ -507,6 +508,27 @@ if (!gotLock) {
   });
 
   app.whenReady().then(() => {
+    // The bridge asks before letting an extension in, and the question has
+    // to reach the user in the app rather than in the browser, or approving
+    // would be something a web page could talk somebody into.
+    browserbridge.setApprover(async ({ name }) => {
+      const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'question',
+        buttons: ['Connect', 'Not now'],
+        defaultId: 1,
+        cancelId: 1,
+        title: 'Connect a browser',
+        message: name + ' wants to fill passwords from this database.',
+        detail:
+          'Only connect a browser extension you installed yourself, just now. ' +
+          'Once connected it can read the passwords for any site it visits, ' +
+          'while this database is unlocked. You can disconnect it at any time ' +
+          'in Settings.'
+      });
+      return response === 0;
+    });
+    if (settings.getPrefs().browserBridge) browserbridge.start();
     applyAppearance(settings.getPrefs().appearance);
     capture.onChange((state, reason) => {
       applyScreenCapture();

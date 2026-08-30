@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Propolis",
+  "version": "1.0.0",
+  "description": "Fill passwords from your Propolis vault. Nothing is stored in the browser and nothing leaves your machine.",
+  "minimum_chrome_version": "133",
+  "permissions": ["nativeMessaging", "storage", "activeTab", "scripting"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Propolis"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

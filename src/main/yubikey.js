@@ -286,7 +286,7 @@ function credentialFn({ slot = 2, devicePath } = {}) {
 
 /** Round trips a fixed challenge so the user can prove their key works. */
 async function selfTest({ slot = 2, devicePath } = {}) {
-  const challenge = Buffer.from('Ironvault challenge response test', 'utf8');
+  const challenge = Buffer.from('Propolis challenge response test', 'utf8');
   const started = Date.now();
   const answer = await challengeResponse(challenge, { slot, devicePath });
   return {

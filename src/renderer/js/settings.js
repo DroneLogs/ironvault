@@ -471,6 +471,35 @@ window.IV = window.IV || {};
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
       await screenCaptureSection(),
+      h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
+      h('p', {
+        class: 'hint warning',
+        text:
+          'Unlocking with a YubiKey is written but has never been run against a real ' +
+          'key, so compatibility is not guaranteed. It stays off until you turn it on. ' +
+          'If you do, test your key before binding a database to it, and keep a backup: ' +
+          'a database bound to a key that does not work cannot be opened.'
+      }),
+      toggle('Allow unlocking with a YubiKey (beta)', prefs.yubikeyBeta === true, async (v) => {
+        if (v) {
+          const ok = await IV.api.confirm({
+            title: 'Turn on YubiKey support',
+            message: 'This part of the app has never been tested against real hardware.',
+            detail:
+              'Everything that could be checked without a key was checked, but every ' +
+              'code path that talks to a device is unproven. Test your key before you ' +
+              'bind a database to it, and back the database up first.',
+            confirmLabel: 'Turn it on',
+            destructive: true
+          });
+          if (!ok) {
+            openSettings();
+            return;
+          }
+        }
+        await apply({ yubikeyBeta: v });
+        openSettings();
+      }),
       await clipboardWarning(),
       appearanceField(prefs),
       themeField(prefs),

@@ -16,7 +16,11 @@ const DEFAULTS = {
     concealPasswords: true,
     // Screen capture protection is a grant, not a stored mode: see capture.js.
     // Only the guard and how long a grant lasts are remembered.
+    // YubiKey has never been run against real hardware, so it stays out of
+    // the way until somebody deliberately turns it on. See yubikey.js.
+    yubikeyBeta: false,
     screenCaptureGuard: 'vault',
+    screenCaptureYubikeySlot: 2,
     screenCaptureGrantMinutes: 60,
     screenCapturePassword: null,
     theme: 'blue-cb',

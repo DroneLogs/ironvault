@@ -127,6 +127,17 @@ function copyWithTimeout(text) {
 
 /* ------------------------------------------------------------ quick unlock */
 
+/**
+ * YubiKey is off unless the user turned it on. The check lives here rather than
+ * only in the interface, so hiding a button is not the only thing standing
+ * between an unverified code path and somebody's database.
+ */
+function requireYubikeyBeta() {
+  if (!settings.getPrefs().yubikeyBeta) {
+    throw new Error('YubiKey support is off. Turn it on in Settings, under YubiKey.');
+  }
+}
+
 function quickUnlockAvailable() {
   try {
     return safeStorage.isEncryptionAvailable();
@@ -480,13 +491,20 @@ const handlers = {
   'gen.strength': ({ password }) => vault.estimateStrength(password),
 
   /* YubiKey */
-  'yubikey.detect': () => yubikey.detect(),
-  'yubikey.test': ({ slot }) => yubikey.selfTest({ slot: Number(slot) || 2 }),
+  'yubikey.detect': () => {
+    requireYubikeyBeta();
+    return yubikey.detect();
+  },
+  'yubikey.test': ({ slot }) => {
+    requireYubikeyBeta();
+    return yubikey.selfTest({ slot: Number(slot) || 2 });
+  },
   'yubikey.get': ({ filePath }) => {
     const secrets = settings.getSecrets(filePath || vault.info().filePath);
     return secrets.yubikey || null;
   },
   'yubikey.set': ({ filePath, slot, enabled }) => {
+    if (enabled) requireYubikeyBeta();
     settings.setSecrets(filePath || vault.info().filePath, {
       yubikey: enabled ? { slot: Number(slot) || 2 } : null
     });

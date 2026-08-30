@@ -106,8 +106,10 @@ function status() {
     guard: guardKind(),
     grantMinutes: grantMinutes(),
     hasSeparatePassword: Boolean(settings.getPrefs().screenCapturePassword),
-    // A YubiKey guard is only offerable once one is actually bound.
-    yubikeyAvailable: false
+    // Offerable only once the user has opted into the beta. Whether a key is
+    // actually plugged in is not asked here: that would probe the device every
+    // time the settings screen opened.
+    yubikeyAvailable: settings.getPrefs().yubikeyBeta === true
   };
 }
 
@@ -183,10 +185,25 @@ async function verifyGuard(credential) {
     return true;
   }
 
-  // YubiKey. The binding work is not finished, so this refuses rather than
-  // pretending to check something. Better a clear no than a false yes on the
-  // one control that exposes every password on screen.
-  throw new Error('YubiKey is not set up as the screen capture guard yet.');
+  // YubiKey. Touching the key is the proof, so the challenge itself is the
+  // check: if it answers, the right key is plugged in. Required lazily so a
+  // missing or broken native module cannot stop the rest of this file loading.
+  if (!settings.getPrefs().yubikeyBeta) {
+    throw new Error('YubiKey support is off. Turn it on in Settings, under YubiKey.');
+  }
+  let yubikey;
+  try {
+    yubikey = require('./yubikey');
+  } catch (err) {
+    throw new Error('YubiKey support could not load: ' + err.message);
+  }
+  const slot = Number(settings.getPrefs().screenCaptureYubikeySlot) || 2;
+  try {
+    await yubikey.selfTest({ slot });
+  } catch (err) {
+    throw new Error('The YubiKey did not answer: ' + err.message);
+  }
+  return true;
 }
 
 /* ------------------------------------------------------------------- grant */

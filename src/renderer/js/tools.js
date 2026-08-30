@@ -735,17 +735,40 @@ window.IV = window.IV || {};
       );
     }
 
-    body.append(
-      h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
-      h('p', {
-        class: 'error-line',
-        text: 'Beta. This has not been tested against real hardware yet. Test your key below, and keep a backup of the database before binding it.'
-      }),
-      yubiState,
-      field('Slot', slotSelect),
-      yubiActions
-    );
-    refreshYubi();
+    // Off unless opted in. A database already bound to a key still shows the
+    // section whatever the setting says, or turning it off would leave somebody
+    // with no way to unbind and no way in.
+    const yubiOptedIn = IV.state.prefs.yubikeyBeta === true;
+    const yubiAlreadyBound = Boolean(await IV.api.yubikeyGet(info.filePath).catch(() => null));
+
+    if (yubiOptedIn || yubiAlreadyBound) {
+      body.append(
+        h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
+        h(
+          'p',
+          { class: 'error-line' },
+          h('strong', { text: 'Beta, and compatibility is not guaranteed. ' }),
+          h('span', {
+            text:
+              'This has never been run against a real key. Press Test below before ' +
+              'binding anything, and back up the database first. If a binding half ' +
+              'succeeds, or the key is lost, the contents cannot be recovered.'
+          })
+        ),
+        !yubiOptedIn
+          ? h('p', {
+              class: 'hint',
+              text:
+                'YubiKey support is switched off in Settings, but this database is ' +
+                'already bound to a key, so the controls stay here.'
+            })
+          : null,
+        yubiState,
+        field('Slot', slotSelect),
+        yubiActions
+      );
+      refreshYubi();
+    }
 
     /* failed attempts */
     const failInput = h('input', {

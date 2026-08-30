@@ -295,7 +295,7 @@ window.IV = window.IV || {};
         if (credential === null) return;
         await IV.api.captureRequest(mode, credential, state.grantMinutes);
         toast('Screen capture allowed for ' + describeRemaining(state.grantMinutes * 60000), 'good');
-        openSettings();
+        reopenSettings();
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -311,7 +311,7 @@ window.IV = window.IV || {};
             onClick: async () => {
               await IV.api.captureRevoke();
               toast('Screen capture protection is back on', 'good');
-              openSettings();
+              reopenSettings();
             }
           })
         : null,
@@ -345,7 +345,7 @@ window.IV = window.IV || {};
             if (v === 'password' && !state.hasSeparatePassword) {
               toast('Set a screen capture password below', 'good');
             }
-            openSettings();
+            reopenSettings();
           } catch (err) {
             toast(err.message, 'error');
           }
@@ -390,7 +390,7 @@ window.IV = window.IV || {};
                           await IV.api.captureSetPassword(input.value);
                           handle.close();
                           toast('Screen capture password set', 'good');
-                          openSettings();
+                          reopenSettings();
                         } catch (err) {
                           toast(err.message, 'error');
                         }
@@ -407,7 +407,7 @@ window.IV = window.IV || {};
                   onClick: async () => {
                     await IV.api.captureClearPassword();
                     toast('Screen capture password removed', 'good');
-                    openSettings();
+                    reopenSettings();
                   }
                 })
               : null
@@ -510,7 +510,7 @@ window.IV = window.IV || {};
                     : 'Connected to ' + provider.name,
                   'good'
                 );
-                openSettings();
+                reopenSettings();
               } catch (err) {
                 toast(err.message, 'error');
               }
@@ -523,7 +523,7 @@ window.IV = window.IV || {};
                 onClick: async () => {
                   await IV.api.aliasClearKey(provider.key);
                   toast(provider.name + ' key removed', 'good');
-                  openSettings();
+                  reopenSettings();
                 }
               })
             : null
@@ -533,7 +533,7 @@ window.IV = window.IV || {};
 
     const chosenRef = { value: chosen };
     const picker = selectField(
-      'Provider',
+      'Set up which provider',
       (state.providers || []).map((p) => ({
         value: p.key,
         label: p.name + (p.hasKey ? ' (key saved)' : '')
@@ -544,8 +544,9 @@ window.IV = window.IV || {};
         renderRows();
       },
       'An alias is a real forwarding address. Mail sent to it reaches you, and you ' +
-        'can switch it off later when it starts getting spam. Propolis asks your ' +
-        'provider for one; it cannot create addresses itself.'
+        'can switch it off later when it starts getting spam. Set up as many as you ' +
+        'like: every one with a key saved is offered when you make an alias, so you ' +
+        'can pick between them at the time.'
     );
 
     wrap.append(h('h3', { text: 'Email aliases' }), picker, rows);
@@ -570,12 +571,12 @@ window.IV = window.IV || {};
               destructive: true
             });
             if (!ok) {
-              openSettings();
+              reopenSettings();
               return;
             }
           }
           await apply({ allowInventedEmail: v });
-          openSettings();
+          reopenSettings();
         }
       )
     );
@@ -613,7 +614,7 @@ window.IV = window.IV || {};
       }),
       toggle('Allow browsers to connect', state.enabled === true, async (v) => {
         await IV.api.browserEnable(v);
-        openSettings();
+        reopenSettings();
       })
     );
 
@@ -667,7 +668,7 @@ window.IV = window.IV || {};
             try {
               await IV.api.browserRegister(browserSelect.value, idInput.value.trim());
               toast('Set up. Restart the browser, then press the Propolis button in it.', 'good');
-              openSettings();
+              reopenSettings();
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -679,7 +680,7 @@ window.IV = window.IV || {};
           onClick: async () => {
             await IV.api.browserUnregister(browserSelect.value);
             toast('Removed');
-            openSettings();
+            reopenSettings();
           }
         })
       ),
@@ -707,7 +708,7 @@ window.IV = window.IV || {};
                   onClick: async () => {
                     await IV.api.browserForget(c.id);
                     toast(c.name + ' disconnected');
-                    openSettings();
+                    reopenSettings();
                   }
                 })
               )
@@ -747,7 +748,7 @@ window.IV = window.IV || {};
       }),
       toggle('Allow computers on this network to pair', state.running === true, async (v) => {
         await IV.api.lanEnable(v);
-        openSettings();
+        reopenSettings();
       })
     );
 
@@ -869,7 +870,7 @@ window.IV = window.IV || {};
                             name: device.name
                           });
                           toast('Paired with ' + device.name, 'good');
-                          openSettings();
+                          reopenSettings();
                         } catch (err) {
                           toast(err.message, 'error');
                         }
@@ -925,7 +926,7 @@ window.IV = window.IV || {};
             onClick: async () => {
               await IV.api.lanForget(peer.id);
               toast(peer.name + ' unpaired');
-              openSettings();
+              reopenSettings();
             }
           })
         )
@@ -937,6 +938,22 @@ window.IV = window.IV || {};
   async function apply(patch) {
     IV.state.prefs = await IV.api.setPrefs(patch);
     IV.app.applyTheme();
+  }
+
+  /**
+   * Redraws Settings in place after something changed.
+   *
+   * Every section that changes a setting has to show the result, and the way it
+   * did that was to call openSettings again, which opened a second dialog on top
+   * of the first. Setting up two providers left three stacked, and closing one
+   * revealed another underneath.
+   *
+   * Closing the open one first makes it a redraw instead of a pile.
+   */
+  function reopenSettings() {
+    const top = IV.dom.topModal && IV.dom.topModal();
+    if (top && typeof top.close === 'function') top.close();
+    return openSettings();
   }
 
   async function openSettings() {
@@ -981,12 +998,12 @@ window.IV = window.IV || {};
             destructive: true
           });
           if (!ok) {
-            openSettings();
+            reopenSettings();
             return;
           }
         }
         await apply({ yubikeyBeta: v });
-        openSettings();
+        reopenSettings();
       }),
       await clipboardWarning(),
       appearanceField(prefs),

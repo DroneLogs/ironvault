@@ -1886,3 +1886,9 @@ span.with-help,
   background: var(--panel, rgba(127, 127, 127, 0.08));
   user-select: all;
 }
+
+/* The next code brightens as the current one runs out, so it goes from
+   information to instruction without moving or appearing suddenly. */
+.totp-next.soon {
+  color: var(--text);
+}

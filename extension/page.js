@@ -16,6 +16,9 @@
 (function () {
   'use strict';
 
+  if (window.__propolisPasskeys) return; // already installed on this page
+  window.__propolisPasskeys = true;
+
   const original = {
     create: navigator.credentials && navigator.credentials.create.bind(navigator.credentials),
     get: navigator.credentials && navigator.credentials.get.bind(navigator.credentials)
@@ -94,7 +97,7 @@
     });
   }
 
-  navigator.credentials.create = async function create(options) {
+  async function propolisCreate(options) {
     if (!options || !options.publicKey) return original.create(options);
     const pub = options.publicKey;
 
@@ -117,8 +120,16 @@
     return buildCredential(reply.data.credential, true);
   };
 
-  navigator.credentials.get = async function get(options) {
+  async function propolisGet(options) {
     if (!options || !options.publicKey) return original.get(options);
+
+    // Conditional mediation is the browser's own autofill: the site asks quietly
+    // and the browser offers passkeys inside the username field. That interface
+    // belongs to the browser and cannot be drawn from a page script, so this is
+    // handed straight back. Intercepting it would replace a silent offer with an
+    // unprompted dialog, which is worse than not being involved.
+    if (options.mediation === 'conditional') return original.get(options);
+
     const pub = options.publicKey;
 
     const allowCredentials = Array.isArray(pub.allowCredentials)
@@ -139,9 +150,53 @@
     return buildCredential(reply.data.credential, false);
   };
 
-  // Sites ask this before offering a passkey button. Propolis is a platform
-  // authenticator as far as the page is concerned, so the answer is yes.
-  if (window.PublicKeyCredential) {
-    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = async () => true;
+  /**
+   * Installs the two overrides, and puts them back if something replaces them.
+   *
+   * Another password manager's extension does exactly what this one does, and
+   * whichever script runs last wins. That is why a site can end up talking to
+   * 1Password while Propolis never hears the request at all. Re-asserting a few
+   * times after load makes this the one holding the wire in the common case.
+   *
+   * It is bounded on purpose. Two extensions re-asserting forever would be a
+   * fight neither can win and would burn a page's main thread doing it. If
+   * another manager is genuinely installed and wanted for a site, the answer is
+   * to turn one of them off, not to escalate.
+   */
+  function install() {
+    if (navigator.credentials.create !== propolisCreate) {
+      navigator.credentials.create = propolisCreate;
+    }
+    if (navigator.credentials.get !== propolisGet) {
+      navigator.credentials.get = propolisGet;
+    }
+    // Sites ask this before offering a passkey button. Propolis is a platform
+    // authenticator as far as the page is concerned, so the answer is yes.
+    if (window.PublicKeyCredential) {
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = async () => true;
+    }
   }
+
+  install();
+  let reasserts = 0;
+  const keepHold = setInterval(() => {
+    install();
+    if (++reasserts >= 20) clearInterval(keepHold);
+  }, 250);
+  document.addEventListener('DOMContentLoaded', install, { once: true });
+
+  // Lets the popup say which manager currently holds the wire, so "it went to
+  // the other one" is answerable rather than a mystery.
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    if (!event.data || event.data.channel !== 'propolis-passkey-probe') return;
+    window.postMessage(
+      {
+        channel: 'propolis-passkey-probe',
+        reply: true,
+        holding: navigator.credentials.get === propolisGet
+      },
+      window.location.origin
+    );
+  });
 })();

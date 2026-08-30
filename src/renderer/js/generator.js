@@ -538,42 +538,62 @@ window.IV = window.IV || {};
         return;
       }
       IV.dom.clear(aliasRow);
-      const configured = (state.providers || []).find((p) => p.key === state.provider && p.hasKey);
-      if (!configured) {
+      // Every provider with a key gets a button, not just the last one set up.
+      // Somebody with two accounts usually has a reason to pick between them in
+      // the moment, and making that a trip to Settings is the wrong shape.
+      const ready = (state.providers || []).filter((p) => p.hasKey);
+      // The way in is here rather than only in Settings, because this is where
+      // somebody is standing when they discover they want one.
+      const setUp = h('button', {
+        class: 'btn ghost small',
+        text: ready.length ? 'Add another provider' : 'Set up email aliases',
+        onClick: () => {
+          handle.close();
+          IV.settings.openSettings();
+        }
+      });
+
+      if (!ready.length) {
         aliasRow.append(
           h('p', {
             class: 'hint',
             text:
               'Want a real email alias, one that forwards to you and can be switched ' +
-              'off later? Add a SimpleLogin or addy.io key in Settings.'
-          })
+              'off later? SimpleLogin, Firefox Relay, DuckDuckGo and addy.io all work.'
+          }),
+          setUp
         );
         return;
       }
-      const button = h('button', {
-        class: 'btn ghost',
-        text: 'Create a ' + configured.name + ' alias',
-        onClick: async () => {
-          button.disabled = true;
-          const was = button.textContent;
-          button.textContent = 'Asking ' + configured.name + '...';
-          try {
-            const made = await IV.api.aliasCreate({
-              provider: configured.key,
-              note: hostname ? 'For ' + hostname : 'Created by Propolis',
-              hostname: hostname || undefined
-            });
-            if (onUse) onUse(made.address);
-            handle.close();
-            toast('Alias created: ' + made.address, 'good');
-          } catch (err) {
-            toast(err.message, 'error');
-            button.disabled = false;
-            button.textContent = was;
+
+      for (const provider of ready) {
+        const button = h('button', {
+          class: 'btn ghost',
+          text: 'Create a ' + provider.name + ' alias',
+          onClick: async () => {
+            const buttons = aliasRow.querySelectorAll('button');
+            for (const b of buttons) b.disabled = true;
+            const was = button.textContent;
+            button.textContent = 'Asking ' + provider.name + '...';
+            try {
+              const made = await IV.api.aliasCreate({
+                provider: provider.key,
+                note: hostname ? 'For ' + hostname : 'Created by Propolis',
+                hostname: hostname || undefined
+              });
+              if (onUse) onUse(made.address);
+              handle.close();
+              toast('Alias created: ' + made.address, 'good');
+            } catch (err) {
+              toast(err.message, 'error');
+              for (const b of buttons) b.disabled = false;
+              button.textContent = was;
+            }
           }
-        }
-      });
-      aliasRow.append(button);
+        });
+        aliasRow.append(button);
+      }
+      aliasRow.append(setUp);
     }
 
     const handle = modal({

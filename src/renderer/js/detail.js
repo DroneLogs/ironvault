@@ -83,10 +83,12 @@ window.IV = window.IV || {};
   function renderTotp(entry) {
     const codeNode = h('div', { class: 'totp-code', text: '------' });
     const ring = h('div', { class: 'totp-ring' }, h('span', { text: '' }));
-    // Only worth showing when the current one is about to expire, which is the
-    // only moment it helps. On screen the whole time it is just clutter, and a
-    // second six digit number next to the real one invites typing the wrong one.
-    const nextNode = h('div', { class: 'totp-next', hidden: true });
+    // Shown the whole time. It was hidden until the last ten seconds on the
+    // theory that a second six digit number is clutter, which was wrong in use:
+    // people want to see what is coming before they decide whether to wait.
+    // Keeping it quieter than the live code is what stops the wrong one being
+    // typed, not hiding it.
+    const nextNode = h('div', { class: 'totp-next' });
     const box = h(
       'div',
       { class: 'totp-box' },
@@ -117,17 +119,15 @@ window.IV = window.IV || {};
         ring.firstChild.textContent = String(result.secondsLeft);
         box.classList.toggle('expiring', result.secondsLeft <= 5);
 
-        // Under ten seconds, typing the current code often loses the race, so
-        // the next one appears and you can wait for the roll instead.
-        if (result.nextCode && result.secondsLeft <= 10) {
+        if (result.nextCode) {
           const nextSpaced =
             result.nextCode.length === 6
               ? result.nextCode.slice(0, 3) + ' ' + result.nextCode.slice(3)
               : result.nextCode;
           nextNode.textContent = 'Next: ' + nextSpaced;
-          nextNode.hidden = false;
-        } else {
-          nextNode.hidden = true;
+          // Brought forward as the current one runs out, since that is the
+          // moment it stops being information and starts being the answer.
+          nextNode.classList.toggle('soon', result.secondsLeft <= 10);
         }
       } catch {
         codeNode.textContent = 'error';

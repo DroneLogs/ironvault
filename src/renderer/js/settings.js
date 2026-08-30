@@ -481,6 +481,7 @@ window.IV = window.IV || {};
         // instead of navigating, and the app has no anchor styling at all, so a
         // real link falls back to the browser blue and is unreadable on dark.
         h('p', { class: 'hint', text: 'You need an API key from ' + provider.name + '.' }),
+        provider.note ? h('p', { class: 'hint warning', text: provider.note }) : null,
         h(
           'div',
           { class: 'row-gap' },

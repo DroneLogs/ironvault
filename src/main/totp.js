@@ -121,10 +121,8 @@ function parseTotpConfig(fieldMap) {
   return null;
 }
 
-function generateCode(config, atMs = Date.now()) {
-  const key = base32Decode(config.secret);
-  if (!key.length) throw new Error('Empty TOTP secret');
-  const counter = Math.floor(atMs / 1000 / config.period);
+/** One code for one time step. Split out so the next one costs a second call. */
+function codeForCounter(key, counter, config) {
   const buf = Buffer.alloc(8);
   buf.writeUInt32BE(Math.floor(counter / 0x100000000), 0);
   buf.writeUInt32BE(counter >>> 0, 4);
@@ -135,22 +133,40 @@ function generateCode(config, atMs = Date.now()) {
     ((hmac[offset + 1] & 0xff) << 16) |
     ((hmac[offset + 2] & 0xff) << 8) |
     (hmac[offset + 3] & 0xff);
-  const secondsLeft = config.period - Math.floor((atMs / 1000) % config.period);
 
-  let code;
   if (config.steam) {
     let value = binary;
-    code = '';
+    let code = '';
     for (let i = 0; i < 5; i++) {
       code += STEAM_ALPHABET[value % STEAM_ALPHABET.length];
       value = Math.floor(value / STEAM_ALPHABET.length);
     }
-  } else {
-    code = String(binary % Math.pow(10, config.digits)).padStart(config.digits, '0');
+    return code;
   }
+  return String(binary % Math.pow(10, config.digits)).padStart(config.digits, '0');
+}
+
+/**
+ * The current code, and the one after it.
+ *
+ * Showing the next code sounds like a small thing and is the difference between
+ * catching a login and missing it. With four seconds left you either type
+ * quickly and get rejected for a code that expired mid submit, or you wait for
+ * the roll and start again. Knowing what comes next means you can just wait and
+ * type the right one.
+ *
+ * It is not a secret being leaked early: anyone holding the entry can compute
+ * every future code anyway, since that is what the shared secret is for.
+ */
+function generateCode(config, atMs = Date.now()) {
+  const key = base32Decode(config.secret);
+  if (!key.length) throw new Error('Empty TOTP secret');
+  const counter = Math.floor(atMs / 1000 / config.period);
+  const secondsLeft = config.period - Math.floor((atMs / 1000) % config.period);
 
   return {
-    code,
+    code: codeForCounter(key, counter, config),
+    nextCode: codeForCounter(key, counter + 1, config),
     period: config.period,
     secondsLeft,
     issuer: config.issuer || '',

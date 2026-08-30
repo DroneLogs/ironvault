@@ -1857,3 +1857,14 @@ span.with-help,
 .list-picker-head:first-child {
   margin-top: 0;
 }
+
+/* The upcoming one time code, shown only in the last seconds of the current
+   one. Deliberately quieter than the live code so the eye is never in doubt
+   about which of the two to type. */
+.totp-next {
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-top: 2px;
+}

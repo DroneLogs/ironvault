@@ -66,6 +66,7 @@ const DEFAULTS = {
       separator: '-',
       casing: 'title',
       leetspeak: 'none',
+      leetspeakCustom: 'a=@, e=3, i=!, o=0, s=$',
       salt: 'none',
       addNumber: false,
       addUppercase: false,

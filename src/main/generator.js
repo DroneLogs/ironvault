@@ -163,11 +163,34 @@ function casingBits(casing, word) {
   return Math.max(0, log2(combinations));
 }
 
-function leetify(word, level) {
+/**
+ * Reads a custom substitution list.
+ *
+ * Written as "a=@, e=3", one letter to whatever the user likes, because people
+ * who care about this have had their own scheme for twenty years and would
+ * rather bring it than be given ours. Anything unparseable in the line is
+ * skipped rather than rejected: a half typed rule should not throw away the
+ * rules on either side of it.
+ */
+function parseLeetMap(text) {
+  const map = {};
+  for (const rule of String(text || '').split(/[,\n]/)) {
+    const match = rule.trim().match(/^([A-Za-z])\s*[=:>]\s*(.+)$/);
+    if (!match) continue;
+    map[match[1].toLowerCase()] = match[2].trim();
+  }
+  return map;
+}
+
+function leetify(word, level, customMap) {
   if (!level || level === 'none') return word;
-  const all = level === 'pro-all' || level === 'basic-all';
+  const all = level === 'pro-all' || level === 'basic-all' || level === 'custom-all';
   if (!all && randomInt(10) < 6) return word; // roughly 40% of words get treated
-  const map = level.startsWith('pro') ? LEET_PRO : LEET_BASIC;
+  const map = level.startsWith('custom')
+    ? customMap || {}
+    : level.startsWith('pro')
+      ? LEET_PRO
+      : LEET_BASIC;
   return word
     .split('')
     .map((c) => map[c.toLowerCase()] || c)
@@ -195,13 +218,14 @@ function generateDiceware(config = {}) {
   const separator = config.separator === undefined ? '-' : String(config.separator);
   const casing = config.casing || 'title';
   const leet = config.leetspeak || 'none';
+  const customLeet = leet.startsWith('custom') ? parseLeetMap(config.leetspeakCustom) : null;
 
   let bits = wordCount * log2(pool.length);
   const words = [];
   for (let i = 0; i < wordCount; i++) {
     const raw = pick(pool);
     bits += casingBits(casing, raw);
-    words.push(leetify(applyCasing(raw, casing), leet));
+    words.push(leetify(applyCasing(raw, casing), leet, customLeet));
   }
 
   let passphrase = words.join(separator);
@@ -318,6 +342,7 @@ function generateUsernames({ includeInventedEmail = false } = {}) {
 }
 
 module.exports = {
+  parseLeetMap,
   generate,
   generateBasic,
   generateDiceware,

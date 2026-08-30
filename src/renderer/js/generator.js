@@ -347,6 +347,32 @@ window.IV = window.IV || {};
       })
     );
 
+    // Hidden until one of the custom levels is picked, since an input box for
+    // rules you are not using is noise in a panel that already has plenty.
+    const customLeetInput = h('input', {
+      type: 'text',
+      spellcheck: 'false',
+      value: config.leetspeakCustom || 'a=@, e=3, i=!, o=0, s=$',
+      placeholder: 'a=@, e=3, i=!, o=0, s=$',
+      onChange: () => {
+        config.leetspeakCustom = customLeetInput.value;
+        regenerate();
+      }
+    });
+    const customRow = h(
+      'label',
+      { class: 'field', hidden: !String(config.leetspeak || '').startsWith('custom') },
+      h('span', { class: 'field-label', text: 'My replacements' }),
+      customLeetInput,
+      h('p', {
+        class: 'hint',
+        text:
+          'One letter each, written as a=@ and separated by commas. Anything you ' +
+          'leave out is left alone. A rule that does not make sense is skipped, ' +
+          'so a half typed one does not throw away the rest.'
+      })
+    );
+
     const dicewareAdvanced = h(
       'details',
       { class: 'adv' },
@@ -374,14 +400,18 @@ window.IV = window.IV || {};
           { value: 'basic-some', label: 'Basic (some words)' },
           { value: 'basic-all', label: 'Basic (all words)' },
           { value: 'pro-some', label: 'Pro (some words)' },
-          { value: 'pro-all', label: 'Pro (all words)' }
+          { value: 'pro-all', label: 'Pro (all words)' },
+          { value: 'custom-some', label: 'My own (some words)' },
+          { value: 'custom-all', label: 'My own (all words)' }
         ],
         config.leetspeak,
         (v) => {
           config.leetspeak = v;
+          customRow.hidden = !String(v).startsWith('custom');
           regenerate();
         }
       ),
+      customRow,
       select(
         'Add Salt',
         [

@@ -83,11 +83,21 @@ window.IV = window.IV || {};
   function renderTotp(entry) {
     const codeNode = h('div', { class: 'totp-code', text: '------' });
     const ring = h('div', { class: 'totp-ring' }, h('span', { text: '' }));
+    // Only worth showing when the current one is about to expire, which is the
+    // only moment it helps. On screen the whole time it is just clutter, and a
+    // second six digit number next to the real one invites typing the wrong one.
+    const nextNode = h('div', { class: 'totp-next', hidden: true });
     const box = h(
       'div',
       { class: 'totp-box' },
       ring,
-      h('div', { class: 'totp-holder' }, codeNode, h('div', { class: 'db-sub', text: entry.totp.issuer || 'One time code' })),
+      h(
+        'div',
+        { class: 'totp-holder' },
+        codeNode,
+        h('div', { class: 'db-sub', text: entry.totp.issuer || 'One time code' }),
+        nextNode
+      ),
       h('div', { class: 'spacer' }),
       copyButton('Copy code', () => IV.api.copyTotp(entry.id))
     );
@@ -106,6 +116,19 @@ window.IV = window.IV || {};
         ring.style.setProperty('--pct', String(pct));
         ring.firstChild.textContent = String(result.secondsLeft);
         box.classList.toggle('expiring', result.secondsLeft <= 5);
+
+        // Under ten seconds, typing the current code often loses the race, so
+        // the next one appears and you can wait for the roll instead.
+        if (result.nextCode && result.secondsLeft <= 10) {
+          const nextSpaced =
+            result.nextCode.length === 6
+              ? result.nextCode.slice(0, 3) + ' ' + result.nextCode.slice(3)
+              : result.nextCode;
+          nextNode.textContent = 'Next: ' + nextSpaced;
+          nextNode.hidden = false;
+        } else {
+          nextNode.hidden = true;
+        }
       } catch {
         codeNode.textContent = 'error';
       }

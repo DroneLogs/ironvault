@@ -32,17 +32,21 @@ const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'propolis-demo-'));
 const demoPath = path.join(workDir, 'Demo Vault.kdbx');
 const PASSWORD = 'demo-master-password';
 
+// Deliberately nobody. These screenshots end up on a website, so the demo
+// vault carries no real handle, no real mailbox and no client's name. The two
+// terrible passwords are on purpose: they are what makes the audit screen show
+// something worth looking at.
 const DEMO = [
-  ['Internet', 'GitHub', 'dronelogs', 'r7Kq-Wm2!vZx9Ld4', 'https://github.com', 'Personal account, 2FA on.', 'otpauth://totp/GitHub:dronelogs?secret=GEZDGNBVGY3TQOJQ&issuer=GitHub'],
-  ['Internet', 'Cloudflare', 'jrusso@example.com', 'Tq8#mLp2vXr9Kd4W', 'https://dash.cloudflare.com', 'DNS and Workers.', ''],
-  ['Internet', 'Vercel', 'drone-logs', 'Zx4$nRt7wQm2Pk9L', 'https://vercel.com', '', ''],
-  ['Email', 'Proton Mail', 'drone-logs@proton.me', 'Vm3^qWt8zPr5Nx2J', 'https://mail.proton.me', 'Primary mailbox.', 'otpauth://totp/Proton:drone-logs?secret=JBSWY3DPEHPK3PXP&issuer=Proton'],
-  ['Email', 'Outlook', 'jrusso@example.com', 'password1', 'https://outlook.com', 'Old account, needs a new password.', ''],
-  ['Banking', 'Regions Bank', 'jrusso', 'Kp7&xNq4mWz8Vt3R', 'https://regions.com', '', ''],
-  ['Banking', 'Discover Card', 'jrusso', 'password1', 'https://discover.com', '', ''],
-  ['Work', 'Supabase', 'drone-logs@proton.me', 'Hq5!zRm9tWn3Xk7P', 'https://supabase.com', 'Newpointe project.', ''],
-  ['Work', 'Namecheap', 'dronelogs', 'Bt6@vKx3qNr8Wm2Z', 'https://namecheap.com', '', ''],
-  ['Work', 'Adobe', 'jrusso@example.com', '123456', 'https://adobe.com', '', '']
+  ['Internet', 'GitHub', 'alex.rivera', 'r7Kq-Wm2!vZx9Ld4', 'https://github.com', 'Personal account, 2FA on.', 'otpauth://totp/GitHub:alex.rivera?secret=GEZDGNBVGY3TQOJQ&issuer=GitHub'],
+  ['Internet', 'Cloudflare', 'alex@example.com', 'Tq8#mLp2vXr9Kd4W', 'https://dash.cloudflare.com', 'DNS and Workers.', ''],
+  ['Internet', 'Vercel', 'alex.rivera', 'Zx4$nRt7wQm2Pk9L', 'https://vercel.com', '', ''],
+  ['Email', 'Proton Mail', 'alex@example.com', 'Vm3^qWt8zPr5Nx2J', 'https://mail.proton.me', 'Primary mailbox.', 'otpauth://totp/Proton:alex?secret=JBSWY3DPEHPK3PXP&issuer=Proton'],
+  ['Email', 'Outlook', 'alex@example.com', 'password1', 'https://outlook.com', 'Old account, needs a new password.', ''],
+  ['Banking', 'First National', 'arivera', 'Kp7&xNq4mWz8Vt3R', 'https://firstnational.example.com', '', ''],
+  ['Banking', 'Credit Union', 'arivera', 'password1', 'https://creditunion.example.com', '', ''],
+  ['Work', 'Supabase', 'alex@example.com', 'Hq5!zRm9tWn3Xk7P', 'https://supabase.com', 'Staging project.', ''],
+  ['Work', 'Namecheap', 'alex.rivera', 'Bt6@vKx3qNr8Wm2Z', 'https://namecheap.com', '', ''],
+  ['Work', 'Adobe', 'alex@example.com', '123456', 'https://adobe.com', '', '']
 ];
 
 async function buildDemo() {
@@ -53,7 +57,7 @@ async function buildDemo() {
   for (const [group, title, username, password, url, notes, otp] of DEMO) {
     const customFields = [];
     if (otp) customFields.push({ key: 'otp', value: otp, protected: false });
-    if (title === 'Regions Bank') customFields.push({ key: 'Account number', value: '1234-5678-9012', protected: true });
+    if (title === 'First National') customFields.push({ key: 'Account number', value: '1234-5678-9012', protected: true });
     vault.createEntry({
       groupId: groupId(group),
       title,
@@ -249,7 +253,7 @@ async function main() {
 
   await run(`
     (async () => {
-      const row = Array.from(document.querySelectorAll('.entry-title')).find(e => e.textContent === 'Regions Bank');
+      const row = Array.from(document.querySelectorAll('.entry-title')).find(e => e.textContent === 'First National');
       row.closest('.entry-row').click();
       await new Promise(r => setTimeout(r, 400));
       const entry = await IV.api.entry(IV.state.entryId);
@@ -294,8 +298,8 @@ async function main() {
       document.querySelector('#search-input').dispatchEvent(new Event('input'));
       await new Promise(r => setTimeout(r, 300));
       const created = await IV.api.createEntry({
-        title: 'Test Card',
-        username: 'J RUSSOM',
+        title: 'Visa ending 1111',
+        username: 'ALEX RIVERA',
         password: '4111111111111111',
         url: '',
         notes: '',
@@ -320,9 +324,63 @@ async function main() {
   await wait(360);
   await shot('24-card-detail');
 
+  // On, so the section photographs as the thing it is rather than one
+  // unticked box. The screenshots are the only place anyone sees this before
+  // they install it.
+  await run(`IV.api.browserEnable(true).then(() => IV.api.getPrefs()).then(p => { IV.state.prefs = p; }); true`,
+    'enable the browser bridge');
+  await wait(300);
+
   await run(`document.querySelector('#btn-settings').click(); true`);
-  await wait(225);
+  await wait(450);
   await shot('12-settings');
+
+  // The settings dialog scrolls, and the sections worth showing are below the
+  // fold, so each is scrolled to rather than left off the bottom of the picture.
+  await run(`
+    (function () {
+      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
+      const target = heads.find((h) => /browser extension/i.test(h.textContent));
+      if (target) target.scrollIntoView({ block: 'start' });
+      return Boolean(target);
+    })()
+  `, 'scroll to browser extension');
+  await wait(220);
+  await shot('25-browser-extension');
+
+  await run(`
+    (function () {
+      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
+      const target = heads.find((h) => /email aliases/i.test(h.textContent));
+      if (target) target.scrollIntoView({ block: 'start' });
+      return Boolean(target);
+    })()
+  `, 'scroll to email aliases');
+  await wait(220);
+  await shot('26-email-aliases');
+
+  await run(`
+    (function () {
+      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
+      const target = heads.find((h) => /screen capture/i.test(h.textContent));
+      if (target) target.scrollIntoView({ block: 'start' });
+      return Boolean(target);
+    })()
+  `, 'scroll to screen capture');
+  await wait(220);
+  await shot('27-screen-capture');
+
+  await run(`
+    (function () {
+      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
+      const target = heads.find((h) => /yubikey/i.test(h.textContent));
+      if (target) target.scrollIntoView({ block: 'start' });
+      return Boolean(target);
+    })()
+  `, 'scroll to yubikey');
+  await wait(220);
+  await shot('28-yubikey');
+
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
 
   await run(`IV.api.setPrefs({appearance:'light'}).then(p => { IV.state.prefs = p; IV.app.applyTheme(); }); true`);

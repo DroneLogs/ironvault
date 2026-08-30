@@ -19,7 +19,8 @@
     "dist": "electron-builder --win",
     "wordlists": "node scripts/fetch-wordlists.js",
     "wordlist:lotr": "node scripts/fetch-lotr-wordlist.js",
-    "fonts": "node scripts/fetch-fonts.js"
+    "fonts": "node scripts/fetch-fonts.js",
+    "hero": "electron scripts/hero.js"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",

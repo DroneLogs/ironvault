@@ -47,7 +47,10 @@ const current = {
   releaseDate: null,
   percent: 0,
   error: null,
-  checkedAt: 0
+  checkedAt: 0,
+  // Whether the check that produced this state ran on its own. The window
+  // only interrupts the user for one that did.
+  automatic: false
 };
 
 let notify = () => {};
@@ -127,12 +130,36 @@ async function check({ manual = true } = {}) {
     wire();
     const updater = loadUpdater();
     updater.setFeedURL({ provider: 'generic', url: url.endsWith('/') ? url : url + '/' });
-    setState({ status: 'checking', error: null });
+    setState({ status: 'checking', error: null, automatic: !manual });
     await updater.checkForUpdates();
+    await settled();
   } catch (err) {
     setState({ status: 'error', error: explain(err.message, url) });
   }
   return snapshot();
+}
+
+/**
+ * checkForUpdates resolves before the events it triggers have run, so the
+ * snapshot taken straight after it still said "checking". The window did not
+ * notice, because the real state arrives separately through the notifier, but
+ * anything using the returned value got a state that was already stale.
+ *
+ * Waits for the events to land, and gives up rather than hanging if they never
+ * do, since a caller waiting forever is worse than one told nothing happened.
+ */
+function settled({ timeoutMs = 20000 } = {}) {
+  if (current.status !== 'checking') return Promise.resolve();
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const poll = setInterval(() => {
+      if (current.status !== 'checking' || Date.now() - started > timeoutMs) {
+        clearInterval(poll);
+        resolve();
+      }
+    }, 50);
+    if (poll.unref) poll.unref();
+  });
 }
 
 async function download() {
@@ -179,14 +206,28 @@ function state() {
 }
 
 /** Called once at startup; quiet unless something is actually available. */
+const LAUNCH_DELAY_MS = 8000;
+const RECHECK_MS = 24 * 60 * 60 * 1000;
+let recheckTimer = null;
+
 function checkOnLaunch(send) {
   notify = send || notify;
   const prefs = settings.getPrefs();
   if (!prefs.autoCheckUpdates || !feedUrl() || !app.isPackaged) return;
+
   // Give the window a moment to appear before touching the network.
   setTimeout(() => {
     check({ manual: false }).catch(() => {});
-  }, 8000);
+  }, LAUNCH_DELAY_MS);
+
+  // A password manager is left open for weeks at a time, so checking only at
+  // launch means somebody who never quits is never told. Once a day after that.
+  if (recheckTimer) clearInterval(recheckTimer);
+  recheckTimer = setInterval(() => {
+    if (!settings.getPrefs().autoCheckUpdates) return;
+    check({ manual: false }).catch(() => {});
+  }, RECHECK_MS);
+  if (recheckTimer.unref) recheckTimer.unref();
 }
 
 function setNotifier(send) {

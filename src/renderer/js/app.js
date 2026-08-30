@@ -990,9 +990,11 @@ window.IV = window.IV || {};
     IV.api.on('update-state', (update) => {
       state.update = update;
       if (IV.settings.onUpdateState) IV.settings.onUpdateState(update);
-      // A background check only speaks up when there is something to say.
-      if (update.status === 'available') {
-        toast('Propolis ' + update.version + ' is available');
+      // A check that ran on its own opens the dialog rather than showing a
+      // toast. A toast disappears after a few seconds, so an update found while
+      // the user was making coffee was never seen at all.
+      if (update.status === 'available' && update.automatic) {
+        IV.settings.promptForUpdate(update);
       }
     });
 

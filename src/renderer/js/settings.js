@@ -889,6 +889,17 @@ window.IV = window.IV || {};
                 toast(err.message, 'error');
               }
             }
+          }),
+          // Without this the prompt would reappear on every launch until the
+          // user gave in, which is how update prompts get resented.
+          h('button', {
+            class: 'btn ghost small',
+            text: 'Skip this version',
+            onClick: async () => {
+              await apply({ skippedUpdateVersion: update.version });
+              toast('Propolis will not bring up ' + update.version + ' again');
+              handle.close();
+            }
           })
         );
       }
@@ -986,6 +997,25 @@ window.IV = window.IV || {};
     return handle;
   }
 
+  /**
+   * Opens the Updates dialog because a check found something on its own.
+   *
+   * Three things stop it being a nuisance: a version the user skipped is never
+   * raised again, it asks once per run rather than on every check, and it does
+   * not interrupt while a dialog is already open, since being pulled out of
+   * editing an entry to be told about an update is worse than being told late.
+   */
+  let updatePromptedFor = null;
+
+  function promptForUpdate(update) {
+    if (!update || update.status !== 'available' || !update.version) return;
+    if (update.version === (IV.state.prefs.skippedUpdateVersion || null)) return;
+    if (updatePromptedFor === update.version) return;
+    if (IV.dom.topModal && IV.dom.topModal()) return;
+    updatePromptedFor = update.version;
+    openUpdates();
+  }
+
   /** Lets app.js push live progress into an open Updates dialog. */
   function onUpdateState(update) {
     if (liveUpdatePanel) liveUpdatePanel(update);
@@ -1055,5 +1085,5 @@ window.IV = window.IV || {};
     });
   }
 
-  IV.settings = { openSettings, openShortcuts, openAbout, openUpdates, onUpdateState };
+  IV.settings = { openSettings, openShortcuts, openAbout, openUpdates, onUpdateState, promptForUpdate };
 })(window.IV);

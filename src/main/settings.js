@@ -43,6 +43,9 @@ const DEFAULTS = {
     markdownNotes: true,
     masterPasswordReminderDays: 180,
     autoCheckUpdates: true,
+    // A version the user chose to skip. Only silences the automatic
+    // prompt; checking by hand still reports it.
+    skippedUpdateVersion: null,
     updateFeedUrl: 'https://github.com/DroneLogs/ironvault/releases/latest/download/',
     updateReleasePageUrl: 'https://github.com/DroneLogs/ironvault/releases',
     generator: {

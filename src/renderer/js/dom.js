@@ -19,6 +19,22 @@ window.IV = window.IV || {};
     if (IV.api && IV.api.secretsVisible) IV.api.secretsVisible(visible).catch(() => {});
   }
 
+  /**
+   * append, but a null child is skipped rather than printed.
+   *
+   * Element.append turns anything that is not a Node into text, so
+   * `parent.append(cond ? h(...) : null)` puts the word "null" on the screen.
+   * h already filters its own children this way; this is the same courtesy for
+   * the places that append after building.
+   */
+  function add(parent, ...children) {
+    for (const child of children.flat()) {
+      if (child == null || child === false) continue;
+      parent.append(child.nodeType ? child : document.createTextNode(String(child)));
+    }
+    return parent;
+  }
+
   function h(tag, props, ...children) {
     const el = document.createElement(tag);
     if (props) {
@@ -324,6 +340,7 @@ window.IV = window.IV || {};
     strengthMeter,
     announce,
     focusableWithin,
-    reportSecrets
+    reportSecrets,
+    add
   };
 })(window.IV);

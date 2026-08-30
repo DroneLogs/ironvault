@@ -635,7 +635,7 @@ window.IV = window.IV || {};
     };
     refreshPin();
 
-    body.append(
+    IV.dom.add(body,
       h('div', { class: 'detail-section' }, h('h3', { text: 'PIN unlock' })),
       pinState,
       h(
@@ -721,7 +721,7 @@ window.IV = window.IV || {};
     };
     refreshDuress();
 
-    body.append(
+    IV.dom.add(body,
       h('div', { class: 'detail-section' }, h('h3', { class: 'with-help' }, 'Duress PIN', IV.glossary.badge('duress'))),
       duressState,
       h(
@@ -846,7 +846,7 @@ window.IV = window.IV || {};
     const yubiAlreadyBound = Boolean(await IV.api.yubikeyGet(info.filePath).catch(() => null));
 
     if (yubiOptedIn || yubiAlreadyBound) {
-      body.append(
+      IV.dom.add(body,
         h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
         h(
           'p',

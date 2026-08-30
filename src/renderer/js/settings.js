@@ -476,7 +476,7 @@ window.IV = window.IV || {};
         placeholder: provider.hasKey ? 'A key is saved. Paste a new one to replace it.' : 'Paste your API key'
       });
 
-      rows.append(
+      IV.dom.add(rows,
         // A button rather than a link: this hands the URL to the system browser
         // instead of navigating, and the app has no anchor styling at all, so a
         // real link falls back to the browser blue and is unreadable on dark.
@@ -953,62 +953,154 @@ window.IV = window.IV || {};
   function reopenSettings() {
     const top = IV.dom.topModal && IV.dom.topModal();
     if (top && typeof top.close === 'function') top.close();
-    return openSettings();
+    return openSettings(settingsPage);
   }
 
-  async function openSettings() {
-    const prefs = IV.state.prefs;
-    const info = IV.state.info;
+  /**
+   * Settings, as pages rather than one very long scroll.
+   *
+   * It grew to include network sync, the browser extension, alias providers,
+   * screen capture and YubiKey, all under the clipboard timeout, and finding
+   * anything meant scrolling past everything. The groups below are by what
+   * somebody came to do, not by which part of the code owns the setting.
+   *
+   * The page in view is remembered, so changing something and being redrawn
+   * leaves you where you were instead of back at the top.
+   */
+  let settingsPage = 'general';
 
-    const general = h(
+  function pageDatabase(info) {
+    if (!info || !info.open) {
+      return h('p', { class: 'hint', text: 'Open a database to see anything about it here.' });
+    }
+
+    const quickToggle = h('input', {
+      type: 'checkbox',
+      checked: IV.state.hasQuickUnlock,
+      onChange: async () => {
+        if (quickToggle.checked) {
+          quickToggle.checked = false;
+          toast('Tick "remember this password" on the unlock screen to turn this on');
+          return;
+        }
+        await IV.api.setQuickUnlock({ filePath: info.filePath, enabled: false });
+        IV.state.hasQuickUnlock = false;
+        toast('Stored password removed', 'good');
+      }
+    });
+
+    return h(
+      'div',
+      null,
+      h(
+        'div',
+        { class: 'meta-grid' },
+        h('div', null, h('b', { text: 'Name' }), info.name),
+        h('div', null, h('b', { text: 'Format' }), 'KDBX ' + info.version),
+        h('div', null, h('b', { text: 'Key derivation' }), info.kdf),
+        h('div', null, h('b', { text: 'Cipher' }), info.cipher),
+        h('div', null, h('b', { text: 'Entries' }), String(info.entryCount)),
+        h('div', null, h('b', { text: 'Groups' }), String(info.groupCount))
+      ),
+      h('p', { class: 'path-line', text: info.filePath }),
+      h('label', { class: 'checkline' }, quickToggle, h('span', { text: 'Quick unlock stored on this Windows account' })),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', { class: 'btn ghost small', text: 'Change master key', onClick: () => IV.editor.openMasterKeyDialog() }),
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Save a copy...',
+          onClick: async () => {
+            try {
+              const result = await IV.api.saveAs();
+              if (result) toast('Saved to ' + result.filePath, 'good');
+              await IV.app.refresh();
+            } catch (err) {
+              toast(err.message, 'error');
+            }
+          }
+        }),
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Show in Explorer',
+          onClick: () => IV.api.revealInFolder(info.filePath)
+        })
+      ),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', {
+          class: 'btn danger small',
+          text: 'Empty recycle bin',
+          onClick: async () => {
+            const ok = await IV.api.confirm({
+              title: 'Empty recycle bin',
+              message: 'Permanently delete everything in the recycle bin?',
+              detail: 'This cannot be undone.',
+              confirmLabel: 'Empty',
+              destructive: true
+            });
+            if (!ok) return;
+            const result = await IV.api.emptyRecycleBin();
+            await IV.app.refresh();
+            await IV.app.autoSave();
+            toast(result.removed + ' items removed', 'good');
+          }
+        })
+      )
+    );
+  }
+
+  function pageGeneral(prefs) {
+    return h(
       'div',
       null,
       numberField('Clear the clipboard after', prefs.clipboardClearSeconds, 0, 600, 'seconds (0 to keep)', (v) =>
         apply({ clipboardClearSeconds: v })
       ),
+      toggle('Render notes as Markdown', prefs.markdownNotes !== false, (v) => apply({ markdownNotes: v })),
+      numberField('Keep this many backups', prefs.keepBackups, 0, 100, 'saves (0 to keep none)', (v) =>
+        apply({ keepBackups: v })
+      ),
+      numberField(
+        'Remind me to change the master password after',
+        prefs.masterPasswordReminderDays,
+        0,
+        1095,
+        'days (0 to never)',
+        (v) => apply({ masterPasswordReminderDays: v })
+      ),
+      hotkeyField(prefs),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', { class: 'btn ghost small', text: 'Updates...', onClick: () => openUpdates() })
+      )
+    );
+  }
+
+  function pageLocking(prefs) {
+    return h(
+      'div',
+      null,
       numberField('Lock after inactivity', prefs.autoLockMinutes, 0, 240, 'minutes (0 to never)', (v) =>
         apply({ autoLockMinutes: v })
       ),
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
-      toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
-      await lanSection(),
-      await browserSection(),
-      await aliasSection(),
-      await screenCaptureSection(),
-      h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
-      h('p', {
-        class: 'hint warning',
-        text:
-          'Unlocking with a YubiKey is written but has never been run against a real ' +
-          'key, so compatibility is not guaranteed. It stays off until you turn it on. ' +
-          'If you do, test your key before binding a database to it, and keep a backup: ' +
-          'a database bound to a key that does not work cannot be opened.'
-      }),
-      toggle('Allow unlocking with a YubiKey (beta)', prefs.yubikeyBeta === true, async (v) => {
-        if (v) {
-          const ok = await IV.api.confirm({
-            title: 'Turn on YubiKey support',
-            message: 'This part of the app has never been tested against real hardware.',
-            detail:
-              'Everything that could be checked without a key was checked, but every ' +
-              'code path that talks to a device is unproven. Test your key before you ' +
-              'bind a database to it, and back the database up first.',
-            confirmLabel: 'Turn it on',
-            destructive: true
-          });
-          if (!ok) {
-            reopenSettings();
-            return;
-          }
-        }
-        await apply({ yubikeyBeta: v });
-        reopenSettings();
-      }),
-      await clipboardWarning(),
-      appearanceField(prefs),
-      themeField(prefs),
-      h('div', { class: 'detail-section' }, h('h3', { text: 'Accessibility' })),
+      toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v }))
+    );
+  }
+
+  function pageAppearance(prefs) {
+    return h('div', null, appearanceField(prefs), themeField(prefs));
+  }
+
+  function pageAccessibility(prefs) {
+    return h(
+      'div',
+      null,
       selectField(
         'Typeface',
         [
@@ -1054,121 +1146,115 @@ window.IV = window.IV || {};
               bigTargets: false,
               highContrast: false
             });
-            handle.close();
             toast('Accessibility settings reset', 'good');
+            reopenSettings();
           }
         })
-      ),
-      toggle('Render notes as Markdown', prefs.markdownNotes !== false, (v) => apply({ markdownNotes: v })),
-      numberField('Keep this many backups', prefs.keepBackups, 0, 100, 'saves (0 to keep none)', (v) =>
-        apply({ keepBackups: v })
-      ),
-      numberField(
-        'Remind me to change the master password after',
-        prefs.masterPasswordReminderDays,
-        0,
-        1095,
-        'days (0 to never)',
-        (v) => apply({ masterPasswordReminderDays: v })
-      ),
-      hotkeyField(prefs),
-
-      h(
-        'div',
-        { class: 'row-gap' },
-        h('button', { class: 'btn ghost small', text: 'Updates...', onClick: () => openUpdates() })
       )
     );
+  }
 
-    const body = h('div', null, general);
+  async function pageSecurity(prefs) {
+    const wrap = h('div', null);
+    const capture = await screenCaptureSection();
+    if (capture) wrap.append(capture);
+    const warning = await clipboardWarning();
+    if (warning) wrap.append(warning);
 
-    if (info && info.open) {
-      const quickToggle = h('input', {
-        type: 'checkbox',
-        checked: IV.state.hasQuickUnlock,
-        onChange: async () => {
-          if (quickToggle.checked) {
-            quickToggle.checked = false;
-            toast('Tick "remember this password" on the unlock screen to turn this on');
+    wrap.append(
+      h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
+      h('p', {
+        class: 'hint warning',
+        text:
+          'Unlocking with a YubiKey is written but has never been run against a real ' +
+          'key, so compatibility is not guaranteed. It stays off until you turn it on. ' +
+          'If you do, test your key before binding a database to it, and keep a backup: ' +
+          'a database bound to a key that does not work cannot be opened.'
+      }),
+      toggle('Allow unlocking with a YubiKey (beta)', prefs.yubikeyBeta === true, async (v) => {
+        if (v) {
+          const ok = await IV.api.confirm({
+            title: 'Turn on YubiKey support',
+            message: 'This part of the app has never been tested against real hardware.',
+            detail:
+              'Everything that could be checked without a key was checked, but every ' +
+              'code path that talks to a device is unproven. Test your key before you ' +
+              'bind a database to it, and back the database up first.',
+            confirmLabel: 'Turn it on',
+            destructive: true
+          });
+          if (!ok) {
+            reopenSettings();
             return;
           }
-          await IV.api.setQuickUnlock({ filePath: info.filePath, enabled: false });
-          IV.state.hasQuickUnlock = false;
-          toast('Stored password removed', 'good');
         }
-      });
+        await apply({ yubikeyBeta: v });
+        reopenSettings();
+      })
+    );
+    return wrap;
+  }
 
-      body.append(
-        h(
-          'div',
-          { class: 'detail-section' },
-          h('h3', { text: 'This database' }),
-          h(
-            'div',
-            { class: 'meta-grid' },
-            h('div', null, h('b', { text: 'Name' }), info.name),
-            h('div', null, h('b', { text: 'Format' }), 'KDBX ' + info.version),
-            h('div', null, h('b', { text: 'Key derivation' }), info.kdf),
-            h('div', null, h('b', { text: 'Cipher' }), info.cipher),
-            h('div', null, h('b', { text: 'Entries' }), String(info.entryCount)),
-            h('div', null, h('b', { text: 'Groups' }), String(info.groupCount))
-          ),
-          h('p', { class: 'path-line', text: info.filePath }),
-          h('label', { class: 'checkline' }, quickToggle, h('span', { text: 'Quick unlock stored on this Windows account' })),
-          h(
-            'div',
-            { class: 'row-gap' },
-            h('button', { class: 'btn ghost small', text: 'Change master key', onClick: () => IV.editor.openMasterKeyDialog() }),
-            h('button', {
-              class: 'btn ghost small',
-              text: 'Save a copy...',
-              onClick: async () => {
-                try {
-                  const result = await IV.api.saveAs();
-                  if (result) toast('Saved to ' + result.filePath, 'good');
-                  await IV.app.refresh();
-                } catch (err) {
-                  toast(err.message, 'error');
-                }
-              }
-            }),
-            h('button', {
-              class: 'btn ghost small',
-              text: 'Show in Explorer',
-              onClick: () => IV.api.revealInFolder(info.filePath)
-            })
-          ),
-          h(
-            'div',
-            { class: 'row-gap' },
-            h('button', {
-              class: 'btn danger small',
-              text: 'Empty recycle bin',
-              onClick: async () => {
-                const ok = await IV.api.confirm({
-                  title: 'Empty recycle bin',
-                  message: 'Permanently delete everything in the recycle bin?',
-                  detail: 'This cannot be undone.',
-                  confirmLabel: 'Empty',
-                  destructive: true
-                });
-                if (!ok) return;
-                const result = await IV.api.emptyRecycleBin();
-                await IV.app.refresh();
-                await IV.app.autoSave();
-                toast(result.removed + ' items removed', 'good');
-              }
-            })
-          )
-        )
+  async function pageConnections() {
+    const wrap = h('div', null);
+    for (const build of [aliasSection, browserSection, lanSection]) {
+      const section = await build();
+      if (section) wrap.append(section);
+    }
+    return wrap;
+  }
+
+  const SETTINGS_PAGES = [
+    { id: 'general', label: 'General', build: (prefs) => pageGeneral(prefs) },
+    { id: 'locking', label: 'Locking', build: (prefs) => pageLocking(prefs) },
+    { id: 'security', label: 'Security', build: (prefs) => pageSecurity(prefs) },
+    { id: 'connections', label: 'Connections', build: () => pageConnections() },
+    { id: 'appearance', label: 'Appearance', build: (prefs) => pageAppearance(prefs) },
+    { id: 'accessibility', label: 'Accessibility', build: (prefs) => pageAccessibility(prefs) },
+    { id: 'database', label: 'This database', build: (prefs, info) => pageDatabase(info) }
+  ];
+
+  async function openSettings(page) {
+    const prefs = IV.state.prefs;
+    const info = IV.state.info;
+    if (page) settingsPage = page;
+
+    const pane = h('div', { class: 'settings-pane' });
+    const nav = h('div', { class: 'settings-nav', role: 'tablist' });
+
+    async function show(id) {
+      settingsPage = id;
+      for (const button of nav.children) {
+        const on = button.dataset.page === id;
+        button.classList.toggle('on', on);
+        button.setAttribute('aria-selected', on ? 'true' : 'false');
+      }
+      IV.dom.clear(pane);
+      const chosen = SETTINGS_PAGES.find((entry) => entry.id === id) || SETTINGS_PAGES[0];
+      pane.append(await chosen.build(prefs, info));
+      pane.scrollTop = 0;
+    }
+
+    for (const entry of SETTINGS_PAGES) {
+      nav.append(
+        h('button', {
+          class: 'settings-tab',
+          role: 'tab',
+          text: entry.label,
+          dataset: { page: entry.id },
+          onClick: () => show(entry.id)
+        })
       );
     }
 
     const handle = modal({
       title: 'Settings',
-      body,
+      body: h('div', { class: 'settings-layout' }, nav, pane),
       footer: [h('button', { class: 'btn primary', text: 'Done', onClick: () => handle.close() })]
     });
+
+    await show(settingsPage);
+    return handle;
   }
 
   /* ------------------------------------------------------------- updates */

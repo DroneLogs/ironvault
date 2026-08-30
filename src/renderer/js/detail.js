@@ -198,7 +198,7 @@ window.IV = window.IV || {};
   function openHistory(entry) {
     const list = h('div');
     for (const item of entry.history) {
-      list.append(
+      IV.dom.add(list,
         h(
           'div',
           { class: 'detail-field' },

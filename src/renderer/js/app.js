@@ -526,7 +526,7 @@ window.IV = window.IV || {};
       let count = null;
       if (item.key === 'all') count = state.tree.counts.all;
       if (item.key === 'recycle') count = state.tree.counts.recycleBin;
-      smart.append(
+      IV.dom.add(smart,
         h(
           'li',
           {

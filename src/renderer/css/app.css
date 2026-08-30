@@ -1892,3 +1892,64 @@ span.with-help,
 .totp-next.soon {
   color: var(--text);
 }
+
+/* Settings as pages: a column of tabs on the left, one page on the right.
+   Only the page scrolls, so the tabs stay put and you never lose your place
+   in the list while reading down a long section. */
+.settings-layout {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 380px;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 0 0 168px;
+  border-right: 1px solid var(--line);
+  padding-right: 12px;
+}
+
+.settings-tab {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 10px;
+}
+
+.settings-tab:hover {
+  background: var(--hover, rgba(127, 127, 127, 0.12));
+}
+
+.settings-tab.on {
+  background: var(--accent-soft, rgba(90, 140, 240, 0.16));
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* The outline has to survive on both the plain and selected states, since the
+   tabs are how the whole dialog is navigated from a keyboard. */
+.settings-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  max-height: 62vh;
+  padding-right: 4px;
+}
+
+/* The first heading in a page has the dialog title right above it, so its
+   usual spacing reads as a gap rather than separation. */
+.settings-pane > div > .detail-section:first-child {
+  margin-top: 0;
+}

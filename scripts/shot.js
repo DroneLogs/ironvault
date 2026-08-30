@@ -335,51 +335,28 @@ async function main() {
   await wait(450);
   await shot('12-settings');
 
-  // The settings dialog scrolls, and the sections worth showing are below the
-  // fold, so each is scrolled to rather than left off the bottom of the picture.
-  await run(`
-    (function () {
-      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
-      const target = heads.find((h) => /browser extension/i.test(h.textContent));
-      if (target) target.scrollIntoView({ block: 'start' });
-      return Boolean(target);
-    })()
-  `, 'scroll to browser extension');
-  await wait(220);
-  await shot('25-browser-extension');
+  // Settings is pages now, so each is reached by clicking its tab rather than
+  // by scrolling to a heading.
+  async function settingsTab(label, name) {
+    const found = await run(
+      "(function () {" +
+      "  const tab = Array.from(document.querySelectorAll('.settings-tab'))" +
+      "    .find((b) => b.textContent.trim() === " + JSON.stringify(label) + ");" +
+      "  if (tab) tab.click();" +
+      "  return Boolean(tab);" +
+      "})()",
+      'settings tab ' + label
+    );
+    if (!found) console.log('  settings tab missing: ' + label);
+    await wait(320);
+    await shot(name);
+    return found;
+  }
 
-  await run(`
-    (function () {
-      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
-      const target = heads.find((h) => /email aliases/i.test(h.textContent));
-      if (target) target.scrollIntoView({ block: 'start' });
-      return Boolean(target);
-    })()
-  `, 'scroll to email aliases');
-  await wait(220);
-  await shot('26-email-aliases');
-
-  await run(`
-    (function () {
-      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
-      const target = heads.find((h) => /screen capture/i.test(h.textContent));
-      if (target) target.scrollIntoView({ block: 'start' });
-      return Boolean(target);
-    })()
-  `, 'scroll to screen capture');
-  await wait(220);
-  await shot('27-screen-capture');
-
-  await run(`
-    (function () {
-      const heads = Array.from(document.querySelectorAll('.detail-section h3'));
-      const target = heads.find((h) => /yubikey/i.test(h.textContent));
-      if (target) target.scrollIntoView({ block: 'start' });
-      return Boolean(target);
-    })()
-  `, 'scroll to yubikey');
-  await wait(220);
-  await shot('28-yubikey');
+  await settingsTab('Security', '27-screen-capture');
+  await settingsTab('Connections', '25-connections');
+  await settingsTab('Appearance', '26-appearance');
+  await settingsTab('Accessibility', '28-accessibility-page');
 
   await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
 

@@ -52,7 +52,7 @@ Everything needed to keep passwords in a file and use them every day.
 | Have I Been Pwned check | Have I Been Pwned? Audit |
 | Find similar, which catches `Summer2023` beside `Summer2024` | Find Similar Audit |
 | YubiKey unlock | YubiKey for KeePass |
-| Passkeys | Passkeys |
+| Passkey **storage**: a passkey saved elsewhere is read and shown | Passkeys, but only in part. Strongbox's row means signing in with one, which needs the browser extension and is not built. Do not claim parity on this line. |
 | SSH agent serving keys from the database | SSH Agent |
 | Favicon downloader | FavIcon Downloader |
 | Sync merge, and reconciling offline edits | Advanced Sync & Merge |

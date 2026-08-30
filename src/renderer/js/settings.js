@@ -206,53 +206,215 @@ window.IV = window.IV || {};
    * Choosing Always asks first, because it is the one that leaves passwords
    * visible to anything recording the screen.
    */
-  function screenCaptureField(prefs) {
-    const current = prefs.screenCapture || 'never';
-    const options = [
-      { value: 'never', label: 'Never allow (recommended)' },
-      { value: 'unlessRevealed', label: 'Allow, except while a secret is on screen' },
-      { value: 'always', label: 'Always allow' }
-    ];
-    // Built by hand rather than with selectField, because a refused
-    // confirmation has to put the menu back to what it was showing before.
-    const select = h(
-      'select',
-      {
-        onChange: async () => {
-          const chosen = select.value;
-          if (chosen === 'always') {
-            const ok = await IV.api.confirm({
-              title: 'Allow screen capture',
-              message: 'Anything recording your screen will be able to see your passwords.',
-              detail:
-                'Screenshots, screen sharing and recording software will capture this window ' +
-                'including any password you reveal. Use this for demonstrations, and set it ' +
-                'back when you are done.',
-              confirmLabel: 'Allow anyway',
-              destructive: true
-            });
-            if (!ok) {
-              select.value = IV.state.prefs.screenCapture || 'never';
-              return;
+  /**
+   * Screen capture is a grant, not a switch: see capture.js for why. This shows
+   * what is in force, and asks for the guard before relaxing anything.
+   */
+  function describeRemaining(ms) {
+    const mins = Math.max(0, Math.round(ms / 60000));
+    if (mins < 60) return mins + (mins === 1 ? ' minute' : ' minutes');
+    const hours = Math.floor(mins / 60);
+    const rest = mins % 60;
+    return hours + (hours === 1 ? ' hour' : ' hours') + (rest ? ' ' + rest + ' min' : '');
+  }
+
+  async function askForGuard(state) {
+    const kind = state.guard;
+    if (kind === 'yubikey') {
+      throw new Error('YubiKey is not set up as the screen capture guard yet.');
+    }
+    const label =
+      kind === 'vault'
+        ? 'Master password for this database'
+        : 'Screen capture password';
+    return new Promise((resolve) => {
+      const input = h('input', { type: 'password', autofocus: true });
+      const handle = modal({
+        title: 'Confirm it is you',
+        body: h(
+          'div',
+          null,
+          h('p', {
+            class: 'hint',
+            text:
+              'Relaxing screen capture lets recording software see your passwords, ' +
+              'so it asks first. It goes back on its own when the time runs out, ' +
+              'and always when the database locks.'
+          }),
+          h('label', { class: 'field' }, h('span', { class: 'field-label', text: label }), input)
+        ),
+        footer: [
+          h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => { handle.close(); resolve(null); } }),
+          h('button', {
+            class: 'btn primary',
+            text: 'Confirm',
+            onClick: () => { const v = input.value; handle.close(); resolve(v); }
+          })
+        ]
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { const v = input.value; handle.close(); resolve(v); }
+      });
+    });
+  }
+
+  async function screenCaptureSection() {
+    let state;
+    try {
+      state = await IV.api.captureStatus();
+    } catch {
+      return null;
+    }
+
+    const wrap = h('div', { class: 'detail-section' });
+
+    const statusLine = state.active
+      ? h(
+          'p',
+          { class: 'hint warning' },
+          h('strong', {
+            text:
+              (state.mode === 'always'
+                ? 'Screen capture is fully allowed. '
+                : 'Screen capture is allowed except while a secret is on screen. ')
+          }),
+          h('span', { text: describeRemaining(state.remainingMs) + ' left, and it ends as soon as the database locks.' })
+        )
+      : h('p', {
+          class: 'hint',
+          text:
+            'Protected. Screenshots, screen sharing and recording software cannot see this window. ' +
+            'Relaxing this needs the ' +
+            (state.guard === 'vault' ? 'master password' : state.guard === 'password' ? 'screen capture password' : 'YubiKey') +
+            ', and never lasts past the database locking.'
+        });
+
+    async function relax(mode) {
+      try {
+        const credential = await askForGuard(state);
+        if (credential === null) return;
+        await IV.api.captureRequest(mode, credential, state.grantMinutes);
+        toast('Screen capture allowed for ' + describeRemaining(state.grantMinutes * 60000), 'good');
+        openSettings();
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    }
+
+    const buttons = h(
+      'div',
+      { class: 'row-actions' },
+      state.active
+        ? h('button', {
+            class: 'btn primary',
+            text: 'Protect again now',
+            onClick: async () => {
+              await IV.api.captureRevoke();
+              toast('Screen capture protection is back on', 'good');
+              openSettings();
             }
+          })
+        : null,
+      !state.active
+        ? h('button', {
+            class: 'btn ghost',
+            text: 'Allow, except while a secret shows',
+            onClick: () => relax('unlessRevealed')
+          })
+        : null,
+      !state.active
+        ? h('button', { class: 'btn ghost', text: 'Allow fully', onClick: () => relax('always') })
+        : null
+    );
+
+    wrap.append(
+      h('h3', { text: 'Screen capture' }),
+      statusLine,
+      buttons,
+      selectField(
+        'Ask for',
+        [
+          { value: 'vault', label: 'The master password of the open database' },
+          { value: 'password', label: 'A separate screen capture password' },
+          { value: 'yubikey', label: 'A YubiKey (not set up yet)' }
+        ],
+        state.guard,
+        async (v) => {
+          try {
+            await IV.api.captureSetGuard(v);
+            if (v === 'password' && !state.hasSeparatePassword) {
+              toast('Set a screen capture password below', 'good');
+            }
+            openSettings();
+          } catch (err) {
+            toast(err.message, 'error');
           }
-          await apply({ screenCapture: chosen });
+        },
+        'Who is allowed to turn protection off. A separate password suits somebody ' +
+          'demonstrating the app who should not hold the master key.'
+      ),
+      numberField(
+        'Allow for at most',
+        state.grantMinutes,
+        1,
+        480,
+        'minutes',
+        async (v) => {
+          await IV.api.captureSetMinutes(v);
         }
-      },
-      options.map((o) => h('option', { value: o.value, selected: o.value === current, text: o.label }))
+      ),
+      state.guard === 'password'
+        ? h(
+            'div',
+            { class: 'row-actions' },
+            h('button', {
+              class: 'btn ghost',
+              text: state.hasSeparatePassword ? 'Change the screen capture password' : 'Set a screen capture password',
+              onClick: () => {
+                const input = h('input', { type: 'password', autofocus: true });
+                const handle = modal({
+                  title: 'Screen capture password',
+                  body: h(
+                    'div',
+                    null,
+                    h('p', { class: 'hint', text: 'At least 8 characters. This only unlocks the screen capture setting, nothing else.' }),
+                    h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'New password' }), input)
+                  ),
+                  footer: [
+                    h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+                    h('button', {
+                      class: 'btn primary',
+                      text: 'Save',
+                      onClick: async () => {
+                        try {
+                          await IV.api.captureSetPassword(input.value);
+                          handle.close();
+                          toast('Screen capture password set', 'good');
+                          openSettings();
+                        } catch (err) {
+                          toast(err.message, 'error');
+                        }
+                      }
+                    })
+                  ]
+                });
+              }
+            }),
+            state.hasSeparatePassword
+              ? h('button', {
+                  class: 'btn ghost',
+                  text: 'Remove it',
+                  onClick: async () => {
+                    await IV.api.captureClearPassword();
+                    toast('Screen capture password removed', 'good');
+                    openSettings();
+                  }
+                })
+              : null
+          )
+        : null
     );
-    return h(
-      'label',
-      { class: 'field' },
-      h('span', { class: 'field-label', text: 'Screen capture' }),
-      select,
-      h('p', {
-        class: 'hint',
-        text:
-          'Recording software cannot see this window unless you allow it. The middle option ' +
-          'lets you film the app and blacks it out only while a secret is showing.'
-      })
-    );
+    return wrap;
   }
 
   /**
@@ -308,7 +470,7 @@ window.IV = window.IV || {};
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
-      screenCaptureField(prefs),
+      await screenCaptureSection(),
       await clipboardWarning(),
       appearanceField(prefs),
       themeField(prefs),

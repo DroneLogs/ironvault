@@ -5,6 +5,7 @@ const path = require('path');
 const { ipcMain, dialog, clipboard, shell, app, safeStorage, nativeTheme } = require('electron');
 
 const vault = require('./vault');
+const capture = require('./capture');
 const settings = require('./settings');
 const generator = require('./generator');
 const wordlists = require('./wordlists');
@@ -223,7 +224,6 @@ const handlers = {
     if ('appearance' in patch) ctx.applyAppearance(prefs.appearance);
     if ('zoom' in patch) ctx.applyZoom(prefs.zoom);
     if ('autoTypeHotkey' in patch) ctx.registerHotkeys();
-    if ('screenCapture' in patch) ctx.applyScreenCapture(prefs.screenCapture);
     return prefs;
   },
   'app.themes': () => brand.choices(),
@@ -662,6 +662,15 @@ const handlers = {
   /* The renderer says when a secret is on screen. Only the unlessRevealed
      setting acts on it, but it is always reported so that switching to
      that setting takes effect without needing a reveal first. */
+  /* screen capture, which is a grant rather than a setting: see capture.js */
+  'capture.status': () => capture.status(),
+  'capture.request': ({ mode, credential, minutes }) => capture.request({ mode, credential, minutes }),
+  'capture.revoke': () => capture.revoke('user'),
+  'capture.setGuard': ({ guard }) => capture.setGuard(guard),
+  'capture.setMinutes': ({ minutes }) => capture.setGrantMinutes(minutes),
+  'capture.setPassword': ({ password }) => capture.setSeparatePassword(password),
+  'capture.clearPassword': () => capture.clearSeparatePassword(),
+
   'ui.secretsVisible': ({ visible }) => {
     ctx.applyScreenCapture(null, !!visible);
     return { ok: true };

@@ -7,6 +7,7 @@ const { app, BrowserWindow, Menu, shell, powerMonitor, nativeTheme, globalShortc
 const { registerArgon2 } = require('./argon2');
 const settings = require('./settings');
 const vault = require('./vault');
+const capture = require('./capture');
 const { registerIpc, clearClipboardNow } = require('./ipc');
 const updater = require('./updater');
 const features = require('./features');
@@ -147,7 +148,7 @@ let secretsVisible = false;
 function applyScreenCapture(mode, visible) {
   if (typeof visible === 'boolean') secretsVisible = visible;
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  const setting = mode || settings.getPrefs().screenCapture || 'never';
+  const setting = mode || capture.effectiveMode();
   const blocked =
     setting === 'never' ? true : setting === 'unlessRevealed' ? secretsVisible : false;
   try {
@@ -339,6 +340,8 @@ function saveBounds() {
 function lockNow(reason) {
   if (!vault.isOpen()) return;
   vault.lock();
+  // A locked vault means the user stepped away. Protection comes back.
+  capture.revoke('vault locked');
   clearClipboardNow();
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('vault:locked', { reason });
@@ -505,6 +508,10 @@ if (!gotLock) {
 
   app.whenReady().then(() => {
     applyAppearance(settings.getPrefs().appearance);
+    capture.onChange((state, reason) => {
+      applyScreenCapture();
+      send('capture-state', { ...state, reason });
+    });
     applyScreenCapture();
 
     // Following the device means reacting while the app is open, not only at

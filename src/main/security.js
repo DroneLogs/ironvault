@@ -27,13 +27,24 @@ const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const KEY_BYTES = 32;
 
+/**
+ * scrypt needs 128 * N * r * p bytes, and Node rejects a maxmem that only
+ * equals that figure rather than exceeding it.
+ *
+ * This was set to exactly 128 * N * r, so every call threw MEMORY_LIMIT_EXCEEDED
+ * and PIN unlock and the duress PIN could never have worked. The headroom is
+ * what makes them run at all. Covered by a self test now, because nothing else
+ * exercised this path.
+ */
+const SCRYPT_MAXMEM = 128 * SCRYPT_N * SCRYPT_R * SCRYPT_P + (1 << 20);
+
 function deriveKey(pin, salt) {
   return new Promise((resolve, reject) => {
     crypto.scrypt(
       String(pin),
       salt,
       KEY_BYTES,
-      { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, maxmem: 128 * SCRYPT_N * SCRYPT_R },
+      { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, maxmem: SCRYPT_MAXMEM },
       (err, key) => (err ? reject(err) : resolve(key))
     );
   });

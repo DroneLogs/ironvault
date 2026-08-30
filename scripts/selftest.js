@@ -5,6 +5,7 @@
  * on its own: node scripts/selftest.js
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -485,6 +486,53 @@ async function main() {
   await vault.open({ filePath: legacyPath, password: 'legacy' });
   check('KDBX 3 round trip', vault.getSecret(vault.search('legacy entry')[0].id, 'Password') === 'legacy-pw');
   vault.lock();
+
+
+  // The key derivation behind PIN unlock and the duress PIN shipped with a
+  // maxmem set to exactly what scrypt needs, and Node requires more than that,
+  // so every call threw and neither feature could ever have worked. Nothing
+  // else exercises this path: security.js pulls in electron, so the self test
+  // cannot require it, and the UI harness never sets a PIN.
+  //
+  // So the constants are read out of the real file and run for real. Copying
+  // them here instead would pass while the app stayed broken.
+  console.log('\nkey derivation for PIN unlock');
+  {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'security.js'), 'utf8');
+    // SCRYPT_MAXMEM is written in terms of the other three, so they have to be
+    // in scope when it is evaluated rather than read one at a time.
+    const expr = (name) => {
+      const m = source.match(new RegExp('const ' + name + '\\s*=\\s*([^;]+);'));
+      return m ? m[1] : null;
+    };
+    const names = ['SCRYPT_N', 'SCRYPT_R', 'SCRYPT_P', 'KEY_BYTES', 'SCRYPT_MAXMEM'];
+    const found = names.map(expr);
+    const [N, r, p, keyBytes, maxmem] = found.every(Boolean)
+      ? Function(
+          '"use strict";' +
+            names.map((n, i) => 'const ' + n + ' = (' + found[i] + ');').join('') +
+            'return [' + names.join(',') + '];'
+        )()
+      : [null, null, null, null, null];
+
+    check('security.js still declares its scrypt parameters',
+      [N, r, p, keyBytes, maxmem].every((v) => typeof v === 'number' && v > 0),
+      JSON.stringify({ N, r, p, keyBytes, maxmem }));
+
+    const needed = 128 * N * r * p;
+    check('maxmem exceeds what scrypt needs rather than equalling it',
+      maxmem > needed, maxmem + ' vs ' + needed + ' needed');
+
+    let derived = null;
+    let derivationError = null;
+    try {
+      derived = crypto.scryptSync('1234', Buffer.alloc(16), keyBytes, { N, r, p, maxmem });
+    } catch (err) {
+      derivationError = err.message.split('\n')[0];
+    }
+    check('a PIN actually derives a key', derived !== null && derived.length === keyBytes,
+      derivationError || String(derived && derived.length));
+  }
 
   console.log(`\n${passed} passed, ${failed} failed`);
   fs.rmSync(tmpDir, { recursive: true, force: true });

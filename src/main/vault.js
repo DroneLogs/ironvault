@@ -323,6 +323,23 @@ function isOpen() {
   return Boolean(state.db);
 }
 
+/**
+ * Confirms a typed password is the one this database is open with.
+ *
+ * Used to guard settings that are dangerous rather than to unlock anything, so
+ * it compares against the key already in memory instead of reopening the file.
+ * A database opened with a key file alone has no password to check, and says so
+ * rather than quietly passing.
+ */
+function verifyMasterPassword(candidate) {
+  if (!state.db || !state.password) return false;
+  const known = state.password.getText();
+  const given = String(candidate == null ? '' : candidate);
+  const a = crypto.createHash('sha256').update(known, 'utf8').digest();
+  const b = crypto.createHash('sha256').update(given, 'utf8').digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 function kdfName(db) {
   try {
     if (db.header.versionMajor < 4) return 'AES-KDF';
@@ -886,6 +903,7 @@ function audit() {
 /* ------------------------------------------------------------------ exports */
 
 module.exports = {
+  verifyMasterPassword,
   state,
   create,
   open,

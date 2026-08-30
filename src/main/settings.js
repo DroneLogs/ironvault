@@ -14,8 +14,11 @@ const DEFAULTS = {
     lockOnMinimize: false,
     lockOnSuspend: true,
     concealPasswords: true,
-    // never | unlessRevealed | always. See applyScreenCapture in main.js.
-    screenCapture: 'never',
+    // Screen capture protection is a grant, not a stored mode: see capture.js.
+    // Only the guard and how long a grant lasts are remembered.
+    screenCaptureGuard: 'vault',
+    screenCaptureGrantMinutes: 60,
+    screenCapturePassword: null,
     theme: 'blue-cb',
     appearance: 'dark',
     uiFont: 'system',

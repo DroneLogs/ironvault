@@ -26,6 +26,7 @@ let ctx = {
   applyTitleBarColors: () => {},
   applyAppearance: () => {},
   applyZoom: () => {},
+  applyScreenCapture: () => {},
   relaunch: () => {},
   registerHotkeys: () => {}
 };
@@ -59,6 +60,52 @@ function clearClipboardNow() {
     clipboard.clear();
   }
   clipboardValue = null;
+}
+
+/**
+ * Windows keeps a clipboard history (Win+V) and can sync it to other machines.
+ * Both are off by default, and both record anything this app copies when on.
+ *
+ * The proper fix is to mark the clipboard item with the Windows formats that
+ * opt out of history and cloud sync. Electron cannot: every clipboard write it
+ * offers clears the clipboard first, so the text and the exclusion formats
+ * cannot be set together. Verified against Electron 33, not assumed.
+ *
+ * So we detect it and say so instead of failing quietly. Reading two registry
+ * values is cheap and needs no native code.
+ */
+let clipboardRiskCache = null;
+
+function clipboardHistoryRisk() {
+  if (clipboardRiskCache !== null) return clipboardRiskCache;
+  const result = { history: false, cloud: false, checked: false };
+  if (process.platform !== 'win32') {
+    clipboardRiskCache = result;
+    return result;
+  }
+  try {
+    const { execFileSync } = require('child_process');
+    const read = (name) => {
+      try {
+        const out = execFileSync(
+          'reg',
+          ['query', 'HKCU\\Software\\Microsoft\\Clipboard', '/v', name],
+          { encoding: 'utf8', timeout: 4000, windowsHide: true }
+        );
+        const match = out.match(/0x([0-9a-f]+)/i);
+        return !!match && parseInt(match[1], 16) === 1;
+      } catch {
+        return false; // absent means the feature was never turned on
+      }
+    };
+    result.history = read('EnableClipboardHistory');
+    result.cloud = read('CloudClipboardAutomaticUpload');
+    result.checked = true;
+  } catch (err) {
+    console.error('Could not read clipboard settings: ' + err.message);
+  }
+  clipboardRiskCache = result;
+  return result;
 }
 
 function copyWithTimeout(text) {
@@ -176,6 +223,7 @@ const handlers = {
     if ('appearance' in patch) ctx.applyAppearance(prefs.appearance);
     if ('zoom' in patch) ctx.applyZoom(prefs.zoom);
     if ('autoTypeHotkey' in patch) ctx.registerHotkeys();
+    if ('screenCapture' in patch) ctx.applyScreenCapture(prefs.screenCapture);
     return prefs;
   },
   'app.themes': () => brand.choices(),
@@ -580,6 +628,7 @@ const handlers = {
     if (!code || code.error) throw new Error(code ? code.error : 'This entry has no one time code');
     return copyWithTimeout(code.code);
   },
+  'clip.risk': () => clipboardHistoryRisk(),
   'clip.clear': () => {
     clearClipboardNow();
     return { ok: true };
@@ -610,6 +659,13 @@ const handlers = {
    * title bar actually computed to after a theme change, and it is passed on
    * unchanged, so the buttons never sit on the wrong colour.
    */
+  /* The renderer says when a secret is on screen. Only the unlessRevealed
+     setting acts on it, but it is always reported so that switching to
+     that setting takes effect without needing a reveal first. */
+  'ui.secretsVisible': ({ visible }) => {
+    ctx.applyScreenCapture(null, !!visible);
+    return { ok: true };
+  },
   'ui.titleBarColors': ({ color, symbolColor }) => {
     ctx.applyTitleBarColors({ color, symbolColor });
     return { ok: true };

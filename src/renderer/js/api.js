@@ -123,6 +123,8 @@ window.IV = window.IV || {};
 
     generate: (config) => call('gen.make', config),
     usernames: () => call('gen.usernames'),
+    clipboardRisk: () => call('clip.risk'),
+    secretsVisible: (visible) => call('ui.secretsVisible', { visible }),
     wordLists: () => call('gen.wordLists'),
     strength: (password) => call('gen.strength', { password }),
     allTags: () => call('entries.tags'),

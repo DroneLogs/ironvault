@@ -14,6 +14,8 @@ const DEFAULTS = {
     lockOnMinimize: false,
     lockOnSuspend: true,
     concealPasswords: true,
+    // never | unlessRevealed | always. See applyScreenCapture in main.js.
+    screenCapture: 'never',
     theme: 'blue-cb',
     appearance: 'dark',
     uiFont: 'system',

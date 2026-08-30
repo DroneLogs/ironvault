@@ -1675,6 +1675,16 @@ kbd {
   margin: 6px 0 16px;
 }
 
+/* A hint that is telling you something is wrong, not explaining a control. */
+.hint.warning {
+  color: var(--text);
+  background: var(--warn-bg, rgba(215, 145, 40, 0.12));
+  border-left: 3px solid var(--warn, #d79128);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin: 6px 0 16px;
+}
+
 /* Three mutually exclusive choices in one pill, the shape a switch cannot
    take once there are more than two states. */
 .segmented {

@@ -5,6 +5,20 @@ window.IV = window.IV || {};
 (function (IV) {
   'use strict';
 
+  /* Screen capture protection is a whole window flag, so the main process only
+     needs to know whether anything is revealed, not what. Counting the reveal
+     buttons that are currently on is simpler than tracking every caller, and it
+     cannot fall out of step with what is actually on screen. Called after any
+     reveal toggles; the result is only sent when it changes. */
+  let lastReported = null;
+
+  function reportSecrets() {
+    const visible = document.querySelectorAll('.reveal.on, [data-reveal].on').length > 0;
+    if (visible === lastReported) return;
+    lastReported = visible;
+    if (IV.api && IV.api.secretsVisible) IV.api.secretsVisible(visible).catch(() => {});
+  }
+
   function h(tag, props, ...children) {
     const el = document.createElement(tag);
     if (props) {
@@ -309,6 +323,7 @@ window.IV = window.IV || {};
     formatSize,
     strengthMeter,
     announce,
-    focusableWithin
+    focusableWithin,
+    reportSecrets
   };
 })(window.IV);

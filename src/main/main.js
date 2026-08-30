@@ -129,6 +129,34 @@ function applyTitleBarColors(colors) {
   }
 }
 
+/**
+ * Keeps the window out of screenshots, screen shares and recordings.
+ *
+ * Windows protection is a single flag on the whole window; it cannot blur one
+ * field and leave the rest, so this is the closest thing to a middle setting:
+ *
+ *   never          protection always on. Nothing can capture the window.
+ *   unlessRevealed protection only while a secret is actually on screen, so
+ *                  the app records normally until somebody presses reveal.
+ *   always         protection off. For demos, and it warns before it is set.
+ *
+ * `secretsVisible` is reported by the renderer whenever a reveal is toggled.
+ */
+let secretsVisible = false;
+
+function applyScreenCapture(mode, visible) {
+  if (typeof visible === 'boolean') secretsVisible = visible;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const setting = mode || settings.getPrefs().screenCapture || 'never';
+  const blocked =
+    setting === 'never' ? true : setting === 'unlessRevealed' ? secretsVisible : false;
+  try {
+    mainWindow.setContentProtection(blocked);
+  } catch (err) {
+    console.error('Could not set screen capture protection: ' + err.message);
+  }
+}
+
 /** Native menus, dialogs and scrollbars follow the same light or dark choice. */
 function applyAppearance(appearance) {
   nativeTheme.themeSource = appearance === 'light' || appearance === 'system' ? appearance : 'dark';
@@ -477,6 +505,7 @@ if (!gotLock) {
 
   app.whenReady().then(() => {
     applyAppearance(settings.getPrefs().appearance);
+    applyScreenCapture();
 
     // Following the device means reacting while the app is open, not only at
     // startup. The renderer decides what to do with it; the preference may
@@ -500,6 +529,7 @@ if (!gotLock) {
       applyAppIcon,
       applyTitleBarColors,
       applyAppearance,
+      applyScreenCapture,
       applyZoom,
       relaunch,
       registerHotkeys,

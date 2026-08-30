@@ -942,6 +942,7 @@ window.IV = window.IV || {};
         const showing = input.type === 'text';
         input.type = showing ? 'password' : 'text';
         button.classList.toggle('on', !showing);
+        IV.dom.reportSecrets();
       });
     }
 

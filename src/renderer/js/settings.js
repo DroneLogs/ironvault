@@ -199,12 +199,100 @@ window.IV = window.IV || {};
     );
   }
 
+  /**
+   * Windows protects a whole window from capture or none of it, so there is no
+   * way to blur one field. Three honest positions instead of a pretend one.
+   *
+   * Choosing Always asks first, because it is the one that leaves passwords
+   * visible to anything recording the screen.
+   */
+  function screenCaptureField(prefs) {
+    const current = prefs.screenCapture || 'never';
+    const options = [
+      { value: 'never', label: 'Never allow (recommended)' },
+      { value: 'unlessRevealed', label: 'Allow, except while a secret is on screen' },
+      { value: 'always', label: 'Always allow' }
+    ];
+    // Built by hand rather than with selectField, because a refused
+    // confirmation has to put the menu back to what it was showing before.
+    const select = h(
+      'select',
+      {
+        onChange: async () => {
+          const chosen = select.value;
+          if (chosen === 'always') {
+            const ok = await IV.api.confirm({
+              title: 'Allow screen capture',
+              message: 'Anything recording your screen will be able to see your passwords.',
+              detail:
+                'Screenshots, screen sharing and recording software will capture this window ' +
+                'including any password you reveal. Use this for demonstrations, and set it ' +
+                'back when you are done.',
+              confirmLabel: 'Allow anyway',
+              destructive: true
+            });
+            if (!ok) {
+              select.value = IV.state.prefs.screenCapture || 'never';
+              return;
+            }
+          }
+          await apply({ screenCapture: chosen });
+        }
+      },
+      options.map((o) => h('option', { value: o.value, selected: o.value === current, text: o.label }))
+    );
+    return h(
+      'label',
+      { class: 'field' },
+      h('span', { class: 'field-label', text: 'Screen capture' }),
+      select,
+      h('p', {
+        class: 'hint',
+        text:
+          'Recording software cannot see this window unless you allow it. The middle option ' +
+          'lets you film the app and blacks it out only while a secret is showing.'
+      })
+    );
+  }
+
+  /**
+   * Windows keeps a clipboard history (Win+V) and can sync it between machines.
+   * Both are off unless the user turned them on, and both record copied
+   * passwords when on. Electron cannot mark a clipboard item to opt out, so the
+   * honest thing is to notice and say so rather than fail silently.
+   */
+  async function clipboardWarning() {
+    let risk = null;
+    try {
+      risk = await IV.api.clipboardRisk();
+    } catch {
+      return null;
+    }
+    if (!risk || (!risk.history && !risk.cloud)) return null;
+    const which = risk.history && risk.cloud
+      ? 'Clipboard history and cloud clipboard are'
+      : risk.history
+        ? 'Clipboard history is'
+        : 'Cloud clipboard is';
+    return h(
+      'p',
+      { class: 'hint warning' },
+      h('strong', { text: which + ' switched on in Windows. ' }),
+      h('span', {
+        text:
+          'Passwords you copy are being recorded there, and clearing the clipboard ' +
+          'here does not remove them. Turn it off in Windows Settings under ' +
+          'System > Clipboard, or use auto-type instead of copying.'
+      })
+    );
+  }
+
   async function apply(patch) {
     IV.state.prefs = await IV.api.setPrefs(patch);
     IV.app.applyTheme();
   }
 
-  function openSettings() {
+  async function openSettings() {
     const prefs = IV.state.prefs;
     const info = IV.state.info;
 
@@ -220,6 +308,8 @@ window.IV = window.IV || {};
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
+      screenCaptureField(prefs),
+      await clipboardWarning(),
       appearanceField(prefs),
       themeField(prefs),
       h('div', { class: 'detail-section' }, h('h3', { text: 'Accessibility' })),

@@ -55,6 +55,7 @@ window.IV = window.IV || {};
       onClick: async () => {
         revealed = !revealed;
         revealBtn.classList.toggle('on', revealed);
+        IV.dom.reportSecrets();
         if (revealed) {
           if (cached === null) cached = await IV.api.secret(entry.id, 'Password');
           valueNode.textContent = cached || '(empty)';
@@ -429,6 +430,7 @@ window.IV = window.IV || {};
               onClick: async (e) => {
                 shown = !shown;
                 e.currentTarget.classList.toggle('on', shown);
+                IV.dom.reportSecrets();
                 f.valueNode.textContent = shown ? await IV.api.secret(entry.id, custom.key) : '••••••••';
               }
             })

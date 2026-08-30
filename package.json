@@ -1,7 +1,7 @@
 {
   "name": "propolis",
   "productName": "Propolis",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "description": "A KeePass (.kdbx) password manager for Windows",
   "main": "src/main/main.js",
   "author": {

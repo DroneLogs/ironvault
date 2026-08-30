@@ -316,10 +316,24 @@ function readStored(entry) {
   };
 }
 
-/** Every passkey in the open database that belongs to this site. */
+/**
+ * Every passkey in the open database that belongs to this site.
+ *
+ * listEntries returns summaries and leaves custom fields out, which is where a
+ * passkey lives, so each entry has to be fetched in full. The values of
+ * protected fields are redacted even then, which is why the private key is read
+ * separately through getSecret when it is actually needed.
+ */
 function findForHost(host) {
+  if (!host) return [];
   const results = [];
-  for (const entry of vault.listEntries({ scope: 'all' }) || []) {
+  for (const summary of vault.listEntries({ scope: 'all' }) || []) {
+    let entry = null;
+    try {
+      entry = vault.getEntry(summary.id);
+    } catch {
+      continue;
+    }
     const stored = readStored(entry);
     if (!stored) continue;
     if (!coversHost(stored.relyingParty, host)) continue;

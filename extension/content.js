@@ -123,3 +123,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   return false;
 });
+
+/* ---------------------------------------------------------------- passkeys */
+
+/**
+ * Puts page.js into the page's own world and carries its messages to the
+ * service worker.
+ *
+ * A content script cannot replace navigator.credentials in a way the site can
+ * see, because it runs with its own copy of the globals. Injecting a script tag
+ * is the way across, and this end does the relaying because a page script has no
+ * access to chrome.runtime.
+ */
+(function injectPasskeyBridge() {
+  const CHANNEL = 'propolis-passkey';
+
+  const script = document.createElement('script');
+  script.src = chrome.runtime.getURL('page.js');
+  script.async = false;
+  // Removed once it has run: the override lives on, and leaving the tag in the
+  // document is untidy for anything inspecting the page.
+  script.onload = () => script.remove();
+  (document.head || document.documentElement).appendChild(script);
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (!data || data.channel !== CHANNEL || data.reply) return;
+
+    const type = data.action === 'create' ? 'passkey-create' : 'passkey-get';
+    chrome.runtime.sendMessage({ type, ...data.payload }, (reply) => {
+      const answer = chrome.runtime.lastError
+        ? { ok: false, error: chrome.runtime.lastError.message }
+        : reply || { ok: false, error: 'No answer from Propolis' };
+      window.postMessage(
+        { channel: CHANNEL, id: data.id, reply: true, ...answer },
+        window.location.origin
+      );
+    });
+  });
+})();

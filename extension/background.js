@@ -162,11 +162,21 @@ async function associate() {
 
 /* ----------------------------------------------------------------- routing */
 
+/** Everything the page sent except the routing field, which is ours. */
+function strip(message) {
+  const copy = { ...message };
+  delete copy.type;
+  return copy;
+}
+
 const ROUTES = {
   status: () => request({ action: 'get-status' }),
   logins: ({ url }) => request({ action: 'get-logins', url }),
   totp: ({ uuid }) => request({ action: 'get-totp', uuid }),
   associate: () => associate(),
+  'passkey-create': (m) => request({ action: 'passkey-create', ...strip(m) }),
+  'passkey-get': (m) => request({ action: 'passkey-get', ...strip(m) }),
+  'passkey-list': ({ url }) => request({ action: 'passkey-list', url }),
   connection: async () => {
     const session = await connect();
     return { associated: session.associated };

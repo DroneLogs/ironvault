@@ -47,6 +47,7 @@ const net = require('net');
 
 const settings = require('./settings');
 const vault = require('./vault');
+const passkeys = require('./passkeys');
 
 const PIPE_NAME = '\\\\.\\pipe\\propolis-browser';
 const PROTOCOL = 1;
@@ -252,6 +253,136 @@ async function handleAssociate(message, peerKey) {
   return { associated: true, id: record.id, name: record.name };
 }
 
+/* --------------------------------------------------------------- passkeys */
+
+/**
+ * Saving a new passkey.
+ *
+ * It goes onto an existing entry for the site when there is exactly one and it
+ * has no passkey already, because that is what somebody means by "my account
+ * there". Anything less obvious gets its own entry rather than this guessing,
+ * since attaching a credential to the wrong record is a mess to unpick.
+ */
+function storePasskey(store) {
+  const existing = vault
+    .listEntries({ scope: 'all' })
+    .filter((entry) => hostMatches(entry.url, store.relyingParty))
+    .filter((entry) => !(entry.customFields || []).some((f) => /^KPEX_PASSKEY_CREDENTIAL_ID$/i.test(f.key)));
+
+  const fields = [
+    { key: passkeys.FIELDS.relyingParty, value: store.relyingParty, protected: false },
+    { key: passkeys.FIELDS.username, value: store.userName || '', protected: false },
+    { key: passkeys.FIELDS.userHandle, value: store.userHandle, protected: false },
+    { key: passkeys.FIELDS.credentialId, value: store.credentialId, protected: false },
+    { key: passkeys.FIELDS.privateKey, value: store.privateKeyPem, protected: true }
+  ];
+
+  if (existing.length === 1) {
+    const entry = vault.getEntry(existing[0].id);
+    const keep = (entry.customFields || []).filter((f) => !/^KPEX_PASSKEY_/i.test(f.key));
+    vault.updateEntry(entry.id, {
+      title: entry.title,
+      username: entry.username,
+      password: vault.getSecret(entry.id, 'Password') || '',
+      url: entry.url,
+      notes: entry.notes,
+      tags: entry.tags || [],
+      customFields: keep.concat(fields)
+    });
+    return { entryId: entry.id, title: entry.title, attached: true };
+  }
+
+  const created = vault.createEntry({
+    groupId: vault.getTree().root.id,
+    title: store.relyingPartyName || store.relyingParty,
+    username: store.userName || '',
+    password: '',
+    url: 'https://' + store.relyingParty,
+    notes: '',
+    tags: [],
+    customFields: fields
+  });
+  return { entryId: created.id, title: created.title, attached: false };
+}
+
+async function handlePasskeyCreate(inner) {
+  requireUnlocked();
+  if (typeof approver !== 'function') throw new Error('Propolis cannot ask for approval right now');
+
+  const host = hostOf(inner.origin);
+  const approved = await approver({
+    name: inner.rpName || host,
+    kind: 'passkey-create',
+    site: host,
+    account: inner.userName || ''
+  });
+  if (!approved) {
+    const err = new Error('You declined to create the passkey');
+    err.code = 'declined';
+    throw err;
+  }
+
+  const made = passkeys.create(inner);
+  const where = storePasskey(made.store);
+  await vault.save();
+  return { credential: made.credential, entry: where };
+}
+
+async function handlePasskeyGet(inner) {
+  requireUnlocked();
+  const host = hostOf(inner.origin);
+  const found = passkeys.findForHost(host);
+  if (!found.length) {
+    const err = new Error('No passkey for this site is in your database');
+    err.code = 'no-passkey';
+    throw err;
+  }
+
+  // A site may name the credentials it will accept. Honour that rather than
+  // offering one it is going to reject.
+  const allowed = Array.isArray(inner.allowCredentials) ? inner.allowCredentials : [];
+  const usable = allowed.length
+    ? found.filter((c) => allowed.includes(c.credentialId))
+    : found;
+  if (!usable.length) {
+    const err = new Error('None of your passkeys for this site are the one it asked for');
+    err.code = 'no-passkey';
+    throw err;
+  }
+
+  const chosen = usable[0];
+  if (typeof approver === 'function') {
+    const approved = await approver({
+      name: host,
+      kind: 'passkey-use',
+      site: host,
+      account: chosen.userName || chosen.title
+    });
+    if (!approved) {
+      const err = new Error('You declined the sign in');
+      err.code = 'declined';
+      throw err;
+    }
+  }
+
+  const pem = vault.getSecret(chosen.entryId, passkeys.FIELDS.privateKey);
+  if (!pem) throw new Error('That passkey has no private key stored with it');
+
+  return {
+    credential: passkeys.assertion({
+      origin: inner.origin,
+      rpId: inner.rpId,
+      challenge: inner.challenge,
+      stored: {
+        relyingParty: chosen.relyingParty,
+        credentialId: chosen.credentialId,
+        userHandle: chosen.userHandle,
+        privateKeyPem: pem
+      }
+    })
+  };
+}
+
 async function handleInner(inner) {
   switch (inner.action) {
     case 'get-status':
@@ -260,6 +391,13 @@ async function handleInner(inner) {
       return loginsFor(inner.url);
     case 'get-totp':
       return totpFor(inner.uuid);
+    case 'passkey-create':
+      return handlePasskeyCreate(inner);
+    case 'passkey-get':
+      return handlePasskeyGet(inner);
+    case 'passkey-list':
+      requireUnlocked();
+      return { passkeys: passkeys.findForHost(hostOf(inner.url)) };
     default:
       throw new Error('Unknown request: ' + String(inner.action));
   }

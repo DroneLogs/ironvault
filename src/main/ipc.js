@@ -9,6 +9,7 @@ const capture = require('./capture');
 const aliases = require('./aliases');
 const browserbridge = require('./browserbridge');
 const browserinstall = require('./browserinstall');
+const lansync = require('./lansync');
 const settings = require('./settings');
 const generator = require('./generator');
 const wordlists = require('./wordlists');
@@ -493,6 +494,29 @@ const handlers = {
     generator.generateUsernames({
       includeInventedEmail: settings.getPrefs().allowInventedEmail === true
     }),
+
+  /* sync over the local network */
+  'lan.status': () => lansync.status(),
+  'lan.enable': ({ enabled }) => {
+    settings.setPrefs({ lanSync: enabled !== false });
+    return enabled !== false ? lansync.start() : lansync.stop();
+  },
+  'lan.beginPairing': () => {
+    lansync.startAnnouncing();
+    return lansync.beginPairing({});
+  },
+  'lan.cancelPairing': () => {
+    lansync.stopAnnouncing();
+    return lansync.cancelPairing();
+  },
+  'lan.discover': () => lansync.discover({}),
+  'lan.pair': ({ address, port, code, name }) => lansync.pairWith({ address, port, code, name }),
+  'lan.forget': ({ id }) => lansync.forgetPeer(id),
+  'lan.setName': ({ name }) => {
+    settings.setPrefs({ lanDeviceName: String(name || '').slice(0, 60) });
+    return lansync.status();
+  },
+  'lan.sync': ({ peerId }) => features.lanSyncNow({ peerId }),
 
   /* browser extension */
   'browser.status': async () => ({

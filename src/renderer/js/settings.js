@@ -719,6 +719,221 @@ window.IV = window.IV || {};
     return wrap;
   }
 
+  /**
+   * Syncing between two machines on the same network.
+   *
+   * Pairing is laid out the way it actually happens: one machine shows a code,
+   * the other finds it and types the code in. Both halves are on this screen,
+   * because it is the same person walking between two computers.
+   */
+  async function lanSection() {
+    let state;
+    try {
+      state = await IV.api.lanStatus();
+    } catch {
+      return null;
+    }
+
+    const wrap = h('div', { class: 'detail-section' });
+    wrap.append(
+      h('h3', { text: 'Sync over your network' }),
+      h('p', {
+        class: 'hint',
+        text:
+          'Sync straight to another computer running Propolis on the same network, ' +
+          'with no server in between and nothing leaving the building. Both ' +
+          'databases have to be open, and both are merged, so neither computer ' +
+          'is left behind.'
+      }),
+      toggle('Allow computers on this network to pair', state.running === true, async (v) => {
+        await IV.api.lanEnable(v);
+        openSettings();
+      })
+    );
+
+    if (!state.running) return wrap;
+
+    const nameInput = h('input', {
+      type: 'text',
+      value: state.name,
+      spellcheck: 'false',
+      onChange: async () => {
+        await IV.api.lanSetName(nameInput.value.trim());
+        toast('Name changed', 'good');
+      }
+    });
+
+    wrap.append(
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'This computer is called' }), nameInput),
+      h('p', {
+        class: 'hint',
+        text:
+          'Its fingerprint is ' + state.fingerprint +
+          (state.addresses.length ? ', at ' + state.addresses.join(' or ') : '') + '.'
+      })
+    );
+
+    const codeBox = h('div');
+    wrap.append(
+      h('div', { class: 'detail-section' }, h('h3', { text: 'Pair another computer' })),
+      h('p', {
+        class: 'hint',
+        text: 'On one computer show a code, then on the other find it and type the code in.'
+      }),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Show a pairing code',
+          onClick: async () => {
+            try {
+              const started = await IV.api.lanBeginPairing();
+              IV.dom.clear(codeBox);
+              codeBox.append(
+                h('p', { class: 'hint', text: 'Type this on the other computer. It works once, and expires.' }),
+                h('div', { class: 'pair-code', text: started.code })
+              );
+            } catch (err) {
+              toast(err.message, 'error');
+            }
+          }
+        }),
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Stop showing it',
+          onClick: async () => {
+            await IV.api.lanCancelPairing();
+            IV.dom.clear(codeBox);
+            toast('No longer pairing');
+          }
+        })
+      ),
+      codeBox
+    );
+
+    const foundBox = h('div');
+    wrap.append(
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Find a computer showing a code',
+          onClick: async () => {
+            IV.dom.clear(foundBox);
+            foundBox.append(h('p', { class: 'hint', text: 'Looking...' }));
+            let found = [];
+            try {
+              found = await IV.api.lanDiscover();
+            } catch (err) {
+              toast(err.message, 'error');
+            }
+            IV.dom.clear(foundBox);
+            if (!found.length) {
+              foundBox.append(
+                h('p', {
+                  class: 'hint',
+                  text:
+                    'Nothing answered. The other computer needs Propolis open, this ' +
+                    'setting switched on, and a pairing code showing.'
+                })
+              );
+              return;
+            }
+            for (const device of found) {
+              const codeInput = h('input', {
+                type: 'text',
+                placeholder: 'The code it is showing',
+                spellcheck: 'false'
+              });
+              foundBox.append(
+                h(
+                  'div',
+                  { class: 'field' },
+                  h('span', { class: 'field-label', text: device.name + '  (' + device.address + ')' }),
+                  codeInput,
+                  h('p', { class: 'hint', text: 'Its fingerprint is ' + device.fingerprint + '.' }),
+                  h(
+                    'div',
+                    { class: 'row-gap' },
+                    h('button', {
+                      class: 'btn primary small',
+                      text: 'Pair',
+                      onClick: async () => {
+                        try {
+                          await IV.api.lanPair({
+                            address: device.address,
+                            port: device.port,
+                            code: codeInput.value,
+                            name: device.name
+                          });
+                          toast('Paired with ' + device.name, 'good');
+                          openSettings();
+                        } catch (err) {
+                          toast(err.message, 'error');
+                        }
+                      }
+                    })
+                  )
+                )
+              );
+            }
+          }
+        })
+      ),
+      foundBox
+    );
+
+    const paired = state.peers || [];
+    wrap.append(h('div', { class: 'detail-section' }, h('h3', { text: 'Paired computers' })));
+    if (!paired.length) {
+      wrap.append(h('p', { class: 'hint', text: 'None yet.' }));
+      return wrap;
+    }
+    for (const peer of paired) {
+      wrap.append(
+        h(
+          'div',
+          { class: 'row-gap' },
+          h('span', { text: peer.name + '  ' + peer.fingerprint }),
+          h('button', {
+            class: 'btn primary small',
+            text: 'Sync now',
+            onClick: async (e) => {
+              const button = e.currentTarget;
+              button.disabled = true;
+              button.textContent = 'Syncing...';
+              try {
+                const result = await IV.api.lanSync(peer.id);
+                toast(
+                  result.merged || result.theirMerged
+                    ? 'Synced. ' + result.merged + ' came here, ' + result.theirMerged + ' went there.'
+                    : 'Synced. Both were already up to date.',
+                  'good'
+                );
+              } catch (err) {
+                toast(err.message, 'error');
+              }
+              button.disabled = false;
+              button.textContent = 'Sync now';
+            }
+          }),
+          h('button', {
+            class: 'btn ghost small',
+            text: 'Unpair',
+            onClick: async () => {
+              await IV.api.lanForget(peer.id);
+              toast(peer.name + ' unpaired');
+              openSettings();
+            }
+          })
+        )
+      );
+    }
+    return wrap;
+  }
+
   async function apply(patch) {
     IV.state.prefs = await IV.api.setPrefs(patch);
     IV.app.applyTheme();
@@ -740,6 +955,7 @@ window.IV = window.IV || {};
       toggle('Lock when the window is minimised', prefs.lockOnMinimize, (v) => apply({ lockOnMinimize: v })),
       toggle('Lock when Windows sleeps or locks', prefs.lockOnSuspend, (v) => apply({ lockOnSuspend: v })),
       toggle('Hide passwords until revealed', prefs.concealPasswords !== false, (v) => apply({ concealPasswords: v })),
+      await lanSection(),
       await browserSection(),
       await aliasSection(),
       await screenCaptureSection(),

@@ -14,6 +14,7 @@ const compare = require('./compare');
 const transfer = require('./transfer');
 const autotype = require('./autotype');
 const remote = require('./remote');
+const lansync = require('./lansync');
 const backups = require('./backups');
 
 /**
@@ -469,6 +470,107 @@ async function copyEntriesToDatabase({ ids, filePath, password, keyFilePath, gro
   return { ok: true, copied: chosen.length, filePath };
 }
 
+/* ----------------------------------------------------------------- lan sync */
+
+/**
+ * What another machine is allowed to ask of this one.
+ *
+ * Both ends have to have the database open. That sounds like a limitation and
+ * is mostly a safety rail: merging needs the key, and a machine that cannot
+ * read what it was sent could only overwrite its own copy with something it has
+ * not checked, which is how people lose passwords.
+ */
+async function lanFileProvider({ action, data }) {
+  if (!vault.isOpen()) {
+    const err = new Error('The database on the other computer is locked');
+    err.code = 'locked';
+    throw err;
+  }
+  const info = vault.info();
+
+  if (action === 'describe') {
+    return { name: info.name, filePath: undefined, entries: liveEntries().length };
+  }
+
+  if (action === 'pull') {
+    // Unsaved edits would otherwise be left out of what we send, and the
+    // other machine would merge a copy that is already behind.
+    if (vault.state.dirty && !vault.state.readOnly) await vault.save();
+    const bytes = await fsp.readFile(info.filePath);
+    return { name: info.name, data: bytes.toString('base64') };
+  }
+
+  if (action === 'push') {
+    const incoming = Buffer.from(String(data || ''), 'base64');
+    const merged = await mergeBuffer(incoming);
+    return { merged, name: info.name };
+  }
+
+  throw new Error('Unknown request');
+}
+
+/**
+ * Merges a database somebody sent us into the open one.
+ *
+ * Reusing kdbxweb's merge, which is the same call remote sync already makes, so
+ * conflicting edits resolve the way they always have rather than by a second
+ * rule invented for this.
+ */
+async function mergeBuffer(buffer) {
+  const local = vault.requireOpen();
+  const before = allEntries(local.getDefaultGroup()).length;
+  const data = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+
+  let other;
+  try {
+    other = await kdbxweb.Kdbx.load(data, local.credentials);
+  } catch (err) {
+    if (err instanceof kdbxweb.KdbxError && err.code === kdbxweb.Consts.ErrorCodes.InvalidKey) {
+      throw new Error('That computer has a different database, or a different master password');
+    }
+    throw new Error('That copy could not be read: ' + err.message);
+  }
+
+  local.merge(other);
+  if (!vault.state.readOnly) {
+    vault.markDirty();
+    await vault.save();
+  }
+  return allEntries(local.getDefaultGroup()).length - before;
+}
+
+/**
+ * Pull, merge, push, against another machine instead of a server.
+ *
+ * Deliberately the same shape as remote sync, including pushing the merged
+ * result back, so both machines end up with everything rather than one of them
+ * quietly staying behind.
+ */
+async function lanSyncNow({ peerId }) {
+  vault.requireOpen();
+  const info = vault.info();
+
+  const pulled = await lansync.requestFrom(peerId, { action: 'pull', name: info.name });
+  if (!pulled || !pulled.data) throw new Error('That computer sent nothing back');
+
+  const merged = await mergeBuffer(Buffer.from(pulled.data, 'base64'));
+
+  const outgoing = await fsp.readFile(info.filePath);
+  const pushed = await lansync.requestFrom(peerId, {
+    action: 'push',
+    name: info.name,
+    data: outgoing.toString('base64')
+  });
+
+  return {
+    ok: true,
+    merged,
+    theirMerged: (pushed && pushed.merged) || 0,
+    bytes: outgoing.length,
+    at: Date.now()
+  };
+}
+
 /* -------------------------------------------------------------- remote sync */
 
 /**
@@ -560,6 +662,8 @@ module.exports = {
   sshKeys,
   compareWith,
   mergeWith,
+  lanSyncNow,
+  lanFileProvider,
   importFrom,
   exportTo,
   exportRecords,

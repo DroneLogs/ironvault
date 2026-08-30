@@ -496,6 +496,115 @@ function discover({ ms = DISCOVER_MS } = {}) {
   });
 }
 
+/* ------------------------------------------------------------------ client */
+
+/** One request to another machine, opened and closed around a single message. */
+function sendTo({ address, port = TCP_PORT }, message, { timeoutMs = 60000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection(port, address);
+    let buffer = Buffer.alloc(0);
+    let settled = false;
+
+    const finish = (err, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      socket.destroy();
+      if (err) reject(err);
+      else resolve(value);
+    };
+    const timer = setTimeout(() => finish(new Error('That computer did not answer')), timeoutMs);
+    if (timer.unref) timer.unref();
+
+    socket.on('connect', () => writeFrame(socket, message));
+    socket.on('data', (chunk) => {
+      buffer = Buffer.concat([buffer, chunk]);
+      if (buffer.length < 4) return;
+      const length = buffer.readUInt32LE(0);
+      if (length > MAX_FRAME) return finish(new Error('That reply was too large'));
+      if (buffer.length < 4 + length) return;
+      try {
+        finish(null, JSON.parse(buffer.subarray(4, 4 + length).toString('utf8')));
+      } catch (err) {
+        finish(err);
+      }
+    });
+    socket.on('error', (err) =>
+      finish(new Error('Could not reach that computer: ' + err.message))
+    );
+  });
+}
+
+function raise(reply) {
+  if (reply && reply.error) {
+    const err = new Error(reply.error);
+    err.code = reply.code || null;
+    throw err;
+  }
+  return reply;
+}
+
+/**
+ * Pairs with a machine that is showing a code.
+ *
+ * Both ends learn each other here, so this stores their key on success just as
+ * their side stores ours. Pairing that only worked one way would look fine
+ * until the first sync.
+ */
+async function pairWith({ address, port = TCP_PORT, code, name } = {}) {
+  const me = identity();
+  const hello = raise(await sendTo({ address, port }, { action: 'hello', publicKey: me.publicKey }));
+  if (!hello.publicKey) throw new Error('That is not a Propolis');
+  if (!hello.pairing) throw new Error('That computer is not showing a pairing code right now');
+
+  const key = sessionKey(me.privateKey, importPeerKey(hello.publicKey), code);
+  const reply = raise(
+    await sendTo(
+      { address, port },
+      { action: 'pair', publicKey: me.publicKey, ...seal(key, { action: 'pair-proof', name: deviceName() }) }
+    )
+  );
+
+  let confirmed;
+  try {
+    confirmed = open(key, reply.nonce, reply.box);
+  } catch {
+    throw new Error('That pairing code did not match');
+  }
+
+  const record = savePeer({
+    id: crypto.randomUUID(),
+    name: String(name || confirmed.name || hello.name || 'Another computer').slice(0, 60),
+    publicKey: hello.publicKey,
+    address,
+    port,
+    lastSeen: Date.now()
+  });
+  return { ok: true, peer: { id: record.id, name: record.name, fingerprint: fingerprint(record.publicKey) } };
+}
+
+/** An encrypted request to a machine already paired with. */
+async function requestFrom(peerId, inner, options) {
+  const peer = peers().find((p) => p.id === peerId);
+  if (!peer) throw new Error('That computer is not paired with this one');
+  if (!peer.address) throw new Error('No address is known for that computer yet');
+
+  const me = identity();
+  const key = sessionKey(me.privateKey, importPeerKey(peer.publicKey), null);
+  const reply = raise(
+    await sendTo(
+      { address: peer.address, port: peer.port || TCP_PORT },
+      { action: 'message', publicKey: me.publicKey, ...seal(key, inner) },
+      options
+    )
+  );
+  try {
+    return open(key, reply.nonce, reply.box);
+  } catch {
+    throw new Error('That computer replied with something unreadable');
+  }
+}
+
 module.exports = {
   start,
   stop,
@@ -522,6 +631,9 @@ module.exports = {
   stopAnnouncing,
   discover,
   localAddresses,
+  pairWith,
+  requestFrom,
+  sendTo,
   TCP_PORT,
   UDP_PORT,
   PROTOCOL

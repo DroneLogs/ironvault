@@ -1868,3 +1868,21 @@ span.with-help,
   color: var(--muted);
   margin-top: 2px;
 }
+
+/* A pairing code is read off one screen and typed into another, so it is set
+   large and monospaced with the characters spaced apart. Getting one character
+   wrong means starting over, and the alphabet already excludes I, O, 0 and 1
+   for the same reason. */
+.pair-code {
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-align: center;
+  padding: 14px 10px;
+  margin: 8px 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel, rgba(127, 127, 127, 0.08));
+  user-select: all;
+}

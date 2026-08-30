@@ -9,6 +9,7 @@ const settings = require('./settings');
 const vault = require('./vault');
 const capture = require('./capture');
 const browserbridge = require('./browserbridge');
+const lansync = require('./lansync');
 const { registerIpc, clearClipboardNow } = require('./ipc');
 const updater = require('./updater');
 const features = require('./features');
@@ -528,6 +529,28 @@ if (!gotLock) {
       });
       return response === 0;
     });
+    // Pairing is a question about a machine on the network, so it has to be
+    // answered here rather than anywhere the network could reach.
+    lansync.setApprover(async ({ name, fingerprint, address }) => {
+      const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'question',
+        buttons: ['Pair', 'Not now'],
+        defaultId: 1,
+        cancelId: 1,
+        title: 'Pair a computer',
+        message: name + ' wants to sync with this database.',
+        detail:
+          'Check the code came from a computer you own.\n\n' +
+          'Its fingerprint is ' + fingerprint +
+          (address ? '\nIts address is ' + address : '') +
+          '\n\nOnce paired it can read and change this database whenever both ' +
+          'are unlocked and on the same network. You can unpair it at any time.'
+      });
+      return response === 0;
+    });
+    lansync.setFileProvider((request) => features.lanFileProvider(request));
+    if (settings.getPrefs().lanSync) lansync.start();
     if (settings.getPrefs().browserBridge) browserbridge.start();
     applyAppearance(settings.getPrefs().appearance);
     capture.onChange((state, reason) => {

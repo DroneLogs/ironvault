@@ -22,6 +22,11 @@ const DEFAULTS = {
     // Email aliases come from a provider that issues them. The keys are
     // DPAPI sealed, never plain text: see aliases.js.
     // Extensions the user has approved. Public keys only, no secrets.
+    // Machines paired for sync on the local network. Public keys only.
+    lanPeers: [],
+    lanIdentity: null,
+    lanDeviceName: '',
+    lanSync: false,
     browserAssociations: [],
     browserBridge: false,
     aliasProvider: null,

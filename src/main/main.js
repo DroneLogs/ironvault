@@ -449,7 +449,9 @@ function buildMenu() {
         { type: 'separator' },
         { label: 'Backups...', click: () => send('menu', 'tools:backups') },
         { label: 'Security & Unlock...', click: () => send('menu', 'tools:security') },
-        { label: 'Remote Storage...', click: () => send('menu', 'tools:remote') }
+        { label: 'Remote Storage...', click: () => send('menu', 'tools:remote') },
+        { type: 'separator' },
+        { label: 'Make a travel database...', click: () => send('menu', 'tools:travel') }
       ]
     },
     {

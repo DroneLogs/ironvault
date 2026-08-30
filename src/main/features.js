@@ -470,6 +470,121 @@ async function copyEntriesToDatabase({ ids, filePath, password, keyFilePath, gro
   return { ok: true, copied: chosen.length, filePath };
 }
 
+/* ------------------------------------------------------------ travel vaults */
+
+/**
+ * The tag that marks an entry as safe to carry.
+ *
+ * A tag rather than a list kept somewhere else, because it survives, it is
+ * visible on the entry, and it can be edited with the tools already here.
+ */
+const TRAVEL_TAG = 'Travel';
+
+function hasTravelTag(entry, tag) {
+  const wanted = String(tag || TRAVEL_TAG).toLowerCase();
+  return (entry.tags || []).some((t) => String(t).toLowerCase() === wanted);
+}
+
+/** What would be carried, so the screen can show it before anything is written. */
+function travelCandidates({ tag } = {}) {
+  const db = vault.requireOpen();
+  const chosen = allEntries(db.getDefaultGroup())
+    .filter((entry) => !isInRecycleBin(entry))
+    .filter((entry) => hasTravelTag({ tags: entry.tags }, tag));
+  return {
+    tag: tag || TRAVEL_TAG,
+    total: liveEntries().length,
+    entries: chosen.map((entry) => vault.serializeEntry(entry))
+  };
+}
+
+/**
+ * Writes a separate database containing only the tagged entries.
+ *
+ * This is not 1Password's travel mode, and for a file you carry it is better.
+ * Theirs removes vaults from a device and fetches them back from a server
+ * afterwards. There is no server here, so hiding entries inside the same file
+ * would only hide them from the interface: anybody with the file and the
+ * password, or with forensic tools at a border, would still have all of it.
+ *
+ * So the data genuinely is not in the file you carry. The real database stays
+ * at home.
+ *
+ * Built by subtraction rather than construction. The first version made a new
+ * database and imported the chosen entries into it, which meant new identities
+ * for the root group, the groups and the entries, and kdbxweb refuses outright
+ * to merge two databases whose roots differ. Copying the real one and removing
+ * what is not going keeps every identity, every timestamp and every entry's
+ * history, so the travel copy is the same database with less in it and merging
+ * it home afterwards is an ordinary merge.
+ *
+ * Removal is done by taking entries out of their groups directly rather than
+ * through the recycle bin, and the tombstones a normal delete would leave are
+ * cleared. Tombstones would record the identifier of everything left behind,
+ * and worse, merging home would then delete those entries there too.
+ */
+async function exportTravelVault({ filePath, password, keyFilePath, tag, name } = {}) {
+  vault.requireOpen();
+  if (!password && !keyFilePath) {
+    throw new Error('A travel database needs its own password, or a key file');
+  }
+  const info = vault.info();
+  if (path.resolve(filePath) === path.resolve(info.filePath)) {
+    throw new Error('That would write over the database you are carrying entries out of');
+  }
+
+  // Unsaved edits belong in the copy, so start from a saved file.
+  if (vault.state.dirty && !vault.state.readOnly) await vault.save();
+
+  const home = vault.requireOpen();
+  const bytes = await fsp.readFile(info.filePath);
+  const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const copy = await kdbxweb.Kdbx.load(data, home.credentials);
+
+  const root = copy.getDefaultGroup();
+  const recycleId = copy.meta.recycleBinUuid ? copy.meta.recycleBinUuid.id : null;
+
+  let carried = 0;
+  let removed = 0;
+
+  const prune = (group) => {
+    // The recycle bin goes entirely: what somebody deleted is not something to
+    // carry through an airport.
+    group.groups = (group.groups || []).filter((child) => {
+      if (recycleId && child.uuid.id === recycleId) return false;
+      prune(child);
+      return true;
+    });
+
+    group.entries = (group.entries || []).filter((entry) => {
+      const keep = hasTravelTag({ tags: entry.tags }, tag);
+      if (keep) carried += 1;
+      else removed += 1;
+      return keep;
+    });
+  };
+  prune(root);
+
+  if (!carried) {
+    throw new Error('No entries are tagged ' + (tag || TRAVEL_TAG) + ', so there is nothing to carry');
+  }
+
+  // A tombstone names what was taken out, and would tell a merge to delete the
+  // same entries at home. Both are reasons to leave none behind.
+  copy.deletedObjects = [];
+  if (name) copy.meta.name = name;
+
+  const pv = password ? kdbxweb.ProtectedValue.fromString(String(password)) : null;
+  const keyFileBuffer = keyFilePath ? await fsp.readFile(keyFilePath) : null;
+  copy.credentials = new kdbxweb.Credentials(
+    pv,
+    keyFileBuffer ? new Uint8Array(keyFileBuffer).buffer : null
+  );
+
+  await fsp.writeFile(filePath, Buffer.from(await copy.save()));
+  return { ok: true, carried, left: removed, filePath, tag: tag || TRAVEL_TAG };
+}
+
 /* ----------------------------------------------------------------- lan sync */
 
 /**
@@ -668,6 +783,9 @@ module.exports = {
   exportTo,
   exportRecords,
   copyEntriesToDatabase,
+  exportTravelVault,
+  travelCandidates,
+  TRAVEL_TAG,
   syncNow,
   listBackups,
   restoreBackup,

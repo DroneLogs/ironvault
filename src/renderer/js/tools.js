@@ -505,6 +505,110 @@ window.IV = window.IV || {};
 
   /* ------------------------------------------------------------ security */
 
+  /**
+   * Travel vaults.
+   *
+   * The screen has to carry the explanation, because somebody arriving expecting
+   * 1Password's travel mode will otherwise assume this hides things and that
+   * their real database is safe on the same laptop. It is not the same idea and
+   * the difference is the entire point.
+   */
+  async function openTravel() {
+    let state;
+    try {
+      state = await IV.api.travelCandidates('Travel');
+    } catch (err) {
+      toast(err.message, 'error');
+      return null;
+    }
+
+    const list = h('div');
+    const renderList = (found) => {
+      IV.dom.clear(list);
+      if (!found.entries.length) {
+        list.append(
+          h('p', {
+            class: 'hint warning',
+            text:
+              'Nothing is tagged ' + found.tag + ' yet. Open an entry, edit it, and ' +
+              'add that tag to anything you want to carry.'
+          })
+        );
+        return;
+      }
+      list.append(
+        h('p', {
+          class: 'hint',
+          text: found.entries.length + ' of your ' + found.total + ' entries would be carried:'
+        })
+      );
+      for (const entry of found.entries) {
+        list.append(h('div', { class: 'row-gap' }, h('span', { text: entry.title }),
+          h('span', { class: 'db-sub', text: entry.username || '' })));
+      }
+    };
+    renderList(state);
+
+    const passwordInput = h('input', { type: 'password', placeholder: 'A password for the travel database' });
+
+    const handle = modal({
+      title: 'Make a travel database',
+      body: h(
+        'div',
+        null,
+        h('p', {
+          class: 'hint',
+          text:
+            'This writes a separate database holding only the entries you tagged. ' +
+            'Carry that one and leave this one at home. The entries you did not ' +
+            'tag are not hidden in it, they are simply not in it, so a copy of ' +
+            'the file cannot give them up however it is examined.'
+        }),
+        h('p', {
+          class: 'hint',
+          text:
+            'Give it a different password from your real one. If the travel copy ' +
+            'is ever taken from you, the password taken with it opens nothing else.'
+        }),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Travel password' }), passwordInput),
+        list,
+        h('p', {
+          class: 'hint',
+          text:
+            'When you get home, use Compare and merge on the travel file to bring ' +
+            'back anything you changed while away. Entries keep their identity, so ' +
+            'they update rather than arriving a second time.'
+        })
+      ),
+      footer: [
+        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', {
+          class: 'btn primary',
+          text: 'Choose where to save it',
+          onClick: async () => {
+            if (passwordInput.value.length < 8) {
+              toast('Use a travel password of at least 8 characters', 'error');
+              return;
+            }
+            try {
+              const made = await IV.api.travelExport({
+                tag: 'Travel',
+                name: 'Travel',
+                password: passwordInput.value
+              });
+              if (!made) return;
+              handle.close();
+              toast(made.carried + ' entries written, ' + made.left + ' left at home', 'good');
+            } catch (err) {
+              toast(err.message, 'error');
+            }
+          }
+        })
+      ]
+    });
+    return handle;
+  }
+
   async function openSecurity() {
     const info = IV.state.info;
     if (!info || !info.open) {
@@ -1376,6 +1480,7 @@ window.IV = window.IV || {};
     openTransfer,
     openBackups,
     openSecurity,
+    openTravel,
     openRemote,
     syncNow,
     openSsh,

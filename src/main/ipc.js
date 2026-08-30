@@ -495,6 +495,21 @@ const handlers = {
       includeInventedEmail: settings.getPrefs().allowInventedEmail === true
     }),
 
+  /* travel vaults */
+  'travel.candidates': ({ tag } = {}) => features.travelCandidates({ tag }),
+  'travel.export': async ({ tag, name, password }) => {
+    const target = await dialog.showSaveDialog(win(), {
+      title: 'Save the travel database',
+      defaultPath: path.join(app.getPath('documents'), (name || 'Travel') + '.kdbx'),
+      filters: [{ name: 'KeePass database', extensions: ['kdbx'] }]
+    });
+    if (target.canceled || !target.filePath) return null;
+    const filePath = target.filePath.toLowerCase().endsWith('.kdbx')
+      ? target.filePath
+      : target.filePath + '.kdbx';
+    return features.exportTravelVault({ filePath, password, tag, name });
+  },
+
   /* sync over the local network */
   'lan.status': () => lansync.status(),
   'lan.enable': ({ enabled }) => {

@@ -1094,6 +1094,9 @@ window.IV = window.IV || {};
       case 'tools:remote':
         if (state.info) IV.tools.openRemote();
         break;
+      case 'tools:travel':
+        if (state.info) IV.tools.openTravel();
+        break;
       case 'tools:ssh':
         IV.tools.openSsh();
         break;

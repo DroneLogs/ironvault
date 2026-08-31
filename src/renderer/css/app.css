@@ -1953,3 +1953,31 @@ span.with-help,
 .settings-pane > div > .detail-section:first-child {
   margin-top: 0;
 }
+
+/* The update dialog leads with what is happening, at a size that makes it the
+   thing you read first rather than one line among four buttons. */
+.update-headline {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-3, rgba(127, 127, 127, 0.25));
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s ease-out;
+}
+
+/* Reduced motion means the bar should jump rather than slide. */
+body.reduce-motion .progress-fill {
+  transition: none;
+}

@@ -1286,11 +1286,40 @@ window.IV = window.IV || {};
     }
   }
 
+  /**
+   * Updating, as one action rather than a form.
+   *
+   * The old version put four buttons and the whole feed configuration at the
+   * same weight, so the one thing somebody came to do sat beside a text box
+   * explaining latest.yml. What is in front of you now is the update; the
+   * settings are behind Advanced, where they are wanted about once.
+   *
+   * Downloading and installing were also two presses with a wait between them,
+   * which is one press too many for something the user already said yes to.
+   * Update now does both: it downloads, then installs when the download lands.
+   */
+  let updatesHandle = null;
+  let autoInstall = false;
+
   function openUpdates() {
+    // Only ever one of these. A second dialog left the first one live but
+    // unlistened to, so pressing Download on it did nothing visible while the
+    // download actually ran behind it.
+    if (updatesHandle && typeof updatesHandle.close === 'function') {
+      try {
+        updatesHandle.close();
+      } catch {
+        /* already gone */
+      }
+    }
+    autoInstall = false;
+
     const prefs = IV.state.prefs;
-    const status = h('p', { class: 'update-status' });
-    const notes = h('div', { class: 'notes-box', hidden: true });
+    const headline = h('p', { class: 'update-headline' });
+    const detail = h('p', { class: 'hint' });
+    const bar = h('div', { class: 'progress', hidden: true }, h('div', { class: 'progress-fill' }));
     const actions = h('div', { class: 'row-gap' });
+    const notes = h('div', { class: 'notes-box', hidden: true });
 
     const feedInput = h('input', {
       type: 'text',
@@ -1307,10 +1336,33 @@ window.IV = window.IV || {};
       onChange: () => apply({ updateReleasePageUrl: pageInput.value.trim() })
     });
 
+    async function install(update) {
+      const ok = await IV.api.confirm({
+        title: 'Install update',
+        message: 'Install version ' + update.version + ' and restart Propolis?',
+        detail: 'Any open database is locked first. Unsaved changes are saved automatically.',
+        confirmLabel: 'Install and restart'
+      });
+      if (!ok) return;
+      await IV.api.lock().catch(() => {});
+      await IV.api.installUpdate();
+    }
+
     function render(update) {
       IV.state.update = update;
-      status.textContent = describe(update);
-      status.className = 'update-status' + (update.status === 'error' ? ' error-line' : '');
+      headline.textContent = describe(update);
+      headline.className = 'update-headline' + (update.status === 'error' ? ' error-line' : '');
+
+      detail.textContent =
+        update.status === 'available'
+          ? 'It downloads and installs in one go. Propolis restarts when it is done.'
+          : update.status === 'ready'
+            ? 'Ready to install.'
+            : '';
+      detail.hidden = !detail.textContent;
+
+      bar.hidden = update.status !== 'downloading';
+      bar.firstChild.style.width = (update.percent || 0) + '%';
 
       if (update.notes) {
         notes.hidden = false;
@@ -1319,12 +1371,70 @@ window.IV = window.IV || {};
         notes.hidden = true;
       }
 
+      // The download finishing is what triggers the install, so Update now is
+      // one press rather than two with a wait in between.
+      if (update.status === 'ready' && autoInstall) {
+        autoInstall = false;
+        install(update);
+      }
+
       IV.dom.clear(actions);
-      actions.append(
+
+      if (update.status === 'available') {
+        IV.dom.add(
+          actions,
+          h('button', {
+            class: 'btn primary',
+            text: 'Update now',
+            onClick: async () => {
+              autoInstall = true;
+              try {
+                await IV.api.downloadUpdate();
+              } catch (err) {
+                autoInstall = false;
+                toast(err.message, 'error');
+              }
+            }
+          }),
+          h('button', {
+            class: 'btn ghost small',
+            text: 'Skip this version',
+            onClick: async () => {
+              await apply({ skippedUpdateVersion: update.version });
+              toast('Propolis will not bring up ' + update.version + ' again');
+              handle.close();
+            }
+          }),
+          prefs.updateReleasePageUrl
+            ? h('button', {
+                class: 'btn ghost small',
+                text: "What's new",
+                onClick: () => IV.api.openReleasePage().catch((err) => toast(err.message, 'error'))
+              })
+            : null
+        );
+        return;
+      }
+
+      if (update.status === 'downloading') {
+        IV.dom.add(actions, h('button', { class: 'btn primary', text: 'Downloading...', disabled: true }));
+        return;
+      }
+
+      if (update.status === 'ready') {
+        IV.dom.add(
+          actions,
+          h('button', { class: 'btn primary', text: 'Restart and install', onClick: () => install(update) })
+        );
+        return;
+      }
+
+      IV.dom.add(
+        actions,
         h('button', {
-          class: 'btn ghost small',
-          text: update.status === 'checking' ? 'Checking...' : 'Check now',
-          disabled: update.status === 'checking' || update.status === 'downloading',
+          class: 'btn ' + (update.status === 'error' ? 'primary' : 'ghost') + ' small',
+          text: update.status === 'checking' ? 'Checking...' : update.status === 'error' ? 'Try again' : 'Check now',
+          disabled: update.status === 'checking',
           onClick: async () => {
             try {
               render(await IV.api.checkUpdates(true));
@@ -1334,119 +1444,82 @@ window.IV = window.IV || {};
           }
         })
       );
-      if (update.status === 'available') {
-        actions.append(
-          h('button', {
-            class: 'btn primary small',
-            text: 'Download',
-            onClick: async () => {
-              try {
-                await IV.api.downloadUpdate();
-              } catch (err) {
-                toast(err.message, 'error');
-              }
-            }
-          }),
-          // Without this the prompt would reappear on every launch until the
-          // user gave in, which is how update prompts get resented.
-          h('button', {
-            class: 'btn ghost small',
-            text: 'Skip this version',
-            onClick: async () => {
-              await apply({ skippedUpdateVersion: update.version });
-              toast('Propolis will not bring up ' + update.version + ' again');
-              handle.close();
-            }
-          })
-        );
-      }
-      if (update.status === 'ready') {
-        actions.append(
-          h('button', {
-            class: 'btn primary small',
-            text: 'Install and restart',
-            onClick: async () => {
-              const ok = await IV.api.confirm({
-                title: 'Install update',
-                message: 'Install version ' + update.version + ' and restart Propolis?',
-                detail: 'Any open database is locked first. Unsaved changes are saved automatically.',
-                confirmLabel: 'Install'
-              });
-              if (!ok) return;
-              await IV.api.lock().catch(() => {});
-              await IV.api.installUpdate();
-            }
-          })
-        );
-      }
-      if (prefs.updateReleasePageUrl) {
-        actions.append(
-          h('button', {
-            class: 'btn ghost small',
-            text: 'Release notes',
-            onClick: () => IV.api.openReleasePage().catch((err) => toast(err.message, 'error'))
-          })
-        );
-      }
     }
+
+    const advanced = h(
+      'details',
+      { class: 'adv' },
+      h('summary', { text: 'Advanced' }),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Update feed URL' }), feedInput),
+      h(
+        'div',
+        { class: 'row-gap' },
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Use the Propolis repository',
+          onClick: async () => {
+            const state = await IV.api.updateState();
+            feedInput.value = state.defaultFeedUrl;
+            await apply({ updateFeedUrl: state.defaultFeedUrl });
+            toast('Feed reset to the Propolis repository', 'good');
+          }
+        }),
+        h('button', {
+          class: 'btn ghost small',
+          text: 'Never check',
+          onClick: async () => {
+            feedInput.value = '';
+            await apply({ updateFeedUrl: '' });
+            render(await IV.api.updateState());
+            toast('Update checks turned off');
+          }
+        })
+      ),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Release notes page' }), pageInput),
+      h('p', {
+        class: 'hint',
+        text:
+          'A check asks for latest.yml beside the installer, so a release published ' +
+          'without that file cannot be seen however public the repository is. Leave ' +
+          'the feed empty and Propolis never contacts anything.'
+      })
+    );
 
     const handle = modal({
       title: 'Updates',
       body: h(
         'div',
         null,
-        status,
-        notes,
+        headline,
+        detail,
+        bar,
         actions,
-        h('div', { class: 'detail-section' }, h('h3', { text: 'Where to check' })),
+        notes,
+        h('div', { class: 'detail-section' }),
         toggle('Check automatically when Propolis starts', prefs.autoCheckUpdates, (v) =>
           apply({ autoCheckUpdates: v })
         ),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Update feed URL' }), feedInput),
-        h(
-          'div',
-          { class: 'row-gap' },
-          h('button', {
-            class: 'btn ghost small',
-            text: 'Use the Propolis repository',
-            onClick: async () => {
-              const state = await IV.api.updateState();
-              feedInput.value = state.defaultFeedUrl;
-              await apply({ updateFeedUrl: state.defaultFeedUrl });
-              toast('Feed reset to the Propolis repository', 'good');
-            }
-          }),
-          h('button', {
-            class: 'btn ghost small',
-            text: 'Never check',
-            onClick: async () => {
-              feedInput.value = '';
-              await apply({ updateFeedUrl: '' });
-              render(await IV.api.updateState());
-              toast('Update checks turned off');
-            }
-          })
-        ),
-        h('p', {
-          class: 'hint',
-          text:
-            'This points at the Propolis releases by default. A check asks for latest.yml beside ' +
-            'the installer, so a release published without that file cannot be seen however public ' +
-            'the repository is. The app sends no credentials, so a private repository cannot be seen either.'
-        }),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Release notes page (optional)' }), pageInput),
-        h('p', {
-          class: 'hint',
-          text: 'Leave the feed URL empty and Propolis never contacts anything.'
-        })
+        advanced
       ),
       footer: [h('button', { class: 'btn primary', text: 'Done', onClick: () => handle.close() })],
       onClose: () => {
         liveUpdatePanel = null;
+        updatesHandle = null;
+        autoInstall = false;
+        clearInterval(poll);
       }
     });
 
+    updatesHandle = handle;
     liveUpdatePanel = render;
+
+    // Asked for as well as listened for. Progress arrives by event, and an event
+    // that goes astray used to leave this sitting on a stale screen with no way
+    // to recover except closing it.
+    const poll = setInterval(() => {
+      IV.api.updateState().then(render).catch(() => {});
+    }, 1000);
+
     IV.api
       .updateState()
       .then(render)

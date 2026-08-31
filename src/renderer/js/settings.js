@@ -637,9 +637,12 @@ window.IV = window.IV || {};
       h('p', {
         class: 'hint',
         text:
-          'Step 1. Load the extension. It is in the extension folder where Propolis ' +
-          'is installed. In your browser open the extensions page, switch on ' +
-          'developer mode, and choose Load unpacked.'
+          'Step 1. Load the extension. Press the button below to open the folder it ' +
+          'lives in, then in your browser open the extensions page, switch on ' +
+          'developer mode, and choose Load unpacked. Always load it from that ' +
+          'folder: your browser works out the extension id from where it was ' +
+          'loaded, and loading a copy from anywhere else gives a different id that ' +
+          'will not be allowed to connect.'
       }),
       h(
         'div',

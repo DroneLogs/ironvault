@@ -169,25 +169,94 @@ async function status() {
 }
 
 /**
- * Where the unpacked extension sits, which is what the browser has to be
- * pointed at. It ships beside the app rather than inside app.asar, because a
- * browser cannot load an extension out of an archive.
+ * Where the unpacked extension lives for the browser to load.
+ *
+ * Deliberately a copy under the user's own data, and not the folder the app was
+ * installed into, for two reasons that both broke a real setup.
+ *
+ * A browser derives the id of an unpacked extension from the path it was loaded
+ * from, and that id is written into the host manifest as the only extension
+ * allowed to connect. So the path has to be one that never changes. Inside the
+ * install folder it changes every time the app updates, because the installer
+ * replaces that directory wholesale, and the browser can drop or disable the
+ * extension when the files it is watching are swapped underneath it.
+ *
+ * And in a development checkout it would point at the working tree, where the
+ * files change whenever anybody edits them, which is worse still.
+ *
+ * So: one stable folder beside the settings, refreshed from whatever the app
+ * shipped when the app is newer. The path never moves, the id never changes,
+ * and an update means at most reloading the extension rather than setting it up
+ * again.
  */
 function extensionDir() {
+  return path.join(app.getPath('userData'), 'extension');
+}
+
+/** The copy that came with this build, which the stable folder is filled from. */
+function packagedExtensionDir() {
   return app.isPackaged
     ? path.join(process.resourcesPath, 'extension')
     : path.join(__dirname, '..', '..', 'extension');
 }
 
+function copyDir(from, to) {
+  fs.mkdirSync(to, { recursive: true });
+  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+    const source = path.join(from, entry.name);
+    const target = path.join(to, entry.name);
+    if (entry.isDirectory()) copyDir(source, target);
+    else fs.copyFileSync(source, target);
+  }
+}
+
+/**
+ * Refreshes the stable copy when the shipped one is newer.
+ *
+ * Compared by the version in the manifest rather than by timestamps, because a
+ * reinstall can leave file dates that say nothing useful. Failing here must not
+ * stop the app starting: an extension that is one version behind still works,
+ * and a browser that cannot connect is a smaller problem than a vault that will
+ * not open.
+ */
+function syncExtension() {
+  const from = packagedExtensionDir();
+  const to = extensionDir();
+  try {
+    if (!fs.existsSync(from)) return { ok: false, reason: 'nothing shipped' };
+
+    const readVersion = (dir) => {
+      try {
+        return JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')).version || '0';
+      } catch {
+        return null;
+      }
+    };
+    const shipped = readVersion(from);
+    const installed = readVersion(to);
+
+    if (installed && shipped === installed) return { ok: true, dir: to, copied: false };
+
+    copyDir(from, to);
+    return { ok: true, dir: to, copied: true, version: shipped };
+  } catch (err) {
+    console.error('Could not put the browser extension in place: ' + err.message);
+    return { ok: false, reason: err.message };
+  }
+}
+
 function revealExtension() {
+  syncExtension();
   const dir = extensionDir();
-  if (!fs.existsSync(dir)) throw new Error('The extension folder is missing from this install');
+  if (!fs.existsSync(dir)) throw new Error('The extension folder could not be prepared');
   shell.openPath(dir);
   return { ok: true, dir };
 }
 
 module.exports = {
   install,
+  syncExtension,
+  packagedExtensionDir,
   uninstall,
   status,
   browsers,

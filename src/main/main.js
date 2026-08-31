@@ -9,6 +9,7 @@ const settings = require('./settings');
 const vault = require('./vault');
 const capture = require('./capture');
 const browserbridge = require('./browserbridge');
+const browserinstall = require('./browserinstall');
 const lansync = require('./lansync');
 const { registerIpc, clearClipboardNow } = require('./ipc');
 const updater = require('./updater');
@@ -553,6 +554,9 @@ if (!gotLock) {
     });
     lansync.setFileProvider((request) => features.lanFileProvider(request));
     if (settings.getPrefs().lanSync) lansync.start();
+    // Kept up to date before anything asks where it is, so an update means
+    // reloading the extension rather than setting it up again.
+    browserinstall.syncExtension();
     if (settings.getPrefs().browserBridge) browserbridge.start();
     applyAppearance(settings.getPrefs().appearance);
     capture.onChange((state, reason) => {

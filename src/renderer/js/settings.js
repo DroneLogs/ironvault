@@ -1539,12 +1539,43 @@ window.IV = window.IV || {};
    * editing an entry to be told about an update is worse than being told late.
    */
   let updatePromptedFor = null;
+  let pendingUpdate = null;
+  let pendingTimer = null;
 
+  /**
+   * Holds an update back rather than throwing it away.
+   *
+   * The check runs about eight seconds after launch, which is roughly when
+   * somebody is typing their master password, so something is usually open.
+   * Refusing to interrupt was right; dropping the news entirely was not, and
+   * that is what happened: the next automatic check is a day later, so the
+   * prompt never appeared and the update had to be found by hand.
+   *
+   * It waits for the way to be clear and then says its piece.
+   */
   function promptForUpdate(update) {
     if (!update || update.status !== 'available' || !update.version) return;
     if (update.version === (IV.state.prefs.skippedUpdateVersion || null)) return;
     if (updatePromptedFor === update.version) return;
-    if (IV.dom.topModal && IV.dom.topModal()) return;
+    pendingUpdate = update;
+    showPendingUpdate();
+  }
+
+  function showPendingUpdate() {
+    if (!pendingUpdate) return;
+
+    // Still busy. Come back shortly rather than giving up.
+    if (IV.dom.topModal && IV.dom.topModal()) {
+      if (!pendingTimer) pendingTimer = setInterval(showPendingUpdate, 4000);
+      return;
+    }
+
+    if (pendingTimer) {
+      clearInterval(pendingTimer);
+      pendingTimer = null;
+    }
+    const update = pendingUpdate;
+    pendingUpdate = null;
     updatePromptedFor = update.version;
     openUpdates();
   }

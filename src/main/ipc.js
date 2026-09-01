@@ -6,6 +6,7 @@ const { ipcMain, dialog, clipboard, shell, app, safeStorage, nativeTheme } = req
 
 const vault = require('./vault');
 const capture = require('./capture');
+const approval = require('./approval');
 const aliases = require('./aliases');
 const browserbridge = require('./browserbridge');
 const browserinstall = require('./browserinstall');
@@ -533,6 +534,9 @@ const handlers = {
   },
   'lan.sync': ({ peerId }) => features.lanSyncNow({ peerId }),
 
+  /* approval prompts drawn by the renderer */
+  'approval.answer': (args) => approval.answer(args),
+
   /* browser extension */
   'browser.status': async () => ({
     ...browserbridge.status(),
@@ -797,6 +801,10 @@ const handlers = {
 
 function registerIpc(context) {
   ctx = { ...ctx, ...context };
+
+  // The extension copies through here, so the popup never holds a password and
+  // the clipboard is cleared on the same timer as a copy made in the app.
+  browserbridge.setCopier(copyWithTimeout);
 
   ipcMain.handle('propolis', async (event, method, args) => {
     const handler = handlers[method];

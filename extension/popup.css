@@ -6,24 +6,30 @@
 :root {
   --bg: #ffffff;
   --panel: #f4f5f7;
+  --panel-2: #eceef1;
   --text: #1b1d21;
   --muted: #5a6069;
   --line: #d9dce1;
   --accent: #2f6fdb;
+  --accent-soft: rgba(47, 111, 219, 0.12);
   --accent-text: #ffffff;
   --error: #b3261e;
+  --good: #1c7c4a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #16181c;
     --panel: #1e2126;
+    --panel-2: #262a31;
     --text: #e8eaee;
     --muted: #9aa1ab;
     --line: #2b2f36;
     --accent: #6f9ef0;
+    --accent-soft: rgba(111, 158, 240, 0.16);
     --accent-text: #10131a;
     --error: #f2a099;
+    --good: #7fd4a3;
   }
 }
 
@@ -32,7 +38,7 @@
 }
 
 body {
-  width: 320px;
+  width: 340px;
   margin: 0;
   padding: 12px;
   background: var(--bg);
@@ -40,26 +46,59 @@ body {
   font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
 }
 
-header {
+/* ------------------------------------------------------------------- bars */
+
+.bar {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 8px;
+}
+
+header.bar {
   margin-bottom: 10px;
 }
 
-h1 {
-  margin: 0;
+.mark {
+  flex: 0 0 auto;
+  border-radius: 4px;
+}
+
+.wordmark {
   font-size: 15px;
   font-weight: 600;
 }
 
+/* Says whether the database is actually open, which decides whether anything
+   below can work. Previously the only way to find out was to try. */
+.pill {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.pill.open {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 40%, var(--line));
+}
+
+.pill.shut {
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 40%, var(--line));
+}
+
 #site {
+  margin-left: auto;
   font-size: 12px;
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 46%;
 }
 
 .hint {
@@ -80,13 +119,46 @@ h1 {
   color: var(--error);
 }
 
+#message.good {
+  color: var(--good);
+}
+
+/* ----------------------------------------------------------------- filter */
+
+#search-wrap {
+  margin-bottom: 8px;
+}
+
+#search {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+}
+
+#search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* ---------------------------------------------------------------- entries */
+
 ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+  /* The default scrollbar is a bright slab against a dark popup. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
 button {
@@ -121,6 +193,23 @@ button.ghost {
   background: transparent;
 }
 
+/* A card per entry: the whole top half fills, the row underneath is for the
+   things you want without leaving the page. */
+.card {
+  /* The list is a column flex box with a maximum height, so cards would
+     otherwise shrink to share the space rather than letting the list scroll,
+     and the row of buttons underneath each one gets cropped away entirely. */
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.card:focus-within {
+  border-color: var(--accent);
+}
+
 .entry {
   width: 100%;
   display: flex;
@@ -128,6 +217,14 @@ button.ghost {
   align-items: flex-start;
   gap: 2px;
   text-align: left;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 9px 10px 7px;
+}
+
+.entry:hover {
+  background: var(--accent-soft);
 }
 
 .entry .title {
@@ -137,10 +234,45 @@ button.ghost {
 .entry .username {
   font-size: 12px;
   color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-footer {
-  margin-top: 10px;
+.actions {
   display: flex;
-  justify-content: flex-end;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.actions button {
+  flex: 1 1 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 6px 4px;
+}
+
+.actions button + button {
+  border-left: 1px solid var(--line);
+}
+
+.actions button:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* ----------------------------------------------------------------- footer */
+
+footer.bar {
+  margin-top: 10px;
+  justify-content: space-between;
+}
+
+#count {
+  font-size: 12px;
+  color: var(--muted);
 }

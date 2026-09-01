@@ -177,8 +177,18 @@ async function download() {
 
 function installNow() {
   if (current.status !== 'ready') throw new Error('The update has not finished downloading');
-  // false, true: do not force a silent install, do run the app afterwards.
-  setImmediate(() => loadUpdater().quitAndInstall(false, true));
+  // true, true: install silently, then start the app again.
+  //
+  // The first argument is isSilent, and it was false, so the installer ran with
+  // its full window: the user pressed Update in Propolis and then had to agree
+  // to a second, unexplained Windows installer to finish. They had already said
+  // yes once. Being asked again by a different program is how an update starts
+  // to look like something that should be refused.
+  //
+  // Silent is safe for this build: the installer is per user rather than per
+  // machine, so nothing needs elevation, and it installs over the existing copy
+  // in place.
+  setImmediate(() => loadUpdater().quitAndInstall(true, true));
   return { ok: true };
 }
 

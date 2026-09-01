@@ -998,6 +998,70 @@ window.IV = window.IV || {};
       }
     });
 
+    /**
+     * Approving a browser, a passkey, or a computer on the network.
+     *
+     * Drawn here rather than as a native message box so it looks like the app
+     * that is asking. This is the one prompt where being read matters most, and
+     * a system dialog in the wrong colours is one people dismiss on reflex.
+     *
+     * Every path answers exactly once, including closing it with Escape or the
+     * X, which counts as no. Silence must never read as consent.
+     */
+    IV.api.on('approval', (request) => {
+      if (!request || !request.id) return;
+      let answered = false;
+      const answer = (approved) => {
+        if (answered) return;
+        answered = true;
+        IV.api.call('approval.answer', { id: request.id, approved }).catch(() => {});
+      };
+
+      const rows = [];
+      const detailRow = (label, value) =>
+        h('div', { class: 'approval-row' }, [
+          h('span', { class: 'approval-label', text: label }),
+          h('span', { class: 'approval-value', text: value })
+        ]);
+      if (request.site) rows.push(detailRow('Site', request.site));
+      if (request.account) rows.push(detailRow('Account', request.account));
+      if (request.fingerprint) rows.push(detailRow('Fingerprint', request.fingerprint));
+      if (request.address) rows.push(detailRow('Address', request.address));
+
+      const body = h('div', { class: 'approval-body' }, [
+        h('p', { class: 'approval-message', text: request.message || '' }),
+        rows.length ? h('div', { class: 'approval-rows' }, rows) : null,
+        request.detail ? h('p', { class: 'approval-detail', text: request.detail }) : null
+      ]);
+
+      const handle = IV.dom.modal({
+        title: request.title || 'Approve',
+        body,
+        // Closing without choosing is a no, so the cancel button is the one
+        // focus lands on.
+        initialFocus: '.approval-cancel',
+        onClose: () => answer(false),
+        footer: [
+          h('button', {
+            class: 'btn approval-cancel',
+            text: request.cancel || 'Not now',
+            onClick: () => {
+              answer(false);
+              handle.close();
+            }
+          }),
+          h('button', {
+            class: 'btn ' + (request.danger ? 'danger' : 'primary'),
+            text: request.confirm || 'Allow',
+            onClick: () => {
+              answer(true);
+              handle.close();
+            }
+          })
+        ]
+      });
+    });
+
     IV.api.on('open-file', async ({ filePath }) => {
       if (state.info) {
         const ok = await IV.api.confirm({

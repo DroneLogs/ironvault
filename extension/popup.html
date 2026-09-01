@@ -6,8 +6,10 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header>
-      <h1>Propolis</h1>
+    <header class="bar">
+      <img class="mark" src="icons/icon48.png" alt="" width="20" height="20" />
+      <span class="wordmark">Propolis</span>
+      <span id="state" class="pill" hidden></span>
       <span id="site"></span>
     </header>
 
@@ -21,11 +23,16 @@
       <button id="connect-button" class="primary">Connect to Propolis</button>
     </div>
 
+    <div id="search-wrap" hidden>
+      <input id="search" type="search" placeholder="Filter" autocomplete="off" spellcheck="false" />
+    </div>
+
     <ul id="entries" hidden></ul>
 
     <p id="empty" class="hint" hidden>No entries in your vault match this site.</p>
 
-    <footer>
+    <footer class="bar">
+      <span id="count"></span>
       <button id="refresh" class="ghost">Refresh</button>
     </footer>
 

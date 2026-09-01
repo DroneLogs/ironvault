@@ -64,6 +64,19 @@ function setApprover(fn) {
   approver = fn;
 }
 
+let copier = null;
+
+/**
+ * Lets the extension copy through the app's clipboard rather than the
+ * browser's, so a password copied from the popup is wiped on the same timer as
+ * one copied from the app. A copy made in the browser would sit there until
+ * something happened to replace it, which is not what the clipboard setting
+ * promises.
+ */
+function setCopier(fn) {
+  copier = fn;
+}
+
 /* ------------------------------------------------------------------- keys */
 
 /** One key pair per run. Associations survive; this does not need to. */
@@ -210,12 +223,23 @@ function loginsFor(url) {
     } catch {
       continue;
     }
+    // Whether there is a one time code, so the popup can offer it without
+    // asking for one first and finding out there is nothing there.
+    let hasTotp = false;
+    try {
+      const code = vault.getTotp(entry.id);
+      hasTotp = Boolean(code && !code.error && code.code);
+    } catch {
+      hasTotp = false;
+    }
+
     results.push({
       uuid: entry.id,
       title: entry.title || '',
       username: entry.username || '',
       password,
-      url: entry.url || ''
+      url: entry.url || '',
+      hasTotp
     });
   }
   return { logins: results, host };
@@ -226,6 +250,30 @@ function totpFor(uuid) {
   const code = vault.getTotp(uuid);
   if (!code || code.error) throw new Error(code ? code.error : 'That entry has no one time code');
   return { code: code.code, seconds: code.seconds };
+}
+
+/**
+ * Copies a field to the clipboard, on the app's terms.
+ *
+ * The value never reaches the popup, which is the point: the browser only says
+ * which entry and which field, so a password can be copied without a copy of
+ * it existing anywhere in the browser's memory.
+ */
+function copyField({ uuid, field }) {
+  requireUnlocked();
+  if (typeof copier !== 'function') throw new Error('Propolis cannot copy right now');
+
+  const wanted = field === 'username' ? 'username' : 'password';
+  const entry = vault.getEntry(uuid);
+  if (!entry) throw new Error('That entry is no longer there');
+
+  const value = wanted === 'username'
+    ? entry.username || ''
+    : vault.getSecret(uuid, 'Password') || '';
+  if (!value) throw new Error('There is no ' + wanted + ' on that entry');
+
+  const result = copier(value) || {};
+  return { copied: wanted, clearAfter: result.clearAfter || 0 };
 }
 
 /* --------------------------------------------------------------- dispatch */
@@ -391,6 +439,8 @@ async function handleInner(inner) {
       return loginsFor(inner.url);
     case 'get-totp':
       return totpFor(inner.uuid);
+    case 'copy':
+      return copyField(inner);
     case 'passkey-create':
       return handlePasskeyCreate(inner);
     case 'passkey-get':
@@ -523,6 +573,7 @@ module.exports = {
   stop,
   status,
   setApprover,
+  setCopier,
   handleMessage,
   listConnections,
   forget,

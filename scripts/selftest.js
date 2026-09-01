@@ -568,6 +568,27 @@ async function main() {
     }
   }
 
+
+  // Installing an update asked twice: once in Propolis, and then again in a
+  // Windows installer window that appeared with no explanation, because the
+  // first argument to quitAndInstall is isSilent and it was false.
+  //
+  // Silent is only safe while the installer needs no elevation, so the setting
+  // that makes that true is pinned here as well. Turning on perMachine would
+  // put up a UAC prompt with nothing on screen to explain it.
+  console.log('\ninstalling an update');
+  {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'updater.js'), 'utf8');
+    const call = source.match(/quitAndInstall\(([^)]*)\)/);
+    check('the update installs without a second installer window',
+      Boolean(call) && /^\s*true\s*,/.test(call[1]), call ? call[1] : 'no call found');
+    check('and the app comes back afterwards',
+      Boolean(call) && /,\s*true\s*$/.test(call[1]), call ? call[1] : 'no call found');
+
+    const nsis = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).build.nsis;
+    check('a silent install needs no elevation', nsis.perMachine === false, String(nsis.perMachine));
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   fs.rmSync(tmpDir, { recursive: true, force: true });
   process.exit(failed ? 1 : 0);

@@ -1981,3 +1981,55 @@ span.with-help,
 body.reduce-motion .progress-fill {
   transition: none;
 }
+
+/* --------------------------------------------------------------- approvals */
+
+/* Browser, passkey and network pairing prompts. These used to be native
+   Windows message boxes, which looked like they came from somewhere else. */
+.approval-message {
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+/* The facts worth checking before saying yes, set apart from the prose so
+   they can be compared at a glance against what the other side claims. */
+.approval-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.approval-row {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.approval-label {
+  flex: 0 0 92px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.approval-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.approval-detail {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.55;
+}

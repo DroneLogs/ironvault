@@ -12,6 +12,7 @@ const listeners = {
   'clipboard:cleared': new Set(),
   'open-file': new Set(),
   'update-state': new Set(),
+  approval: new Set(),
   progress: new Set(),
   'ssh-agent': new Set(),
   'autotype-result': new Set(),

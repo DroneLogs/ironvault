@@ -12,6 +12,7 @@ const browserbridge = require('./browserbridge');
 const browserinstall = require('./browserinstall');
 const lansync = require('./lansync');
 const { registerIpc, clearClipboardNow } = require('./ipc');
+const approval = require('./approval');
 const updater = require('./updater');
 const features = require('./features');
 const sshagent = require('./sshagent');
@@ -515,43 +516,74 @@ if (!gotLock) {
     // The bridge asks before letting an extension in, and the question has
     // to reach the user in the app rather than in the browser, or approving
     // would be something a web page could talk somebody into.
-    browserbridge.setApprover(async ({ name }) => {
-      const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
-      const { response } = await dialog.showMessageBox(win, {
-        type: 'question',
-        buttons: ['Connect', 'Not now'],
-        defaultId: 1,
-        cancelId: 1,
-        title: 'Connect a browser',
-        message: name + ' wants to fill passwords from this database.',
-        detail:
-          'Only connect a browser extension you installed yourself, just now. ' +
-          'Once connected it can read the passwords for any site it visits, ' +
-          'while this database is unlocked. You can disconnect it at any time ' +
-          'in Settings.'
-      });
-      return response === 0;
+    browserbridge.setApprover(({ name, kind, site, account }) => {
+      // Three different questions arrive here, and they used to be worded as
+      // though they were all the first one. Signing in to a site you already
+      // have a passkey for is not the same decision as handing a browser
+      // extension the whole database, and saying so is most of what makes the
+      // prompt worth reading.
+      let spec;
+      if (kind === 'passkey-create') {
+        spec = {
+          kind,
+          title: 'Create a passkey',
+          message: 'Save a passkey for ' + (site || name) + '?',
+          detail:
+            'It is kept in this database like any other entry, so it works on ' +
+            'every computer this database reaches, and nowhere else.',
+          confirm: 'Create',
+          cancel: 'Not now',
+          site: site || '',
+          account: account || ''
+        };
+      } else if (kind === 'passkey-use') {
+        spec = {
+          kind,
+          title: 'Sign in',
+          message: 'Use your passkey for ' + (site || name) + '?',
+          detail:
+            'Propolis will prove who you are to that site. The passkey itself ' +
+            'stays in this database.',
+          confirm: 'Sign in',
+          cancel: 'Not now',
+          site: site || '',
+          account: account || ''
+        };
+      } else {
+        spec = {
+          kind: 'browser-connect',
+          title: 'Connect a browser',
+          message: name + ' wants to fill passwords from this database.',
+          detail:
+            'Only connect a browser extension you installed yourself, just now. ' +
+            'Once connected it can read the passwords for any site it visits, ' +
+            'while this database is unlocked. You can disconnect it at any time ' +
+            'in Settings.',
+          confirm: 'Connect',
+          cancel: 'Not now',
+          danger: true
+        };
+      }
+      return approval.ask(mainWindow, spec);
     });
     // Pairing is a question about a machine on the network, so it has to be
     // answered here rather than anywhere the network could reach.
-    lansync.setApprover(async ({ name, fingerprint, address }) => {
-      const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
-      const { response } = await dialog.showMessageBox(win, {
-        type: 'question',
-        buttons: ['Pair', 'Not now'],
-        defaultId: 1,
-        cancelId: 1,
+    lansync.setApprover(({ name, fingerprint, address }) =>
+      approval.ask(mainWindow, {
+        kind: 'lan-pair',
         title: 'Pair a computer',
         message: name + ' wants to sync with this database.',
         detail:
-          'Check the code came from a computer you own.\n\n' +
-          'Its fingerprint is ' + fingerprint +
-          (address ? '\nIts address is ' + address : '') +
-          '\n\nOnce paired it can read and change this database whenever both ' +
-          'are unlocked and on the same network. You can unpair it at any time.'
-      });
-      return response === 0;
-    });
+          'Check the code came from a computer you own. Once paired it can read ' +
+          'and change this database whenever both are unlocked and on the same ' +
+          'network. You can unpair it at any time.',
+        confirm: 'Pair',
+        cancel: 'Not now',
+        fingerprint: fingerprint || '',
+        address: address || '',
+        danger: true
+      })
+    );
     lansync.setFileProvider((request) => features.lanFileProvider(request));
     if (settings.getPrefs().lanSync) lansync.start();
     // Kept up to date before anything asks where it is, so an update means

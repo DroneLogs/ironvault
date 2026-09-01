@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Propolis",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Fill passwords from your Propolis vault. Nothing is stored in the browser and nothing leaves your machine.",
   "minimum_chrome_version": "133",
   "permissions": [

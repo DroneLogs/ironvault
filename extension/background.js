@@ -181,6 +181,9 @@ const ROUTES = {
   status: () => request({ action: 'get-status' }),
   logins: ({ url }) => request({ action: 'get-logins', url }),
   totp: ({ uuid }) => request({ action: 'get-totp', uuid }),
+  // The value never comes back here: Propolis copies it itself, so no password
+  // ever exists in the browser's memory just to be put on the clipboard.
+  copy: ({ uuid, field }) => request({ action: 'copy', uuid, field }),
   associate: () => associate(),
   'passkey-create': (m) => request({ action: 'passkey-create', ...strip(m) }),
   'passkey-get': (m) => request({ action: 'passkey-get', ...strip(m) }),

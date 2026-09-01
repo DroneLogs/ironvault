@@ -60,7 +60,7 @@ window.IV = window.IV || {};
   function askCredentials(title, filePath) {
     return new Promise((resolve) => {
       const password = h('input', { type: 'password', autocomplete: 'off' });
-      const keyPath = h('input', { type: 'text', readOnly: true, placeholder: 'None' });
+      const keyPath = h('input', { type: 'text', readOnly: true, placeholder: tr('None') });
       let settled = false;
 
       const handle = modal({
@@ -78,21 +78,21 @@ window.IV = window.IV || {};
               keyPath,
               h('button', {
                 class: 'btn ghost small',
-                text: 'Choose',
+                text: tr('Choose'),
                 onClick: async () => {
                   const picked = await IV.api.chooseKeyFile();
                   if (picked) keyPath.value = picked;
                 }
               }),
-              h('button', { class: 'btn ghost small', text: 'Clear', onClick: () => (keyPath.value = '') })
+              h('button', { class: 'btn ghost small', text: tr('Clear'), onClick: () => (keyPath.value = '') })
             )
           )
         ),
         footer: [
-          h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+          h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
           h('button', {
             class: 'btn primary',
-            text: 'Continue',
+            text: tr('Continue'),
             onClick: () => {
               settled = true;
               const result = { password: password.value, keyFilePath: keyPath.value || null };
@@ -179,7 +179,7 @@ window.IV = window.IV || {};
           )
         );
       }
-      body.append(h('div', { class: 'detail-section' }, h('h3', { text: 'Different' }), list));
+      body.append(h('div', { class: 'detail-section' }, h('h3', { text: tr('Different') }), list));
     }
 
     const listOf = (title, items) => {
@@ -201,23 +201,23 @@ window.IV = window.IV || {};
     if (extras.childElementCount) body.append(extras);
 
     const handle = modal({
-      title: 'Compare databases',
+      title: tr('Compare databases'),
       wide: true,
       body,
       footer: [
-        h('button', { class: 'btn ghost', text: 'Close', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Close'), onClick: () => handle.close() }),
         h('span', { class: 'spacer' }),
         h('button', {
           class: 'btn primary',
-          text: 'Merge the other one in',
+          text: tr('Merge the other one in'),
           onClick: async () => {
             const ok = await IV.api.confirm({
-              title: 'Merge databases',
+              title: tr('Merge databases'),
               message: 'Merge ' + report.remoteName + ' into this database?',
               detail:
                 'Entries only in the other file are added, and newer versions win where both changed. ' +
                 'Nothing is deleted. A backup is written first.',
-              confirmLabel: 'Merge'
+              confirmLabel: tr('Merge')
             });
             if (!ok) return;
             try {
@@ -225,7 +225,7 @@ window.IV = window.IV || {};
               handle.close();
               await IV.app.refresh();
               await IV.app.autoSave();
-              toast('Merged, ' + result.added + ' entries added', 'good');
+              toast(tr('Merged, ') + result.added + ' entries added', 'good');
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -239,19 +239,19 @@ window.IV = window.IV || {};
 
   async function openPwned() {
     const ok = await IV.api.confirm({
-      title: 'Have I Been Pwned',
+      title: tr('Have I Been Pwned'),
       message: 'Check your passwords against known breaches?',
       detail:
         'Only the first five characters of each password’s SHA-1 hash are sent, and the reply covers hundreds ' +
         'of hashes, so the service cannot tell which password was asked about. No other part of any entry leaves this PC.',
-      confirmLabel: 'Check'
+      confirmLabel: tr('Check')
     });
     if (!ok) return;
 
-    const status = h('p', { class: 'update-status', text: 'Checking...' });
+    const status = h('p', { class: 'update-status', text: tr('Checking...') });
     const results = h('div');
     const handle = modal({
-      title: 'Have I Been Pwned',
+      title: tr('Have I Been Pwned'),
       wide: true,
       body: h('div', null, h('div', { class: 'with-help' }, status, IV.glossary.badge('pwned')), results)
     });
@@ -278,7 +278,7 @@ window.IV = window.IV || {};
         );
       }
       if (report.errors.length) {
-        results.append(h('p', { class: 'hint', text: 'Some checks failed: ' + report.errors.join('; ') }));
+        results.append(h('p', { class: 'hint', text: tr('Some checks failed: ') + report.errors.join('; ') }));
       }
     } catch (err) {
       status.textContent = err.message;
@@ -300,7 +300,7 @@ window.IV = window.IV || {};
     const body = h('div', null);
     if (!report.pairs.length) {
       body.append(
-        h('p', { class: 'empty-note', text: 'No two passwords are close enough to be worth flagging.' })
+        h('p', { class: 'empty-note', text: tr('No two passwords are close enough to be worth flagging.') })
       );
     } else {
       body.append(
@@ -325,21 +325,21 @@ window.IV = window.IV || {};
       }
     }
 
-    modal({ title: 'Find similar passwords', wide: true, body });
+    modal({ title: tr('Find similar passwords'), wide: true, body });
   }
 
   async function openFavicons() {
     const ok = await IV.api.confirm({
-      title: 'Download favicons',
+      title: tr('Download favicons'),
       message: 'Fetch website icons for every entry that has a URL?',
       detail: 'Propolis will contact each site to download its icon. Entries that already have an icon are skipped.',
-      confirmLabel: 'Download'
+      confirmLabel: tr('Download')
     });
     if (!ok) return;
 
-    const status = h('p', { class: 'update-status', text: 'Starting...' });
+    const status = h('p', { class: 'update-status', text: tr('Starting...') });
     const results = h('div');
-    const handle = modal({ title: 'Favicon downloader', body: h('div', null, status, results) });
+    const handle = modal({ title: tr('Favicon downloader'), body: h('div', null, status, results) });
 
     const stop = IV.api.on('progress', (p) => {
       if (p.job === 'favicons') status.textContent = 'Fetching... ' + p.done + ' of ' + p.total;
@@ -373,18 +373,18 @@ window.IV = window.IV || {};
 
   function openTransfer() {
     const handle = modal({
-      title: 'Import and export',
+      title: tr('Import and export'),
       body: h(
         'div',
         null,
-        h('div', { class: 'detail-section' }, h('h3', { text: 'Import' })),
-        h('p', { class: 'hint', text: 'CSV from most password managers, KeePass XML, and 1Password .1pux archives.' }),
+        h('div', { class: 'detail-section' }, h('h3', { text: tr('Import') })),
+        h('p', { class: 'hint', text: tr('CSV from most password managers, KeePass XML, and 1Password .1pux archives.') }),
         h(
           'div',
           { class: 'row-gap' },
           h('button', {
             class: 'btn primary small',
-            text: 'Choose a file to import...',
+            text: tr('Choose a file to import...'),
             onClick: async () => {
               try {
                 const result = await IV.api.importEntries(null);
@@ -399,41 +399,41 @@ window.IV = window.IV || {};
             }
           })
         ),
-        h('div', { class: 'detail-section' }, h('h3', { text: 'Export' })),
+        h('div', { class: 'detail-section' }, h('h3', { text: tr('Export') })),
         h('p', {
           class: 'error-line',
-          text: 'Exports are not encrypted. Every password is written in plain text, so delete the file when you are done with it.'
+          text: tr('Exports are not encrypted. Every password is written in plain text, so delete the file when you are done with it.')
         }),
         h(
           'div',
           { class: 'row-gap' },
           h('button', {
             class: 'btn ghost small',
-            text: 'Export as CSV...',
+            text: tr('Export as CSV...'),
             onClick: () => runExport('csv')
           }),
           h('button', {
             class: 'btn ghost small',
-            text: 'Export as KeePass XML...',
+            text: tr('Export as KeePass XML...'),
             onClick: () => runExport('xml')
           })
         )
       ),
-      footer: [h('button', { class: 'btn primary', text: 'Done', onClick: () => handle.close() })]
+      footer: [h('button', { class: 'btn primary', text: tr('Done'), onClick: () => handle.close() })]
     });
 
     async function runExport(format) {
       const ok = await IV.api.confirm({
-        title: 'Export unencrypted',
+        title: tr('Export unencrypted'),
         message: 'Write every entry, including passwords, to a plain file?',
         detail: 'Anyone who can read that file can read your passwords.',
-        confirmLabel: 'Export anyway',
+        confirmLabel: tr('Export anyway'),
         destructive: true
       });
       if (!ok) return;
       try {
         const result = await IV.api.exportEntries(format);
-        if (result) toast('Exported to ' + result.filePath, 'good');
+        if (result) toast(tr('Exported to ') + result.filePath, 'good');
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -453,7 +453,7 @@ window.IV = window.IV || {};
 
     const rows = h('div');
     if (!list.length) {
-      rows.append(h('p', { class: 'empty-note', text: 'No backups yet. One is written every time the database saves.' }));
+      rows.append(h('p', { class: 'empty-note', text: tr('No backups yet. One is written every time the database saves.') }));
     }
     for (const backup of list) {
       rows.append(
@@ -467,20 +467,20 @@ window.IV = window.IV || {};
             { class: 'df-actions' },
             h('button', {
               class: 'btn ghost small',
-              text: 'Restore',
+              text: tr('Restore'),
               onClick: async () => {
                 const ok = await IV.api.confirm({
-                  title: 'Restore backup',
+                  title: tr('Restore backup'),
                   message: 'Replace the current database with the backup from ' + formatDate(backup.modified) + '?',
                   detail: 'The current contents are backed up first, and the database locks so you can unlock the restored copy.',
-                  confirmLabel: 'Restore',
+                  confirmLabel: tr('Restore'),
                   destructive: true
                 });
                 if (!ok) return;
                 try {
                   await IV.api.restoreBackup(backup.name);
                   handle.close();
-                  toast('Restored, unlock to continue', 'good');
+                  toast(tr('Restored, unlock to continue'), 'good');
                 } catch (err) {
                   toast(err.message, 'error');
                 }
@@ -492,12 +492,12 @@ window.IV = window.IV || {};
     }
 
     const handle = modal({
-      title: 'Backups',
+      title: tr('Backups'),
       wide: true,
       body: h(
         'div',
         null,
-        h('p', { class: 'hint', text: 'Propolis keeps the most recent saves. Older ones drop off automatically.' }),
+        h('p', { class: 'hint', text: tr('Propolis keeps the most recent saves. Older ones drop off automatically.') }),
         rows
       )
     });
@@ -530,7 +530,7 @@ window.IV = window.IV || {};
           h('p', {
             class: 'hint warning',
             text:
-              'Nothing is tagged ' + found.tag + ' yet. Open an entry, edit it, and ' +
+              tr('Nothing is tagged ') + found.tag + ' yet. Open an entry, edit it, and ' +
               'add that tag to anything you want to carry.'
           })
         );
@@ -549,17 +549,17 @@ window.IV = window.IV || {};
     };
     renderList(state);
 
-    const passwordInput = h('input', { type: 'password', placeholder: 'A password for the travel database' });
+    const passwordInput = h('input', { type: 'password', placeholder: tr('A password for the travel database') });
 
     const handle = modal({
-      title: 'Make a travel database',
+      title: tr('Make a travel database'),
       body: h(
         'div',
         null,
         h('p', {
           class: 'hint',
           text:
-            'This writes a separate database holding only the entries you tagged. ' +
+            tr('This writes a separate database holding only the entries you tagged. ') +
             'Carry that one and leave this one at home. The entries you did not ' +
             'tag are not hidden in it, they are simply not in it, so a copy of ' +
             'the file cannot give them up however it is examined.'
@@ -567,27 +567,27 @@ window.IV = window.IV || {};
         h('p', {
           class: 'hint',
           text:
-            'Give it a different password from your real one. If the travel copy ' +
+            tr('Give it a different password from your real one. If the travel copy ') +
             'is ever taken from you, the password taken with it opens nothing else.'
         }),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Travel password' }), passwordInput),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Travel password') }), passwordInput),
         list,
         h('p', {
           class: 'hint',
           text:
-            'When you get home, use Compare and merge on the travel file to bring ' +
+            tr('When you get home, use Compare and merge on the travel file to bring ') +
             'back anything you changed while away. Entries keep their identity, so ' +
             'they update rather than arriving a second time.'
         })
       ),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
         h('button', {
           class: 'btn primary',
-          text: 'Choose where to save it',
+          text: tr('Choose where to save it'),
           onClick: async () => {
             if (passwordInput.value.length < 8) {
-              toast('Use a travel password of at least 8 characters', 'error');
+              toast(tr('Use a travel password of at least 8 characters'), 'error');
               return;
             }
             try {
@@ -612,7 +612,7 @@ window.IV = window.IV || {};
   async function openSecurity() {
     const info = IV.state.info;
     if (!info || !info.open) {
-      toast('Unlock a database first', 'error');
+      toast(tr('Unlock a database first'), 'error');
       return;
     }
 
@@ -636,7 +636,7 @@ window.IV = window.IV || {};
     refreshPin();
 
     IV.dom.add(body,
-      h('div', { class: 'detail-section' }, h('h3', { text: 'PIN unlock' })),
+      h('div', { class: 'detail-section' }, h('h3', { text: tr('PIN unlock') })),
       pinState,
       h(
         'div',
@@ -649,12 +649,12 @@ window.IV = window.IV || {};
         status.hasPin
           ? h('button', {
               class: 'btn danger small',
-              text: 'Remove PIN',
+              text: tr('Remove PIN'),
               onClick: async () => {
                 await IV.api.clearPin(info.filePath);
                 status.hasPin = false;
                 refreshPin();
-                toast('PIN removed');
+                toast(tr('PIN removed'));
               }
             })
           : null
@@ -662,7 +662,7 @@ window.IV = window.IV || {};
       h('p', {
         class: 'hint',
         text:
-          'The master password is encrypted with a key derived from the PIN, then wrapped by Windows. ' +
+          tr('The master password is encrypted with a key derived from the PIN, then wrapped by Windows. ') +
           'Both the PIN and this Windows account are needed to unlock.'
       })
     );
@@ -679,7 +679,7 @@ window.IV = window.IV || {};
     refreshHello();
 
     body.append(
-      h('div', { class: 'detail-section' }, h('h3', { text: 'Windows Hello' })),
+      h('div', { class: 'detail-section' }, h('h3', { text: tr('Windows Hello') })),
       helloState,
       h(
         'div',
@@ -693,7 +693,7 @@ window.IV = window.IV || {};
               await IV.api.setHello({ filePath: info.filePath, enabled: false });
               status.helloEnabled = false;
               refreshHello();
-              toast('Windows Hello unlock turned off');
+              toast(tr('Windows Hello unlock turned off'));
               return;
             }
             const password = await askMasterPassword('Confirm your master password to turn on Windows Hello');
@@ -702,7 +702,7 @@ window.IV = window.IV || {};
               await IV.api.setHello({ filePath: info.filePath, enabled: true, password });
               status.helloEnabled = true;
               refreshHello();
-              toast('Windows Hello unlock turned on', 'good');
+              toast(tr('Windows Hello unlock turned on'), 'good');
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -735,12 +735,12 @@ window.IV = window.IV || {};
         status.hasDuress
           ? h('button', {
               class: 'btn danger small',
-              text: 'Remove',
+              text: tr('Remove'),
               onClick: async () => {
                 await IV.api.clearDuress(info.filePath);
                 status.hasDuress = false;
                 refreshDuress();
-                toast('Duress PIN removed');
+                toast(tr('Duress PIN removed'));
               }
             })
           : null
@@ -753,8 +753,8 @@ window.IV = window.IV || {};
     const slotSelect = h(
       'select',
       null,
-      h('option', { value: '1', text: 'Slot 1' }),
-      h('option', { value: '2', selected: true, text: 'Slot 2 (usual choice)' })
+      h('option', { value: '1', text: tr('Slot 1') }),
+      h('option', { value: '2', selected: true, text: tr('Slot 2 (usual choice)') })
     );
 
     async function refreshYubi() {
@@ -772,7 +772,7 @@ window.IV = window.IV || {};
       yubiActions.append(
         h('button', {
           class: 'btn ghost small',
-          text: 'Test this key',
+          text: tr('Test this key'),
           onClick: async () => {
             yubiState.textContent = 'Touch the key if it blinks...';
             try {
@@ -790,10 +790,10 @@ window.IV = window.IV || {};
           onClick: async () => {
             if (configured) {
               const ok = await IV.api.confirm({
-                title: 'Stop using a YubiKey',
+                title: tr('Stop using a YubiKey'),
                 message: 'Stop requiring a YubiKey for this database?',
                 detail: 'The master key is rewritten without the challenge answer in it.',
-                confirmLabel: 'Stop using it',
+                confirmLabel: tr('Stop using it'),
                 destructive: true
               });
               if (!ok) return;
@@ -801,7 +801,7 @@ window.IV = window.IV || {};
                 await IV.api.changeCredentials({ password: await askMasterPassword('Confirm your master password') });
                 await IV.api.yubikeySet({ filePath: info.filePath, enabled: false });
                 await refreshYubi();
-                toast('YubiKey no longer required', 'good');
+                toast(tr('YubiKey no longer required'), 'good');
               } catch (err) {
                 toast(err.message, 'error');
               }
@@ -809,13 +809,13 @@ window.IV = window.IV || {};
             }
 
             const ok = await IV.api.confirm({
-              title: 'Require a YubiKey',
+              title: tr('Require a YubiKey'),
               message: 'Bind this database to the YubiKey in slot ' + slotSelect.value + '?',
               detail:
                 'From then on the database will not open without that key plugged in. If you lose it, and have ' +
                 'no backup of the database, the contents are gone. Test the key first, and keep a backup. ' +
                 'This feature is still a beta and has not been tested against real hardware.',
-              confirmLabel: 'Bind it',
+              confirmLabel: tr('Bind it'),
               destructive: true
             });
             if (!ok) return;
@@ -829,7 +829,7 @@ window.IV = window.IV || {};
                 yubikey: { slot: Number(slotSelect.value) }
               });
               await refreshYubi();
-              toast('This database now needs the YubiKey', 'good');
+              toast(tr('This database now needs the YubiKey'), 'good');
             } catch (err) {
               await IV.api.yubikeySet({ filePath: info.filePath, enabled: false });
               toast(err.message, 'error');
@@ -847,14 +847,14 @@ window.IV = window.IV || {};
 
     if (yubiOptedIn || yubiAlreadyBound) {
       IV.dom.add(body,
-        h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
+        h('div', { class: 'detail-section' }, h('h3', { text: tr('YubiKey') })),
         h(
           'p',
           { class: 'error-line' },
-          h('strong', { text: 'Beta, and compatibility is not guaranteed. ' }),
+          h('strong', { text: tr('Beta, and compatibility is not guaranteed. ') }),
           h('span', {
             text:
-              'This has never been run against a real key. Press Test below before ' +
+              tr('This has never been run against a real key. Press Test below before ') +
               'binding anything, and back up the database first. If a binding half ' +
               'succeeds, or the key is lost, the contents cannot be recovered.'
           })
@@ -863,7 +863,7 @@ window.IV = window.IV || {};
           ? h('p', {
               class: 'hint',
               text:
-                'YubiKey support is switched off in Settings, but this database is ' +
+                tr('YubiKey support is switched off in Settings, but this database is ') +
                 'already bound to a key, so the controls stay here.'
             })
           : null,
@@ -884,10 +884,10 @@ window.IV = window.IV || {};
         const count = Number(failInput.value) || 0;
         if (count > 0) {
           const ok = await IV.api.confirm({
-            title: 'Delete after failed attempts',
+            title: tr('Delete after failed attempts'),
             message: 'Delete this database after ' + count + ' wrong passwords in a row?',
             detail: 'There is no undo and no recovery. Only turn this on if you keep a backup elsewhere.',
-            confirmLabel: 'Turn on',
+            confirmLabel: tr('Turn on'),
             destructive: true
           });
           if (!ok) {
@@ -902,15 +902,15 @@ window.IV = window.IV || {};
     });
 
     body.append(
-      h('div', { class: 'detail-section' }, h('h3', { text: 'App lock' })),
+      h('div', { class: 'detail-section' }, h('h3', { text: tr('App lock') })),
       field('Delete everything after this many failed unlocks', failInput, '0 turns it off.')
     );
 
     const handle = modal({
-      title: 'Security and unlock',
+      title: tr('Security and unlock'),
       wide: true,
       body,
-      footer: [h('button', { class: 'btn primary', text: 'Done', onClick: () => handle.close() })]
+      footer: [h('button', { class: 'btn primary', text: tr('Done'), onClick: () => handle.close() })]
     });
 
     function askMasterPassword(title) {
@@ -921,10 +921,10 @@ window.IV = window.IV || {};
           title,
           body: field('Master password', input),
           footer: [
-            h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => inner.close() }),
+            h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => inner.close() }),
             h('button', {
               class: 'btn primary',
-              text: 'Confirm',
+              text: tr('Confirm'),
               onClick: () => {
                 settled = true;
                 const value = input.value;
@@ -946,10 +946,10 @@ window.IV = window.IV || {};
       const actionSelect = h(
         'select',
         null,
-        h('option', { value: 'dummy', text: 'Open a decoy database instead' }),
-        h('option', { value: 'wipe', text: 'Delete this database and its backups' })
+        h('option', { value: 'dummy', text: tr('Open a decoy database instead') }),
+        h('option', { value: 'wipe', text: tr('Delete this database and its backups') })
       );
-      const dummyPath = h('input', { type: 'text', readOnly: true, value: status.duressDummyPath || '', placeholder: 'None' });
+      const dummyPath = h('input', { type: 'text', readOnly: true, value: status.duressDummyPath || '', placeholder: tr('None') });
 
       const duressExtras = h(
         'div',
@@ -963,7 +963,7 @@ window.IV = window.IV || {};
             dummyPath,
             h('button', {
               class: 'btn ghost small',
-              text: 'Choose',
+              text: tr('Choose'),
               onClick: async () => {
                 const picked = await IV.api.chooseDummy();
                 if (picked) dummyPath.value = picked;
@@ -982,30 +982,30 @@ window.IV = window.IV || {};
           field('Repeat PIN', pin2),
           kind === 'duress' ? duressExtras : null,
           kind === 'pin'
-            ? h('p', { class: 'hint', text: 'You will still be able to unlock with the master password.' })
+            ? h('p', { class: 'hint', text: tr('You will still be able to unlock with the master password.') })
             : h('p', {
                 class: 'error-line',
-                text: 'A duress PIN is meant to be entered under pressure. Test it before you rely on it.'
+                text: tr('A duress PIN is meant to be entered under pressure. Test it before you rely on it.')
               })
         ),
         footer: [
-          h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => inner.close() }),
+          h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => inner.close() }),
           h('button', {
             class: 'btn primary',
-            text: 'Save',
+            text: tr('Save'),
             onClick: async () => {
               if (pin1.value !== pin2.value) {
-                toast('The two PINs do not match', 'error');
+                toast(tr('The two PINs do not match'), 'error');
                 return;
               }
               try {
                 if (kind === 'duress') {
                   if (actionSelect.value === 'wipe') {
                     const ok = await IV.api.confirm({
-                      title: 'Duress PIN that deletes',
+                      title: tr('Duress PIN that deletes'),
                       message: 'Entering this PIN will permanently delete the database and every backup.',
                       detail: 'There is no undo. Keep a copy somewhere else first.',
-                      confirmLabel: 'I understand',
+                      confirmLabel: tr('I understand'),
                       destructive: true
                     });
                     if (!ok) return;
@@ -1027,7 +1027,7 @@ window.IV = window.IV || {};
                   refreshPin();
                 }
                 inner.close();
-                toast('Saved', 'good');
+                toast(tr('Saved'), 'good');
               } catch (err) {
                 toast(err.message, 'error');
               }
@@ -1043,7 +1043,7 @@ window.IV = window.IV || {};
   async function openRemote() {
     const info = IV.state.info;
     if (!info || !info.open) {
-      toast('Unlock a database first', 'error');
+      toast(tr('Unlock a database first'), 'error');
       return;
     }
 
@@ -1051,18 +1051,18 @@ window.IV = window.IV || {};
     const provider = h(
       'select',
       { onChange: () => refresh() },
-      h('option', { value: '', selected: !existing.provider, text: 'None (local file only)' }),
-      h('option', { value: 'webdav', selected: existing.provider === 'webdav', text: 'WebDAV (Nextcloud, ownCloud, NAS)' }),
-      h('option', { value: 'sftp', selected: existing.provider === 'sftp', text: 'SFTP' })
+      h('option', { value: '', selected: !existing.provider, text: tr('None (local file only)') }),
+      h('option', { value: 'webdav', selected: existing.provider === 'webdav', text: tr('WebDAV (Nextcloud, ownCloud, NAS)') }),
+      h('option', { value: 'sftp', selected: existing.provider === 'sftp', text: tr('SFTP') })
     );
 
-    const url = h('input', { type: 'text', value: existing.url || '', placeholder: 'https://cloud.example.com/remote.php/dav/files/me/Passwords.kdbx' });
-    const host = h('input', { type: 'text', value: existing.host || '', placeholder: 'sftp.example.com' });
+    const url = h('input', { type: 'text', value: existing.url || '', placeholder: tr('https://cloud.example.com/remote.php/dav/files/me/Passwords.kdbx') });
+    const host = h('input', { type: 'text', value: existing.host || '', placeholder: tr('sftp.example.com') });
     const port = h('input', { type: 'number', value: String(existing.port || 22), min: '1', max: '65535' });
     const username = h('input', { type: 'text', value: existing.username || '', spellcheck: 'false' });
     const password = h('input', { type: 'password', placeholder: existing.hasPassword ? 'unchanged' : '' });
-    const remotePath = h('input', { type: 'text', value: existing.remotePath || '', placeholder: '/home/me/Passwords.kdbx' });
-    const keyPath = h('input', { type: 'text', readOnly: true, value: existing.privateKeyPath || '', placeholder: 'None' });
+    const remotePath = h('input', { type: 'text', value: existing.remotePath || '', placeholder: tr('/home/me/Passwords.kdbx') });
+    const keyPath = h('input', { type: 'text', readOnly: true, value: existing.privateKeyPath || '', placeholder: tr('None') });
     const passphrase = h('input', { type: 'password', placeholder: existing.hasPassphrase ? 'unchanged' : '' });
 
     const webdavFields = h('div', null, field('File URL', url), field('Username', username), field('Password', password));
@@ -1081,13 +1081,13 @@ window.IV = window.IV || {};
           keyPath,
           h('button', {
             class: 'btn ghost small',
-            text: 'Choose',
+            text: tr('Choose'),
             onClick: async () => {
               const picked = await IV.api.chooseSshKey();
               if (picked) keyPath.value = picked;
             }
           }),
-          h('button', { class: 'btn ghost small', text: 'Clear', onClick: () => (keyPath.value = '') })
+          h('button', { class: 'btn ghost small', text: tr('Clear'), onClick: () => (keyPath.value = '') })
         )
       ),
       field('Key passphrase or account password', passphrase)
@@ -1127,7 +1127,7 @@ window.IV = window.IV || {};
     }
 
     const handle = modal({
-      title: 'Remote storage',
+      title: tr('Remote storage'),
       wide: true,
       body: h(
         'div',
@@ -1144,18 +1144,18 @@ window.IV = window.IV || {};
         h('p', {
           class: 'hint',
           text:
-            'Propolis keeps working on the local copy when the remote is unreachable, and merges the two the next ' +
+            tr('Propolis keeps working on the local copy when the remote is unreachable, and merges the two the next ') +
             'time a sync succeeds. Credentials are encrypted with Windows DPAPI.'
         })
       ),
       footer: [
         h('button', {
           class: 'btn ghost',
-          text: 'Test connection',
+          text: tr('Test connection'),
           onClick: async () => {
             const config = collect();
             if (!config) {
-              toast('Pick a provider first', 'error');
+              toast(tr('Pick a provider first'), 'error');
               return;
             }
             status.textContent = 'Testing...';
@@ -1172,15 +1172,15 @@ window.IV = window.IV || {};
           }
         }),
         h('span', { class: 'spacer' }),
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
         h('button', {
           class: 'btn primary',
-          text: 'Save',
+          text: tr('Save'),
           onClick: async () => {
             try {
               await IV.api.remoteSet(info.filePath, collect());
               handle.close();
-              toast('Remote storage saved', 'good');
+              toast(tr('Remote storage saved'), 'good');
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -1193,14 +1193,14 @@ window.IV = window.IV || {};
   }
 
   async function syncNow() {
-    toast('Syncing...');
+    toast(tr('Syncing...'));
     try {
       const result = await IV.api.remoteSync();
       await IV.app.refresh();
       toast(result.merged ? 'Synced, ' + result.merged + ' entries merged in' : 'Synced', 'good');
     } catch (err) {
       if (err.code === 'OFFLINE') {
-        toast('Offline, your changes stay local until the next sync', 'error');
+        toast(tr('Offline, your changes stay local until the next sync'), 'error');
       } else {
         toast(err.message, 'error');
       }
@@ -1242,7 +1242,7 @@ window.IV = window.IV || {};
         keyList.append(
           h('p', {
             class: 'hint',
-            text: 'No keys found. Add a private key to an entry, either as an attachment or in a custom field named "SSH Key".'
+            text: tr('No keys found. Add a private key to an entry, either as an attachment or in a custom field named "SSH Key".')
           })
         );
       }
@@ -1267,19 +1267,19 @@ window.IV = window.IV || {};
         actions.append(
           h('button', {
             class: 'btn ghost small',
-            text: 'Reload keys',
+            text: tr('Reload keys'),
             onClick: async () => {
               status = await IV.api.sshReload();
               render();
-              toast('Keys reloaded');
+              toast(tr('Keys reloaded'));
             }
           }),
           h('button', {
             class: 'btn ghost small',
-            text: 'Copy the SSH_AUTH_SOCK line',
+            text: tr('Copy the SSH_AUTH_SOCK line'),
             onClick: async () => {
               await IV.api.copy("$env:SSH_AUTH_SOCK = '" + status.pipe + "'");
-              toast('Copied, paste it into PowerShell');
+              toast(tr('Copied, paste it into PowerShell'));
             }
           })
         );
@@ -1289,20 +1289,20 @@ window.IV = window.IV || {};
     render();
 
     modal({
-      title: 'SSH agent',
+      title: tr('SSH agent'),
       wide: true,
       body: h(
         'div',
         null,
         state,
         actions,
-        h('div', { class: 'detail-section' }, h('h3', { text: 'Keys' })),
+        h('div', { class: 'detail-section' }, h('h3', { text: tr('Keys') })),
         keyList,
         h('div', { class: 'detail-section' }, h('h3', { class: 'with-help' }, 'How to use it', IV.glossary.badge('sshagent'))),
         h('p', {
           class: 'hint',
           text:
-            'Start the agent, then in PowerShell run the SSH_AUTH_SOCK line above before using ssh or git. ' +
+            tr('Start the agent, then in PowerShell run the SSH_AUTH_SOCK line above before using ssh or git. ') +
             'Keys are read from the open database and never written to disk.'
         })
       )
@@ -1315,13 +1315,13 @@ window.IV = window.IV || {};
     const sequence = h('input', {
       type: 'text',
       value: entry.autoTypeSequence || '',
-      placeholder: '{USERNAME}{TAB}{PASSWORD}{ENTER}',
+      placeholder: tr('{USERNAME}{TAB}{PASSWORD}{ENTER}'),
       spellcheck: 'false'
     });
-    const window = h('input', { type: 'text', value: '', placeholder: 'e.g. *GitHub*', spellcheck: 'false' });
+    const window = h('input', { type: 'text', value: '', placeholder: tr('e.g. *GitHub*'), spellcheck: 'false' });
 
     const handle = modal({
-      title: 'Auto-type for ' + (entry.title || 'this entry'),
+      title: tr('Auto-type for ') + (entry.title || 'this entry'),
       body: h(
         'div',
         null,
@@ -1330,19 +1330,19 @@ window.IV = window.IV || {};
           { class: 'field' },
           IV.glossary.label('Sequence', 'placeholders'),
           sequence,
-          h('p', { class: 'hint', text: 'Leave empty to use {USERNAME}{TAB}{PASSWORD}{ENTER}.' })
+          h('p', { class: 'hint', text: tr('Leave empty to use {USERNAME}{TAB}{PASSWORD}{ENTER}.') })
         ),
         field('Window title contains', window, 'Optional. Helps Propolis pick this entry over a similar one.'),
         h('p', {
           class: 'hint',
-          text: 'Placeholders: {USERNAME} {PASSWORD} {URL} {TITLE} {NOTES} {TOTP} {TAB} {ENTER} {DELAY 500}'
+          text: tr('Placeholders: {USERNAME} {PASSWORD} {URL} {TITLE} {NOTES} {TOTP} {TAB} {ENTER} {DELAY 500}')
         })
       ),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
         h('button', {
           class: 'btn primary',
-          text: 'Save',
+          text: tr('Save'),
           onClick: async () => {
             try {
               await IV.api.setAutoTypeSequence({
@@ -1353,7 +1353,7 @@ window.IV = window.IV || {};
               handle.close();
               await IV.app.refresh({ selectEntryId: entry.id });
               await IV.app.autoSave();
-              toast('Auto-type saved', 'good');
+              toast(tr('Auto-type saved'), 'good');
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -1366,16 +1366,16 @@ window.IV = window.IV || {};
   /* ---------------------------------------------------------- TOTP editor */
 
   function openTotpEditor(entry) {
-    const uri = h('input', { type: 'text', placeholder: 'otpauth://totp/...', spellcheck: 'false' });
-    const secret = h('input', { type: 'text', placeholder: 'JBSWY3DPEHPK3PXP', spellcheck: 'false' });
+    const uri = h('input', { type: 'text', placeholder: tr('otpauth://totp/...'), spellcheck: 'false' });
+    const secret = h('input', { type: 'text', placeholder: tr('JBSWY3DPEHPK3PXP'), spellcheck: 'false' });
     const digits = h('input', { type: 'number', value: '6', min: '5', max: '8' });
     const period = h('input', { type: 'number', value: '30', min: '10', max: '120' });
     const algorithm = h(
       'select',
       null,
-      h('option', { value: 'sha1', text: 'SHA-1 (default)' }),
-      h('option', { value: 'sha256', text: 'SHA-256' }),
-      h('option', { value: 'sha512', text: 'SHA-512' })
+      h('option', { value: 'sha1', text: tr('SHA-1 (default)') }),
+      h('option', { value: 'sha256', text: tr('SHA-256') }),
+      h('option', { value: 'sha512', text: tr('SHA-512') })
     );
     const steam = h('input', { type: 'checkbox' });
 
@@ -1389,24 +1389,24 @@ window.IV = window.IV || {};
           { class: 'field' },
           IV.glossary.label('Paste an otpauth:// address', 'totp'),
           uri,
-          h('p', { class: 'hint', text: 'This is what a QR code contains. Everything below is filled in from it.' })
+          h('p', { class: 'hint', text: tr('This is what a QR code contains. Everything below is filled in from it.') })
         ),
-        h('div', { class: 'detail-section' }, h('h3', { text: 'Or enter the secret by hand' })),
+        h('div', { class: 'detail-section' }, h('h3', { text: tr('Or enter the secret by hand') })),
         field('Secret', secret),
         h('div', { class: 'gen-grid' }, field('Digits', digits), field('Period (seconds)', period)),
         field('Algorithm', algorithm),
-        h('label', { class: 'checkline' }, steam, h('span', { text: 'Steam authenticator (5 characters)' }))
+        h('label', { class: 'checkline' }, steam, h('span', { text: tr('Steam authenticator (5 characters)') }))
       ),
       footer: [
         entry.totp
           ? h('button', {
               class: 'btn danger',
-              text: 'Remove',
+              text: tr('Remove'),
               onClick: async () => {
                 const ok = await IV.api.confirm({
-                  title: 'Remove one time code',
+                  title: tr('Remove one time code'),
                   message: 'Remove the one time code from this entry?',
-                  confirmLabel: 'Remove',
+                  confirmLabel: tr('Remove'),
                   destructive: true
                 });
                 if (!ok) return;
@@ -1414,15 +1414,15 @@ window.IV = window.IV || {};
                 handle.close();
                 await IV.app.refresh({ selectEntryId: entry.id });
                 await IV.app.autoSave();
-                toast('One time code removed');
+                toast(tr('One time code removed'));
               }
             })
           : null,
         h('span', { class: 'spacer' }),
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
         h('button', {
           class: 'btn primary',
-          text: 'Save',
+          text: tr('Save'),
           onClick: async () => {
             try {
               await IV.api.setTotp({
@@ -1437,7 +1437,7 @@ window.IV = window.IV || {};
               handle.close();
               await IV.app.refresh({ selectEntryId: entry.id });
               await IV.app.autoSave();
-              toast('One time code saved', 'good');
+              toast(tr('One time code saved'), 'good');
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -1451,18 +1451,18 @@ window.IV = window.IV || {};
     try {
       const result = await IV.api.totpQr(entry.id);
       modal({
-        title: 'One time code for ' + (entry.title || 'this entry'),
+        title: tr('One time code for ') + (entry.title || 'this entry'),
         body: h(
           'div',
           { class: 'qr-wrap' },
           h('img', { class: 'qr-image', src: result.svg, alt: 'QR code' }),
-          h('p', { class: 'hint', text: 'Scan this with another authenticator app to add the same code there.' }),
+          h('p', { class: 'hint', text: tr('Scan this with another authenticator app to add the same code there.') }),
           h('button', {
             class: 'btn ghost small',
-            text: 'Copy the otpauth address',
+            text: tr('Copy the otpauth address'),
             onClick: async () => {
               await IV.api.copy(result.uri);
-              toast('Copied');
+              toast(tr('Copied'));
             }
           })
         )

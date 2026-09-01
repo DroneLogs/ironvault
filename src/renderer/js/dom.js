@@ -148,7 +148,7 @@ window.IV = window.IV || {};
         'div',
         { class: 'modal-head' },
         h('h2', { id: titleId, text: title || '' }),
-        h('button', { class: 'icon-btn close', title: 'Close', onClick: () => close() })
+        h('button', { class: 'icon-btn close', title: tr('Close'), onClick: () => close() })
       ),
       h('div', { class: 'modal-body' }, body),
       footer ? h('div', { class: 'modal-foot' }, footer) : null

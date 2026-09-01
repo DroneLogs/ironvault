@@ -15,7 +15,7 @@ window.IV = window.IV || {};
     quickUnlockAvailable: false,
     info: null,
     tree: null,
-    selection: { type: 'smart', key: 'all', label: 'All entries' },
+    selection: { type: 'smart', key: 'all', label: tr('All entries') },
     entries: [],
     entryId: null,
     entry: null,
@@ -28,12 +28,12 @@ window.IV = window.IV || {};
   IV.state = state;
 
   const SMART_LISTS = [
-    { key: 'all', label: 'All entries', glyph: '◈' },
-    { key: 'favorites', label: 'Favorites', glyph: '★' },
-    { key: 'recent', label: 'Recently changed', glyph: '↺' },
-    { key: 'totp', label: 'One time codes', glyph: '⏱' },
-    { key: 'expired', label: 'Expired', glyph: '⚠' },
-    { key: 'recycle', label: 'Recycle bin', glyph: '⌧' }
+    { key: 'all', label: tr('All entries'), glyph: '◈' },
+    { key: 'favorites', label: tr('Favorites'), glyph: '★' },
+    { key: 'recent', label: tr('Recently changed'), glyph: '↺' },
+    { key: 'totp', label: tr('One time codes'), glyph: '⏱' },
+    { key: 'expired', label: tr('Expired'), glyph: '⚠' },
+    { key: 'recycle', label: tr('Recycle bin'), glyph: '⌧' }
   ];
 
   /* -------------------------------------------------------------- boot */
@@ -50,6 +50,10 @@ window.IV = window.IV || {};
     state.systemDark = info.systemDark !== false;
     state.tagline = info.tagline || '';
     state.quickUnlockAvailable = info.quickUnlockAvailable;
+    // Once, here, while the only text on screen is the app's own. Nothing from
+    // a database has been drawn yet, so there is nothing of the user's to
+    // mistranslate.
+    IV.i18n.translateStatic();
     applyTheme();
     applyBrand();
     nameStaticIconButtons();
@@ -81,7 +85,9 @@ window.IV = window.IV || {};
     for (const node of $$('.brand-name, .lock-title')) node.textContent = name;
     for (const img of $$('.brand-mark, .lock-logo')) img.src = 'icons/app-' + icon + '.png';
     const tagline = $('.lock-tagline');
-    if (tagline && state.tagline) tagline.textContent = state.tagline;
+    // Comes from the main process in English, and is written over the static
+    // markup that translateStatic already handled, so it is translated here.
+    if (tagline && state.tagline) tagline.textContent = tr(state.tagline);
     document.title = name;
   }
 
@@ -186,10 +192,10 @@ window.IV = window.IV || {};
             text: db.exists ? db.path : 'File not found · ' + db.path
           })
         ),
-        db.hasQuickUnlock ? h('span', { class: 'db-badge', text: 'quick unlock' }) : null,
+        db.hasQuickUnlock ? h('span', { class: 'db-badge', text: tr('quick unlock') }) : null,
         h('button', {
           class: 'icon-btn close',
-          title: 'Remove from this list',
+          title: tr('Remove from this list'),
           onClick: async (e) => {
             e.stopPropagation();
             await IV.api.forgetDatabase(db.path);
@@ -203,10 +209,10 @@ window.IV = window.IV || {};
 
   async function offerForget(db) {
     const ok = await IV.api.confirm({
-      title: 'File not found',
+      title: tr('File not found'),
       message: 'This database is no longer at ' + db.path,
       detail: 'Remove it from the list?',
-      confirmLabel: 'Remove'
+      confirmLabel: tr('Remove')
     });
     if (ok) {
       await IV.api.forgetDatabase(db.path);
@@ -278,10 +284,10 @@ window.IV = window.IV || {};
     const formatSelect = h(
       'select',
       null,
-      h('option', { value: '4', text: 'KDBX 4 with Argon2 (recommended)' }),
-      h('option', { value: '3', text: 'KDBX 3.1 with AES-KDF (older readers)' })
+      h('option', { value: '4', text: tr('KDBX 4 with Argon2 (recommended)') }),
+      h('option', { value: '3', text: tr('KDBX 3.1 with AES-KDF (older readers)') })
     );
-    const keyPath = h('input', { type: 'text', readOnly: true, placeholder: 'None' });
+    const keyPath = h('input', { type: 'text', readOnly: true, placeholder: tr('None') });
 
     let mode = 'generated';
     let generated = '';
@@ -294,10 +300,10 @@ window.IV = window.IV || {};
       h(
         'div',
         { class: 'gen-preview-actions' },
-        h('button', { class: 'icon-btn refresh', title: 'Generate another', onClick: () => regenerate() }),
+        h('button', { class: 'icon-btn refresh', title: tr('Generate another'), onClick: () => regenerate() }),
         h('button', {
           class: 'icon-btn copy',
-          title: 'Copy to the clipboard',
+          title: tr('Copy to the clipboard'),
           onClick: async () => {
             await IV.api.copy(generated);
             copiedNote.textContent = 'Copied. Paste it somewhere safe before you finish.';
@@ -348,10 +354,10 @@ window.IV = window.IV || {};
         { class: 'row-gap' },
         h('button', {
           class: 'btn ghost small',
-          text: 'Other options...',
+          text: tr('Other options...'),
           onClick: () =>
             IV.generator.openGenerator({
-              title: 'Choose a master password',
+              title: tr('Choose a master password'),
               mode: 'diceware',
               onUse: async (value) => {
                 generated = value;
@@ -360,20 +366,20 @@ window.IV = window.IV || {};
               }
             })
         }),
-        h('button', { class: 'btn ghost small', text: 'Type my own', onClick: () => setMode('manual') })
+        h('button', { class: 'btn ghost small', text: tr('Type my own'), onClick: () => setMode('manual') })
       ),
       h('p', {
         class: 'error-line',
-        text: 'Write this down before you continue. There is no reset, no recovery, and no back door. Lose it and the database is gone.'
+        text: tr('Write this down before you continue. There is no reset, no recovery, and no back door. Lose it and the database is gone.')
       })
     );
 
     const manualPanel = h(
       'div',
       { hidden: true },
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Master password' }), pass1, manualMeter),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Repeat password' }), pass2),
-      h('button', { class: 'btn ghost small', text: 'Generate one for me instead', onClick: () => setMode('generated') })
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Master password') }), pass1, manualMeter),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Repeat password') }), pass2),
+      h('button', { class: 'btn ghost small', text: tr('Generate one for me instead'), onClick: () => setMode('generated') })
     );
 
     function setMode(next) {
@@ -386,19 +392,19 @@ window.IV = window.IV || {};
     async function submit() {
       const password = mode === 'generated' ? generated : pass1.value;
       if (mode === 'manual' && pass1.value !== pass2.value) {
-        toast('The two passwords do not match', 'error');
+        toast(tr('The two passwords do not match'), 'error');
         return;
       }
       if (!password && !keyPath.value) {
-        toast('Set a master password, a key file, or both', 'error');
+        toast(tr('Set a master password, a key file, or both'), 'error');
         return;
       }
       if (mode === 'generated') {
         const ok = await IV.api.confirm({
-          title: 'Have you saved it?',
+          title: tr('Have you saved it?'),
           message: 'Have you written down or saved the master password?',
           detail: 'This is the only time it is shown. Nobody can recover it for you.',
-          confirmLabel: 'Yes, I saved it'
+          confirmLabel: tr('Yes, I saved it')
         });
         if (!ok) return;
       }
@@ -416,19 +422,19 @@ window.IV = window.IV || {};
         handle.close();
         state.hasQuickUnlock = false;
         await enterMainScreen(info);
-        toast('Database created', 'good');
+        toast(tr('Database created'), 'good');
       } catch (err) {
         toast(err.message, 'error');
       }
     }
 
     const handle = modal({
-      title: 'New database',
+      title: tr('New database'),
       wide: true,
       body: h(
         'div',
         null,
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Name' }), nameInput),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Name') }), nameInput),
         generatedPanel,
         manualPanel,
         h(
@@ -441,20 +447,20 @@ window.IV = window.IV || {};
             keyPath,
             h('button', {
               class: 'btn ghost small',
-              text: 'Choose',
+              text: tr('Choose'),
               onClick: async () => {
                 const picked = await IV.api.chooseKeyFile();
                 if (picked) keyPath.value = picked;
               }
             }),
-            h('button', { class: 'btn ghost small', text: 'Clear', onClick: () => (keyPath.value = '') })
+            h('button', { class: 'btn ghost small', text: tr('Clear'), onClick: () => (keyPath.value = '') })
           )
         ),
         h('label', { class: 'field' }, IV.glossary.label('Format', 'kdf'), formatSelect)
       ),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
-        h('button', { class: 'btn primary', text: 'Choose location and create', onClick: submit })
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
+        h('button', { class: 'btn primary', text: tr('Choose location and create'), onClick: submit })
       ]
     });
 
@@ -477,7 +483,7 @@ window.IV = window.IV || {};
     $('#screen-lock').hidden = true;
     $('#screen-main').hidden = false;
     $('#titlebar-db').textContent = info.name;
-    state.selection = { type: 'smart', key: 'all', label: 'All entries' };
+    state.selection = { type: 'smart', key: 'all', label: tr('All entries') };
     state.query = '';
     $('#search-input').value = '';
     await refresh();
@@ -492,10 +498,10 @@ window.IV = window.IV || {};
       const age = await IV.api.masterKeyAge();
       if (!age.known || age.days < limit) return;
       const ok = await IV.api.confirm({
-        title: 'Master password reminder',
+        title: tr('Master password reminder'),
         message: 'Your master password was last changed ' + age.days + ' days ago.',
         detail: 'Changing it now is optional. You can turn this reminder off in Settings.',
-        confirmLabel: 'Change it now'
+        confirmLabel: tr('Change it now')
       });
       if (ok) IV.editor.openMasterKeyDialog();
     } catch {
@@ -616,26 +622,26 @@ window.IV = window.IV || {};
 
   function openGroupMenu(group) {
     const items = [
-      { label: 'New entry here', run: () => IV.editor.openEntryEditor(null, group.id) },
-      { label: 'New sub group', run: () => IV.editor.openGroupEditor(null, group.id) },
-      { label: 'Rename', run: () => IV.editor.openGroupEditor(group) },
+      { label: tr('New entry here'), run: () => IV.editor.openEntryEditor(null, group.id) },
+      { label: tr('New sub group'), run: () => IV.editor.openGroupEditor(null, group.id) },
+      { label: tr('Rename'), run: () => IV.editor.openGroupEditor(group) },
       {
-        label: 'Delete group',
+        label: tr('Delete group'),
         danger: true,
         run: async () => {
           const ok = await IV.api.confirm({
-            title: 'Delete group',
+            title: tr('Delete group'),
             message: 'Delete "' + group.name + '" and everything inside it?',
             detail: group.totalEntryCount + ' entries would go to the recycle bin.',
-            confirmLabel: 'Delete',
+            confirmLabel: tr('Delete'),
             destructive: true
           });
           if (!ok) return;
           await IV.api.deleteGroup(group.id, false);
-          state.selection = { type: 'smart', key: 'all', label: 'All entries' };
+          state.selection = { type: 'smart', key: 'all', label: tr('All entries') };
           await refresh({ selectEntryId: null });
           await autoSave();
-          toast('Group deleted');
+          toast(tr('Group deleted'));
         }
       }
     ];
@@ -726,12 +732,12 @@ window.IV = window.IV || {};
         { class: 'entry-actions' },
         h('button', {
           class: 'icon-btn copy',
-          title: 'Copy password',
+          title: tr('Copy password'),
           onClick: async (e) => {
             e.stopPropagation();
             try {
               await IV.api.copyField(entry.id, 'Password');
-              toast('Password copied');
+              toast(tr('Password copied'));
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -742,20 +748,20 @@ window.IV = window.IV || {};
         actions.prepend(
           h('button', {
             class: 'icon-btn edit',
-            title: 'Copy username',
+            title: tr('Copy username'),
             onClick: async (e) => {
               e.stopPropagation();
               await IV.api.copyField(entry.id, 'UserName');
-              toast('Username copied');
+              toast(tr('Username copied'));
             }
           })
         );
       }
 
       const flags = h('div', { class: 'entry-flags' });
-      if (entry.expired) flags.append(h('span', { class: 'pill-expired', text: 'expired' }));
+      if (entry.expired) flags.append(h('span', { class: 'pill-expired', text: tr('expired') }));
       if (entry.hasTotp) flags.append(h('span', { text: '⏱' }));
-      if (entry.attachmentCount) flags.append(h('span', { text: '\u{1F4CE}' }));
+      if (entry.attachmentCount) flags.append(h('span', { text: tr('\u{1F4CE}') }));
       if ((entry.tags || []).some((t) => /^favou?rite$/i.test(t))) flags.append(h('span', { text: '★' }));
 
       const spoken = [
@@ -809,7 +815,7 @@ window.IV = window.IV || {};
         // Selecting from the audit or a search result may point at an entry the
         // current list does not contain; widen to all entries so it shows up.
         if (!state.entries.some((e) => e.id === id)) {
-          state.selection = { type: 'smart', key: 'all', label: 'All entries' };
+          state.selection = { type: 'smart', key: 'all', label: tr('All entries') };
           state.query = '';
           $('#search-input').value = '';
           renderSidebar();
@@ -836,7 +842,7 @@ window.IV = window.IV || {};
         state.info = await IV.api.save();
         $('#titlebar-dirty').hidden = true;
       } catch (err) {
-        toast('Could not save: ' + err.message, 'error');
+        toast(tr('Could not save: ') + err.message, 'error');
       }
     }, 300);
   }
@@ -845,7 +851,7 @@ window.IV = window.IV || {};
     try {
       state.info = await IV.api.save();
       $('#titlebar-dirty').hidden = true;
-      toast('Saved', 'good');
+      toast(tr('Saved'), 'good');
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -904,7 +910,7 @@ window.IV = window.IV || {};
         const info = await IV.api.pinUnlock(db.path, $('#unlock-pin').value);
         $('#unlock-pin').value = '';
         await enterMainScreen(info);
-        if (info.decoy) toast('Opened');
+        if (info.decoy) toast(tr('Opened'));
       } catch (err) {
         if (err.code === 'WIPED') {
           errorLine.textContent = 'Wrong PIN';
@@ -981,11 +987,17 @@ window.IV = window.IV || {};
       IV.detail.stopTimers();
       await showLockScreen();
       if (payload && payload.reason && payload.reason !== 'manual') {
-        toast('Locked (' + payload.reason + ')');
+        toast(tr('Locked (') + payload.reason + ')');
       }
     });
 
-    IV.api.on('clipboard:cleared', () => toast('Clipboard cleared'));
+    IV.api.on('clipboard:cleared', () => toast(tr('Clipboard cleared')));
+
+    // An icon that arrived after the save finished. Redraw quietly: the user
+    // has moved on, and a toast for a picture appearing is noise.
+    IV.api.on('icon-updated', () => {
+      if (state.info) refresh({ selectEntryId: state.entryId });
+    });
 
     IV.api.on('update-state', (update) => {
       state.update = update;
@@ -1065,9 +1077,9 @@ window.IV = window.IV || {};
     IV.api.on('open-file', async ({ filePath }) => {
       if (state.info) {
         const ok = await IV.api.confirm({
-          title: 'Open another database',
+          title: tr('Open another database'),
           message: 'Lock the current database and open ' + filePath + '?',
-          confirmLabel: 'Open'
+          confirmLabel: tr('Open')
         });
         if (!ok) return;
         await IV.api.lock();
@@ -1078,7 +1090,7 @@ window.IV = window.IV || {};
     IV.api.on('menu', handleMenu);
 
     IV.api.on('autotype-result', (result) => {
-      if (result.ok) toast('Typed ' + result.title + ' into ' + result.window);
+      if (result.ok) toast(tr('Typed ') + result.title + ' into ' + result.window);
       else toast(result.error || 'Auto-type failed', 'error');
     });
 
@@ -1090,8 +1102,8 @@ window.IV = window.IV || {};
     });
 
     IV.api.on('ssh-agent', (event) => {
-      if (event.type === 'signed') toast('SSH key used: ' + event.comment);
-      else if (event.type === 'error') toast('SSH agent: ' + event.message, 'error');
+      if (event.type === 'signed') toast(tr('SSH key used: ') + event.comment);
+      else if (event.type === 'error') toast(tr('SSH agent: ') + event.message, 'error');
     });
 
     document.addEventListener('keydown', handleKeydown);
@@ -1183,7 +1195,7 @@ window.IV = window.IV || {};
         if (state.entryId) {
           try {
             await IV.api.copyTotp(state.entryId);
-            toast('One time code copied');
+            toast(tr('One time code copied'));
           } catch (err) {
             toast(err.message, 'error');
           }
@@ -1240,9 +1252,9 @@ window.IV = window.IV || {};
       e.preventDefault();
       (async () => {
         const ok = await IV.api.confirm({
-          title: 'Delete entry',
+          title: tr('Delete entry'),
           message: 'Move "' + (state.entry.title || 'this entry') + '" to the recycle bin?',
-          confirmLabel: 'Delete',
+          confirmLabel: tr('Delete'),
           destructive: true
         });
         if (!ok) return;
@@ -1257,7 +1269,7 @@ window.IV = window.IV || {};
 
   document.addEventListener('DOMContentLoaded', () => {
     boot().catch((err) => {
-      document.body.append(h('pre', { text: 'Startup failed: ' + err.message }));
+      document.body.append(h('pre', { text: tr('Startup failed: ') + err.message }));
     });
   });
 })(window.IV);

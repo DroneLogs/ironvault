@@ -50,6 +50,12 @@ const DEFAULTS = {
     keepBackups: 10,
     markdownNotes: true,
     masterPasswordReminderDays: 180,
+    // Applied when the window is created, so it takes effect on restart.
+    language: 'en',
+    // Fetch a site's icon when an entry with a URL is saved. Contacting the
+    // site tells it somebody here has an entry for it, so this is a choice
+    // rather than something the app does behind your back.
+    autoFetchFavicons: true,
     autoCheckUpdates: true,
     // A version the user chose to skip. Only silences the automatic
     // prompt; checking by hand still reports it.

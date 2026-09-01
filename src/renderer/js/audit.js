@@ -52,30 +52,30 @@ window.IV = window.IV || {};
     const stats = h(
       'div',
       { class: 'audit-summary' },
-      h('div', { class: 'audit-stat' }, h('b', { text: String(report.total) }), h('span', { text: 'entries' })),
+      h('div', { class: 'audit-stat' }, h('b', { text: String(report.total) }), h('span', { text: tr('entries') })),
       h(
         'div',
         { class: 'audit-stat ' + (report.weak.length ? 'bad' : 'ok') },
         h('b', { text: String(report.weak.length) }),
-        h('span', { text: 'weak' })
+        h('span', { text: tr('weak') })
       ),
       h(
         'div',
         { class: 'audit-stat ' + (report.duplicates.length ? 'warn' : 'ok') },
         h('b', { text: String(report.duplicates.length) }),
-        h('span', { text: 'reused' })
+        h('span', { text: tr('reused') })
       ),
       h(
         'div',
         { class: 'audit-stat ' + (report.expired.length ? 'warn' : 'ok') },
         h('b', { text: String(report.expired.length) }),
-        h('span', { text: 'expired' })
+        h('span', { text: tr('expired') })
       ),
       h(
         'div',
         { class: 'audit-stat ' + (report.old.length ? 'warn' : 'ok') },
         h('b', { text: String(report.old.length) }),
-        h('span', { text: 'over 2 years' })
+        h('span', { text: tr('over 2 years') })
       )
     );
 
@@ -86,7 +86,7 @@ window.IV = window.IV || {};
       null,
       stats,
       problems === 0
-        ? h('p', { class: 'empty-note', text: 'Nothing needs attention. Every password is unique and reasonably strong.' })
+        ? h('p', { class: 'empty-note', text: tr('Nothing needs attention. Every password is unique and reasonably strong.') })
         : null,
       section(
         'Weak passwords',
@@ -129,7 +129,7 @@ window.IV = window.IV || {};
       )
     );
 
-    const handle = modal({ title: 'Security audit', wide: true, body });
+    const handle = modal({ title: tr('Security audit'), wide: true, body });
   }
 
   IV.audit = { openAudit };

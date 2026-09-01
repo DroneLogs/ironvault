@@ -6,7 +6,12 @@ window.IV = window.IV || {};
 
   const { h, modal, toast } = IV.dom;
 
+  // The three field helpers translate their own label, hint and suffix, so
+  // every settings row is covered without wrapping each call. Safe for the few
+  // that are handed a computed name: an unknown string comes back unchanged.
   function numberField(label, value, min, max, suffix, onChange) {
+    label = tr(label);
+    suffix = suffix ? tr(suffix) : suffix;
     const input = h('input', {
       type: 'number',
       min: String(min),
@@ -22,12 +27,20 @@ window.IV = window.IV || {};
     );
   }
 
-  function toggle(label, checked, onChange) {
+  function toggle(label, checked, onChange, hint) {
+    label = tr(label);
+    hint = hint ? tr(hint) : hint;
     const input = h('input', { type: 'checkbox', checked, onChange: () => onChange(input.checked) });
-    return h('label', { class: 'checkline' }, input, h('span', { text: label }));
+    const line = h('label', { class: 'checkline' }, input, h('span', { text: label }));
+    // A switch whose consequence is not obvious needs a sentence under it,
+    // the same way the dropdowns get one.
+    if (!hint) return line;
+    return h('div', { class: 'checkline-group' }, line, h('p', { class: 'hint', text: hint }));
   }
 
   function selectField(label, options, value, onChange, hint) {
+    label = tr(label);
+    hint = hint ? tr(hint) : hint;
     const select = h(
       'select',
       { onChange: () => onChange(select.value) },
@@ -58,7 +71,7 @@ window.IV = window.IV || {};
     return h(
       'div',
       { class: 'field' },
-      h('span', { class: 'field-label', text: 'Text and interface size' }),
+      h('span', { class: 'field-label', text: tr('Text and interface size') }),
       h('div', { class: 'range-row' }, input, output)
     );
   }
@@ -68,7 +81,7 @@ window.IV = window.IV || {};
     const input = h('input', {
       type: 'text',
       value: prefs.autoTypeHotkey || '',
-      placeholder: 'Control+Alt+A',
+      placeholder: tr('Control+Alt+A'),
       spellcheck: 'false',
       onChange: async () => {
         try {
@@ -82,9 +95,9 @@ window.IV = window.IV || {};
     return h(
       'label',
       { class: 'field' },
-      h('span', { class: 'field-label', text: 'Auto-type hotkey' }),
+      h('span', { class: 'field-label', text: tr('Auto-type hotkey') }),
       input,
-      h('p', { class: 'hint', text: 'Press this anywhere in Windows to type into the front window. Empty turns it off.' })
+      h('p', { class: 'hint', text: tr('Press this anywhere in Windows to type into the front window. Empty turns it off.') })
     );
   }
 
@@ -134,9 +147,9 @@ window.IV = window.IV || {};
     return h(
       'div',
       { class: 'field' },
-      h('span', { class: 'field-label', text: 'Appearance' }),
+      h('span', { class: 'field-label', text: tr('Appearance') }),
       group,
-      h('p', { class: 'hint', text: 'Device follows the light or dark setting in Windows, and changes with it.' })
+      h('p', { class: 'hint', text: tr('Device follows the light or dark setting in Windows, and changes with it.') })
     );
   }
 
@@ -151,16 +164,16 @@ window.IV = window.IV || {};
         IV.app.applyBrand();
 
         const ok = await IV.api.confirm({
-          title: 'Restart to finish',
+          title: tr('Restart to finish'),
           message: 'Restart now so the taskbar and window icon change too?',
           detail:
             'The colours and the logo inside the app have already changed. Windows holds the ' +
             'taskbar icon against the running program, so only that part needs a restart. Any open ' +
             'database is locked first.',
-          confirmLabel: 'Restart now'
+          confirmLabel: tr('Restart now')
         });
         if (!ok) {
-          toast('Palette changed. The taskbar icon follows next time you start the app.');
+          toast(tr('Palette changed. The taskbar icon follows next time you start the app.'));
           return;
         }
         await IV.api.lock().catch(() => {});
@@ -187,12 +200,12 @@ window.IV = window.IV || {};
     return h(
       'label',
       { class: 'field' },
-      h('span', { class: 'field-label', text: 'Palette' }),
+      h('span', { class: 'field-label', text: tr('Palette') }),
       select,
       h('p', {
         class: 'hint',
         text:
-          'The two CB palettes swap the colours that merge under colour blindness, mainly green against red. ' +
+          tr('The two CB palettes swap the colours that merge under colour blindness, mainly green against red. ') +
           'Amber changes the accent and the window icon as well. The installed shortcut and the executable ' +
           'keep the icon the build was made with.'
       })
@@ -230,24 +243,24 @@ window.IV = window.IV || {};
     return new Promise((resolve) => {
       const input = h('input', { type: 'password', autofocus: true });
       const handle = modal({
-        title: 'Confirm it is you',
+        title: tr('Confirm it is you'),
         body: h(
           'div',
           null,
           h('p', {
             class: 'hint',
             text:
-              'Relaxing screen capture lets recording software see your passwords, ' +
+              tr('Relaxing screen capture lets recording software see your passwords, ') +
               'so it asks first. It goes back on its own when the time runs out, ' +
               'and always when the database locks.'
           }),
           h('label', { class: 'field' }, h('span', { class: 'field-label', text: label }), input)
         ),
         footer: [
-          h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => { handle.close(); resolve(null); } }),
+          h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => { handle.close(); resolve(null); } }),
           h('button', {
             class: 'btn primary',
-            text: 'Confirm',
+            text: tr('Confirm'),
             onClick: () => { const v = input.value; handle.close(); resolve(v); }
           })
         ]
@@ -283,7 +296,7 @@ window.IV = window.IV || {};
       : h('p', {
           class: 'hint',
           text:
-            'Protected. Screenshots, screen sharing and recording software cannot see this window. ' +
+            tr('Protected. Screenshots, screen sharing and recording software cannot see this window. ') +
             'Relaxing this needs the ' +
             (state.guard === 'vault' ? 'master password' : state.guard === 'password' ? 'screen capture password' : 'YubiKey') +
             ', and never lasts past the database locking.'
@@ -294,7 +307,7 @@ window.IV = window.IV || {};
         const credential = await askForGuard(state);
         if (credential === null) return;
         await IV.api.captureRequest(mode, credential, state.grantMinutes);
-        toast('Screen capture allowed for ' + describeRemaining(state.grantMinutes * 60000), 'good');
+        toast(tr('Screen capture allowed for ') + describeRemaining(state.grantMinutes * 60000), 'good');
         reopenSettings();
       } catch (err) {
         toast(err.message, 'error');
@@ -307,10 +320,10 @@ window.IV = window.IV || {};
       state.active
         ? h('button', {
             class: 'btn primary',
-            text: 'Protect again now',
+            text: tr('Protect again now'),
             onClick: async () => {
               await IV.api.captureRevoke();
-              toast('Screen capture protection is back on', 'good');
+              toast(tr('Screen capture protection is back on'), 'good');
               reopenSettings();
             }
           })
@@ -318,32 +331,32 @@ window.IV = window.IV || {};
       !state.active
         ? h('button', {
             class: 'btn ghost',
-            text: 'Allow, except while a secret shows',
+            text: tr('Allow, except while a secret shows'),
             onClick: () => relax('unlessRevealed')
           })
         : null,
       !state.active
-        ? h('button', { class: 'btn ghost', text: 'Allow fully', onClick: () => relax('always') })
+        ? h('button', { class: 'btn ghost', text: tr('Allow fully'), onClick: () => relax('always') })
         : null
     );
 
     wrap.append(
-      h('h3', { text: 'Screen capture' }),
+      h('h3', { text: tr('Screen capture') }),
       statusLine,
       buttons,
       selectField(
         'Ask for',
         [
-          { value: 'vault', label: 'The master password of the open database' },
-          { value: 'password', label: 'A separate screen capture password' },
-          { value: 'yubikey', label: 'A YubiKey (not set up yet)' }
+          { value: 'vault', label: tr('The master password of the open database') },
+          { value: 'password', label: tr('A separate screen capture password') },
+          { value: 'yubikey', label: tr('A YubiKey (not set up yet)') }
         ],
         state.guard,
         async (v) => {
           try {
             await IV.api.captureSetGuard(v);
             if (v === 'password' && !state.hasSeparatePassword) {
-              toast('Set a screen capture password below', 'good');
+              toast(tr('Set a screen capture password below'), 'good');
             }
             reopenSettings();
           } catch (err) {
@@ -373,23 +386,23 @@ window.IV = window.IV || {};
               onClick: () => {
                 const input = h('input', { type: 'password', autofocus: true });
                 const handle = modal({
-                  title: 'Screen capture password',
+                  title: tr('Screen capture password'),
                   body: h(
                     'div',
                     null,
-                    h('p', { class: 'hint', text: 'At least 8 characters. This only unlocks the screen capture setting, nothing else.' }),
-                    h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'New password' }), input)
+                    h('p', { class: 'hint', text: tr('At least 8 characters. This only unlocks the screen capture setting, nothing else.') }),
+                    h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('New password') }), input)
                   ),
                   footer: [
-                    h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+                    h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
                     h('button', {
                       class: 'btn primary',
-                      text: 'Save',
+                      text: tr('Save'),
                       onClick: async () => {
                         try {
                           await IV.api.captureSetPassword(input.value);
                           handle.close();
-                          toast('Screen capture password set', 'good');
+                          toast(tr('Screen capture password set'), 'good');
                           reopenSettings();
                         } catch (err) {
                           toast(err.message, 'error');
@@ -403,10 +416,10 @@ window.IV = window.IV || {};
             state.hasSeparatePassword
               ? h('button', {
                   class: 'btn ghost',
-                  text: 'Remove it',
+                  text: tr('Remove it'),
                   onClick: async () => {
                     await IV.api.captureClearPassword();
-                    toast('Screen capture password removed', 'good');
+                    toast(tr('Screen capture password removed'), 'good');
                     reopenSettings();
                   }
                 })
@@ -442,7 +455,7 @@ window.IV = window.IV || {};
       h('strong', { text: which + ' switched on in Windows. ' }),
       h('span', {
         text:
-          'Passwords you copy are being recorded there, and clearing the clipboard ' +
+          tr('Passwords you copy are being recorded there, and clearing the clipboard ') +
           'here does not remove them. Turn it off in Windows Settings under ' +
           'System > Clipboard, or use auto-type instead of copying.'
       })
@@ -480,24 +493,24 @@ window.IV = window.IV || {};
         // A button rather than a link: this hands the URL to the system browser
         // instead of navigating, and the app has no anchor styling at all, so a
         // real link falls back to the browser blue and is unreadable on dark.
-        h('p', { class: 'hint', text: 'You need an API key from ' + provider.name + '.' }),
+        h('p', { class: 'hint', text: tr('You need an API key from ') + provider.name + '.' }),
         provider.note ? h('p', { class: 'hint warning', text: provider.note }) : null,
         h(
           'div',
           { class: 'row-gap' },
           h('button', {
             class: 'btn ghost small',
-            text: 'Open the ' + provider.name + ' key page',
+            text: tr('Open the ') + provider.name + ' key page',
             onClick: () => IV.api.openUrl(provider.keyUrl).catch(() => {})
           })
         ),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'API key' }), keyInput),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('API key') }), keyInput),
         h(
           'div',
           { class: 'row-gap' },
           h('button', {
             class: 'btn primary small',
-            text: 'Save and test',
+            text: tr('Save and test'),
             onClick: async () => {
               try {
                 if (keyInput.value.trim()) {
@@ -519,7 +532,7 @@ window.IV = window.IV || {};
           provider.hasKey
             ? h('button', {
                 class: 'btn ghost small',
-                text: 'Remove the key',
+                text: tr('Remove the key'),
                 onClick: async () => {
                   await IV.api.aliasClearKey(provider.key);
                   toast(provider.name + ' key removed', 'good');
@@ -549,7 +562,7 @@ window.IV = window.IV || {};
         'can pick between them at the time.'
     );
 
-    wrap.append(h('h3', { text: 'Email aliases' }), picker, rows);
+    wrap.append(h('h3', { text: tr('Email aliases') }), picker, rows);
     renderRows();
 
     wrap.append(
@@ -560,14 +573,14 @@ window.IV = window.IV || {};
         async (v) => {
           if (v) {
             const ok = await IV.api.confirm({
-              title: 'Suggest a made up address',
+              title: tr('Suggest a made up address'),
               message: 'This is not an alias. Nothing creates the mailbox.',
               detail:
                 'It builds an address from a name, a number and a real provider\'s ' +
                 'domain. No mailbox is created, the domain belongs to somebody else, ' +
                 'and the address may already be a real person\'s. Mail sent to it will ' +
                 'not reach you. Only useful for a form that will never send you anything.',
-              confirmLabel: 'Suggest it anyway',
+              confirmLabel: tr('Suggest it anyway'),
               destructive: true
             });
             if (!ok) {
@@ -603,11 +616,11 @@ window.IV = window.IV || {};
 
     const wrap = h('div', { class: 'detail-section' });
     wrap.append(
-      h('h3', { text: 'Browser extension' }),
+      h('h3', { text: tr('Browser extension') }),
       h('p', {
         class: 'hint',
         text:
-          'Fills passwords into web pages. The extension talks to Propolis over a ' +
+          tr('Fills passwords into web pages. The extension talks to Propolis over a ') +
           'private channel on this machine, encrypted end to end, and nothing is ' +
           'sent anywhere. Passwords are only ever given out for a site the entry ' +
           'belongs to, and only while this database is unlocked.'
@@ -623,7 +636,7 @@ window.IV = window.IV || {};
     const idInput = h('input', {
       type: 'text',
       spellcheck: 'false',
-      placeholder: 'The id from your browser extensions page'
+      placeholder: tr('The id from your browser extensions page')
     });
     const browserSelect = h(
       'select',
@@ -637,7 +650,7 @@ window.IV = window.IV || {};
       h('p', {
         class: 'hint',
         text:
-          'Step 1. Load the extension. Press the button below to open the folder it ' +
+          tr('Step 1. Load the extension. Press the button below to open the folder it ') +
           'lives in, then in your browser open the extensions page, switch on ' +
           'developer mode, and choose Load unpacked. Always load it from that ' +
           'folder: your browser works out the extension id from where it was ' +
@@ -649,28 +662,28 @@ window.IV = window.IV || {};
         { class: 'row-gap' },
         h('button', {
           class: 'btn ghost small',
-          text: 'Open the extension folder',
+          text: tr('Open the extension folder'),
           onClick: () => IV.api.browserReveal().catch((err) => toast(err.message, 'error'))
         })
       ),
       h('p', {
         class: 'hint',
         text:
-          'Step 2. Copy the id your browser shows on the extension card, pick the ' +
+          tr('Step 2. Copy the id your browser shows on the extension card, pick the ') +
           'browser below, and press Set up. Then restart the browser.'
       }),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Browser' }), browserSelect),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Extension id' }), idInput),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Browser') }), browserSelect),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Extension id') }), idInput),
       h(
         'div',
         { class: 'row-gap' },
         h('button', {
           class: 'btn primary small',
-          text: 'Set up',
+          text: tr('Set up'),
           onClick: async () => {
             try {
               await IV.api.browserRegister(browserSelect.value, idInput.value.trim());
-              toast('Set up. Restart the browser, then press the Propolis button in it.', 'good');
+              toast(tr('Set up. Restart the browser, then press the Propolis button in it.'), 'good');
               reopenSettings();
             } catch (err) {
               toast(err.message, 'error');
@@ -679,23 +692,23 @@ window.IV = window.IV || {};
         }),
         h('button', {
           class: 'btn ghost small',
-          text: 'Remove setup',
+          text: tr('Remove setup'),
           onClick: async () => {
             await IV.api.browserUnregister(browserSelect.value);
-            toast('Removed');
+            toast(tr('Removed'));
             reopenSettings();
           }
         })
       ),
       h('p', {
         class: 'hint',
-        text: 'Step 3. Press the Propolis button in the browser and approve it here when asked.'
+        text: tr('Step 3. Press the Propolis button in the browser and approve it here when asked.')
       })
     );
 
     const connections = state.connections || [];
     wrap.append(
-      h('div', { class: 'detail-section' }, h('h3', { text: 'Connected browsers' })),
+      h('div', { class: 'detail-section' }, h('h3', { text: tr('Connected browsers') })),
       connections.length
         ? h(
             'div',
@@ -707,7 +720,7 @@ window.IV = window.IV || {};
                 h('span', { text: c.name }),
                 h('button', {
                   class: 'btn ghost small',
-                  text: 'Disconnect',
+                  text: tr('Disconnect'),
                   onClick: async () => {
                     await IV.api.browserForget(c.id);
                     toast(c.name + ' disconnected');
@@ -717,7 +730,7 @@ window.IV = window.IV || {};
               )
             )
           )
-        : h('p', { class: 'hint', text: 'None yet. A browser appears here once you approve it.' })
+        : h('p', { class: 'hint', text: tr('None yet. A browser appears here once you approve it.') })
     );
 
     return wrap;
@@ -740,11 +753,11 @@ window.IV = window.IV || {};
 
     const wrap = h('div', { class: 'detail-section' });
     wrap.append(
-      h('h3', { text: 'Sync over your network' }),
+      h('h3', { text: tr('Sync over your network') }),
       h('p', {
         class: 'hint',
         text:
-          'Sync straight to another computer running Propolis on the same network, ' +
+          tr('Sync straight to another computer running Propolis on the same network, ') +
           'with no server in between and nothing leaving the building. Both ' +
           'databases have to be open, and both are merged, so neither computer ' +
           'is left behind.'
@@ -763,39 +776,39 @@ window.IV = window.IV || {};
       spellcheck: 'false',
       onChange: async () => {
         await IV.api.lanSetName(nameInput.value.trim());
-        toast('Name changed', 'good');
+        toast(tr('Name changed'), 'good');
       }
     });
 
     wrap.append(
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'This computer is called' }), nameInput),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('This computer is called') }), nameInput),
       h('p', {
         class: 'hint',
         text:
-          'Its fingerprint is ' + state.fingerprint +
+          tr('Its fingerprint is ') + state.fingerprint +
           (state.addresses.length ? ', at ' + state.addresses.join(' or ') : '') + '.'
       })
     );
 
     const codeBox = h('div');
     wrap.append(
-      h('div', { class: 'detail-section' }, h('h3', { text: 'Pair another computer' })),
+      h('div', { class: 'detail-section' }, h('h3', { text: tr('Pair another computer') })),
       h('p', {
         class: 'hint',
-        text: 'On one computer show a code, then on the other find it and type the code in.'
+        text: tr('On one computer show a code, then on the other find it and type the code in.')
       }),
       h(
         'div',
         { class: 'row-gap' },
         h('button', {
           class: 'btn ghost small',
-          text: 'Show a pairing code',
+          text: tr('Show a pairing code'),
           onClick: async () => {
             try {
               const started = await IV.api.lanBeginPairing();
               IV.dom.clear(codeBox);
               codeBox.append(
-                h('p', { class: 'hint', text: 'Type this on the other computer. It works once, and expires.' }),
+                h('p', { class: 'hint', text: tr('Type this on the other computer. It works once, and expires.') }),
                 h('div', { class: 'pair-code', text: started.code })
               );
             } catch (err) {
@@ -805,11 +818,11 @@ window.IV = window.IV || {};
         }),
         h('button', {
           class: 'btn ghost small',
-          text: 'Stop showing it',
+          text: tr('Stop showing it'),
           onClick: async () => {
             await IV.api.lanCancelPairing();
             IV.dom.clear(codeBox);
-            toast('No longer pairing');
+            toast(tr('No longer pairing'));
           }
         })
       ),
@@ -823,10 +836,10 @@ window.IV = window.IV || {};
         { class: 'row-gap' },
         h('button', {
           class: 'btn ghost small',
-          text: 'Find a computer showing a code',
+          text: tr('Find a computer showing a code'),
           onClick: async () => {
             IV.dom.clear(foundBox);
-            foundBox.append(h('p', { class: 'hint', text: 'Looking...' }));
+            foundBox.append(h('p', { class: 'hint', text: tr('Looking...') }));
             let found = [];
             try {
               found = await IV.api.lanDiscover();
@@ -839,7 +852,7 @@ window.IV = window.IV || {};
                 h('p', {
                   class: 'hint',
                   text:
-                    'Nothing answered. The other computer needs Propolis open, this ' +
+                    tr('Nothing answered. The other computer needs Propolis open, this ') +
                     'setting switched on, and a pairing code showing.'
                 })
               );
@@ -848,7 +861,7 @@ window.IV = window.IV || {};
             for (const device of found) {
               const codeInput = h('input', {
                 type: 'text',
-                placeholder: 'The code it is showing',
+                placeholder: tr('The code it is showing'),
                 spellcheck: 'false'
               });
               foundBox.append(
@@ -857,13 +870,13 @@ window.IV = window.IV || {};
                   { class: 'field' },
                   h('span', { class: 'field-label', text: device.name + '  (' + device.address + ')' }),
                   codeInput,
-                  h('p', { class: 'hint', text: 'Its fingerprint is ' + device.fingerprint + '.' }),
+                  h('p', { class: 'hint', text: tr('Its fingerprint is ') + device.fingerprint + '.' }),
                   h(
                     'div',
                     { class: 'row-gap' },
                     h('button', {
                       class: 'btn primary small',
-                      text: 'Pair',
+                      text: tr('Pair'),
                       onClick: async () => {
                         try {
                           await IV.api.lanPair({
@@ -872,7 +885,7 @@ window.IV = window.IV || {};
                             code: codeInput.value,
                             name: device.name
                           });
-                          toast('Paired with ' + device.name, 'good');
+                          toast(tr('Paired with ') + device.name, 'good');
                           reopenSettings();
                         } catch (err) {
                           toast(err.message, 'error');
@@ -890,9 +903,9 @@ window.IV = window.IV || {};
     );
 
     const paired = state.peers || [];
-    wrap.append(h('div', { class: 'detail-section' }, h('h3', { text: 'Paired computers' })));
+    wrap.append(h('div', { class: 'detail-section' }, h('h3', { text: tr('Paired computers') })));
     if (!paired.length) {
-      wrap.append(h('p', { class: 'hint', text: 'None yet.' }));
+      wrap.append(h('p', { class: 'hint', text: tr('None yet.') }));
       return wrap;
     }
     for (const peer of paired) {
@@ -903,7 +916,7 @@ window.IV = window.IV || {};
           h('span', { text: peer.name + '  ' + peer.fingerprint }),
           h('button', {
             class: 'btn primary small',
-            text: 'Sync now',
+            text: tr('Sync now'),
             onClick: async (e) => {
               const button = e.currentTarget;
               button.disabled = true;
@@ -925,7 +938,7 @@ window.IV = window.IV || {};
           }),
           h('button', {
             class: 'btn ghost small',
-            text: 'Unpair',
+            text: tr('Unpair'),
             onClick: async () => {
               await IV.api.lanForget(peer.id);
               toast(peer.name + ' unpaired');
@@ -974,7 +987,7 @@ window.IV = window.IV || {};
 
   function pageDatabase(info) {
     if (!info || !info.open) {
-      return h('p', { class: 'hint', text: 'Open a database to see anything about it here.' });
+      return h('p', { class: 'hint', text: tr('Open a database to see anything about it here.') });
     }
 
     const quickToggle = h('input', {
@@ -983,12 +996,12 @@ window.IV = window.IV || {};
       onChange: async () => {
         if (quickToggle.checked) {
           quickToggle.checked = false;
-          toast('Tick "remember this password" on the unlock screen to turn this on');
+          toast(tr('Tick "remember this password" on the unlock screen to turn this on'));
           return;
         }
         await IV.api.setQuickUnlock({ filePath: info.filePath, enabled: false });
         IV.state.hasQuickUnlock = false;
-        toast('Stored password removed', 'good');
+        toast(tr('Stored password removed'), 'good');
       }
     });
 
@@ -998,26 +1011,26 @@ window.IV = window.IV || {};
       h(
         'div',
         { class: 'meta-grid' },
-        h('div', null, h('b', { text: 'Name' }), info.name),
-        h('div', null, h('b', { text: 'Format' }), 'KDBX ' + info.version),
-        h('div', null, h('b', { text: 'Key derivation' }), info.kdf),
-        h('div', null, h('b', { text: 'Cipher' }), info.cipher),
-        h('div', null, h('b', { text: 'Entries' }), String(info.entryCount)),
-        h('div', null, h('b', { text: 'Groups' }), String(info.groupCount))
+        h('div', null, h('b', { text: tr('Name') }), info.name),
+        h('div', null, h('b', { text: tr('Format') }), 'KDBX ' + info.version),
+        h('div', null, h('b', { text: tr('Key derivation') }), info.kdf),
+        h('div', null, h('b', { text: tr('Cipher') }), info.cipher),
+        h('div', null, h('b', { text: tr('Entries') }), String(info.entryCount)),
+        h('div', null, h('b', { text: tr('Groups') }), String(info.groupCount))
       ),
       h('p', { class: 'path-line', text: info.filePath }),
-      h('label', { class: 'checkline' }, quickToggle, h('span', { text: 'Quick unlock stored on this Windows account' })),
+      h('label', { class: 'checkline' }, quickToggle, h('span', { text: tr('Quick unlock stored on this Windows account') })),
       h(
         'div',
         { class: 'row-gap' },
-        h('button', { class: 'btn ghost small', text: 'Change master key', onClick: () => IV.editor.openMasterKeyDialog() }),
+        h('button', { class: 'btn ghost small', text: tr('Change master key'), onClick: () => IV.editor.openMasterKeyDialog() }),
         h('button', {
           class: 'btn ghost small',
-          text: 'Save a copy...',
+          text: tr('Save a copy...'),
           onClick: async () => {
             try {
               const result = await IV.api.saveAs();
-              if (result) toast('Saved to ' + result.filePath, 'good');
+              if (result) toast(tr('Saved to ') + result.filePath, 'good');
               await IV.app.refresh();
             } catch (err) {
               toast(err.message, 'error');
@@ -1026,7 +1039,7 @@ window.IV = window.IV || {};
         }),
         h('button', {
           class: 'btn ghost small',
-          text: 'Show in Explorer',
+          text: tr('Show in Explorer'),
           onClick: () => IV.api.revealInFolder(info.filePath)
         })
       ),
@@ -1035,13 +1048,13 @@ window.IV = window.IV || {};
         { class: 'row-gap' },
         h('button', {
           class: 'btn danger small',
-          text: 'Empty recycle bin',
+          text: tr('Empty recycle bin'),
           onClick: async () => {
             const ok = await IV.api.confirm({
-              title: 'Empty recycle bin',
+              title: tr('Empty recycle bin'),
               message: 'Permanently delete everything in the recycle bin?',
               detail: 'This cannot be undone.',
-              confirmLabel: 'Empty',
+              confirmLabel: tr('Empty'),
               destructive: true
             });
             if (!ok) return;
@@ -1059,10 +1072,40 @@ window.IV = window.IV || {};
     return h(
       'div',
       null,
+      selectField(
+        'Language',
+        IV.i18n.available().map((l) => ({ value: l.code, label: l.name })),
+        prefs.language || 'en',
+        async (value) => {
+          await apply({ language: value });
+          // Each screen reads its words as it is built, so whatever is already
+          // drawn would stay in the old language. Rebuilding everything would
+          // mean returning to the lock screen with the database still open
+          // behind it, so this waits for a restart instead.
+          const ok = await IV.api.confirm({
+            title: tr('Restart to finish'),
+            message: tr('Restart Propolis now to change the language?'),
+            confirmLabel: tr('Restart now'),
+            cancelLabel: tr('Not now')
+          });
+          if (!ok) return;
+          await IV.api.lock().catch(() => {});
+          await IV.api.relaunch();
+        },
+        'Changes when Propolis restarts.'
+      ),
       numberField('Clear the clipboard after', prefs.clipboardClearSeconds, 0, 600, 'seconds (0 to keep)', (v) =>
         apply({ clipboardClearSeconds: v })
       ),
       toggle('Render notes as Markdown', prefs.markdownNotes !== false, (v) => apply({ markdownNotes: v })),
+      toggle(
+        'Fetch site icons for new entries',
+        prefs.autoFetchFavicons !== false,
+        (v) => apply({ autoFetchFavicons: v }),
+        'Downloads the icon when you save an entry with a web address, and keeps ' +
+          'it in the database so it is there offline. Fetching it tells that site ' +
+          'somebody here has an entry for it.'
+      ),
       numberField('Keep this many backups', prefs.keepBackups, 0, 100, 'saves (0 to keep none)', (v) =>
         apply({ keepBackups: v })
       ),
@@ -1078,7 +1121,7 @@ window.IV = window.IV || {};
       h(
         'div',
         { class: 'row-gap' },
-        h('button', { class: 'btn ghost small', text: 'Updates...', onClick: () => openUpdates() })
+        h('button', { class: 'btn ghost small', text: tr('Updates...'), onClick: () => openUpdates() })
       )
     );
   }
@@ -1107,9 +1150,9 @@ window.IV = window.IV || {};
       selectField(
         'Typeface',
         [
-          { value: 'system', label: 'System default' },
-          { value: 'dyslexic', label: 'OpenDyslexic (for dyslexia)' },
-          { value: 'hyperlegible', label: 'Atkinson Hyperlegible (for low vision)' }
+          { value: 'system', label: tr('System default') },
+          { value: 'dyslexic', label: tr('OpenDyslexic (for dyslexia)') },
+          { value: 'hyperlegible', label: tr('Atkinson Hyperlegible (for low vision)') }
         ],
         prefs.uiFont || 'system',
         (v) => apply({ uiFont: v })
@@ -1131,14 +1174,14 @@ window.IV = window.IV || {};
       ),
       h('p', {
         class: 'hint',
-        text: 'Out of the box only the colourblind safe palette is on. Everything else here starts off.'
+        text: tr('Out of the box only the colourblind safe palette is on. Everything else here starts off.')
       }),
       h(
         'div',
         { class: 'row-gap' },
         h('button', {
           class: 'btn ghost small',
-          text: 'Reset accessibility to defaults',
+          text: tr('Reset accessibility to defaults'),
           onClick: async () => {
             await apply({
               theme: 'blue-cb',
@@ -1149,7 +1192,7 @@ window.IV = window.IV || {};
               bigTargets: false,
               highContrast: false
             });
-            toast('Accessibility settings reset', 'good');
+            toast(tr('Accessibility settings reset'), 'good');
             reopenSettings();
           }
         })
@@ -1165,11 +1208,11 @@ window.IV = window.IV || {};
     if (warning) wrap.append(warning);
 
     wrap.append(
-      h('div', { class: 'detail-section' }, h('h3', { text: 'YubiKey' })),
+      h('div', { class: 'detail-section' }, h('h3', { text: tr('YubiKey') })),
       h('p', {
         class: 'hint warning',
         text:
-          'Unlocking with a YubiKey is written but has never been run against a real ' +
+          tr('Unlocking with a YubiKey is written but has never been run against a real ') +
           'key, so compatibility is not guaranteed. It stays off until you turn it on. ' +
           'If you do, test your key before binding a database to it, and keep a backup: ' +
           'a database bound to a key that does not work cannot be opened.'
@@ -1177,13 +1220,13 @@ window.IV = window.IV || {};
       toggle('Allow unlocking with a YubiKey (beta)', prefs.yubikeyBeta === true, async (v) => {
         if (v) {
           const ok = await IV.api.confirm({
-            title: 'Turn on YubiKey support',
+            title: tr('Turn on YubiKey support'),
             message: 'This part of the app has never been tested against real hardware.',
             detail:
               'Everything that could be checked without a key was checked, but every ' +
               'code path that talks to a device is unproven. Test your key before you ' +
               'bind a database to it, and back the database up first.',
-            confirmLabel: 'Turn it on',
+            confirmLabel: tr('Turn it on'),
             destructive: true
           });
           if (!ok) {
@@ -1208,13 +1251,13 @@ window.IV = window.IV || {};
   }
 
   const SETTINGS_PAGES = [
-    { id: 'general', label: 'General', build: (prefs) => pageGeneral(prefs) },
-    { id: 'locking', label: 'Locking', build: (prefs) => pageLocking(prefs) },
-    { id: 'security', label: 'Security', build: (prefs) => pageSecurity(prefs) },
-    { id: 'connections', label: 'Connections', build: () => pageConnections() },
-    { id: 'appearance', label: 'Appearance', build: (prefs) => pageAppearance(prefs) },
-    { id: 'accessibility', label: 'Accessibility', build: (prefs) => pageAccessibility(prefs) },
-    { id: 'database', label: 'This database', build: (prefs, info) => pageDatabase(info) }
+    { id: 'general', label: tr('General'), build: (prefs) => pageGeneral(prefs) },
+    { id: 'locking', label: tr('Locking'), build: (prefs) => pageLocking(prefs) },
+    { id: 'security', label: tr('Security'), build: (prefs) => pageSecurity(prefs) },
+    { id: 'connections', label: tr('Connections'), build: () => pageConnections() },
+    { id: 'appearance', label: tr('Appearance'), build: (prefs) => pageAppearance(prefs) },
+    { id: 'accessibility', label: tr('Accessibility'), build: (prefs) => pageAccessibility(prefs) },
+    { id: 'database', label: tr('This database'), build: (prefs, info) => pageDatabase(info) }
   ];
 
   async function openSettings(page) {
@@ -1251,9 +1294,9 @@ window.IV = window.IV || {};
     }
 
     const handle = modal({
-      title: 'Settings',
+      title: tr('Settings'),
       body: h('div', { class: 'settings-layout' }, nav, pane),
-      footer: [h('button', { class: 'btn primary', text: 'Done', onClick: () => handle.close() })]
+      footer: [h('button', { class: 'btn primary', text: tr('Done'), onClick: () => handle.close() })]
     });
 
     await show(settingsPage);
@@ -1328,23 +1371,23 @@ window.IV = window.IV || {};
       type: 'text',
       value: prefs.updateFeedUrl || '',
       spellcheck: 'false',
-      placeholder: 'https://example.com/propolis/updates/',
+      placeholder: tr('https://example.com/propolis/updates/'),
       onChange: () => apply({ updateFeedUrl: feedInput.value.trim() })
     });
     const pageInput = h('input', {
       type: 'text',
       value: prefs.updateReleasePageUrl || '',
       spellcheck: 'false',
-      placeholder: 'https://example.com/propolis/releases',
+      placeholder: tr('https://example.com/propolis/releases'),
       onChange: () => apply({ updateReleasePageUrl: pageInput.value.trim() })
     });
 
     async function install(update) {
       const ok = await IV.api.confirm({
-        title: 'Install update',
+        title: tr('Install update'),
         message: 'Install version ' + update.version + ' and restart Propolis?',
         detail: 'Any open database is locked first. Unsaved changes are saved automatically.',
-        confirmLabel: 'Install and restart'
+        confirmLabel: tr('Install and restart')
       });
       if (!ok) return;
       await IV.api.lock().catch(() => {});
@@ -1388,7 +1431,7 @@ window.IV = window.IV || {};
           actions,
           h('button', {
             class: 'btn primary',
-            text: 'Update now',
+            text: tr('Update now'),
             onClick: async () => {
               autoInstall = true;
               try {
@@ -1401,10 +1444,10 @@ window.IV = window.IV || {};
           }),
           h('button', {
             class: 'btn ghost small',
-            text: 'Skip this version',
+            text: tr('Skip this version'),
             onClick: async () => {
               await apply({ skippedUpdateVersion: update.version });
-              toast('Propolis will not bring up ' + update.version + ' again');
+              toast(tr('Propolis will not bring up ') + update.version + ' again');
               handle.close();
             }
           }),
@@ -1420,14 +1463,14 @@ window.IV = window.IV || {};
       }
 
       if (update.status === 'downloading') {
-        IV.dom.add(actions, h('button', { class: 'btn primary', text: 'Downloading...', disabled: true }));
+        IV.dom.add(actions, h('button', { class: 'btn primary', text: tr('Downloading...'), disabled: true }));
         return;
       }
 
       if (update.status === 'ready') {
         IV.dom.add(
           actions,
-          h('button', { class: 'btn primary', text: 'Restart and install', onClick: () => install(update) })
+          h('button', { class: 'btn primary', text: tr('Restart and install'), onClick: () => install(update) })
         );
         return;
       }
@@ -1452,44 +1495,44 @@ window.IV = window.IV || {};
     const advanced = h(
       'details',
       { class: 'adv' },
-      h('summary', { text: 'Advanced' }),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Update feed URL' }), feedInput),
+      h('summary', { text: tr('Advanced') }),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Update feed URL') }), feedInput),
       h(
         'div',
         { class: 'row-gap' },
         h('button', {
           class: 'btn ghost small',
-          text: 'Use the Propolis repository',
+          text: tr('Use the Propolis repository'),
           onClick: async () => {
             const state = await IV.api.updateState();
             feedInput.value = state.defaultFeedUrl;
             await apply({ updateFeedUrl: state.defaultFeedUrl });
-            toast('Feed reset to the Propolis repository', 'good');
+            toast(tr('Feed reset to the Propolis repository'), 'good');
           }
         }),
         h('button', {
           class: 'btn ghost small',
-          text: 'Never check',
+          text: tr('Never check'),
           onClick: async () => {
             feedInput.value = '';
             await apply({ updateFeedUrl: '' });
             render(await IV.api.updateState());
-            toast('Update checks turned off');
+            toast(tr('Update checks turned off'));
           }
         })
       ),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Release notes page' }), pageInput),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Release notes page') }), pageInput),
       h('p', {
         class: 'hint',
         text:
-          'A check asks for latest.yml beside the installer, so a release published ' +
+          tr('A check asks for latest.yml beside the installer, so a release published ') +
           'without that file cannot be seen however public the repository is. Leave ' +
           'the feed empty and Propolis never contacts anything.'
       })
     );
 
     const handle = modal({
-      title: 'Updates',
+      title: tr('Updates'),
       body: h(
         'div',
         null,
@@ -1504,7 +1547,7 @@ window.IV = window.IV || {};
         ),
         advanced
       ),
-      footer: [h('button', { class: 'btn primary', text: 'Done', onClick: () => handle.close() })],
+      footer: [h('button', { class: 'btn primary', text: tr('Done'), onClick: () => handle.close() })],
       onClose: () => {
         liveUpdatePanel = null;
         updatesHandle = null;
@@ -1605,7 +1648,7 @@ window.IV = window.IV || {};
     ];
 
     modal({
-      title: 'Keyboard shortcuts',
+      title: tr('Keyboard shortcuts'),
       body: h(
         'table',
         { class: 'kbd-table' },
@@ -1628,23 +1671,23 @@ window.IV = window.IV || {};
   function openAbout() {
     const app = IV.state.app;
     modal({
-      title: 'About Propolis',
+      title: tr('About Propolis'),
       body: h(
         'div',
         null,
-        h('p', { text: 'Propolis ' + app.version }),
+        h('p', { text: tr('Propolis ') + app.version }),
         h('p', {
           class: 'muted',
-          text: 'A KeePass client for Windows. Reads and writes KDBX 3.1 and KDBX 4 files with AES or ChaCha20 and Argon2 or AES-KDF.'
+          text: tr('A KeePass client for Windows. Reads and writes KDBX 3.1 and KDBX 4 files with AES or ChaCha20 and Argon2 or AES-KDF.')
         }),
-        h('div', { class: 'detail-section' }, h('h3', { text: 'How your data is handled' })),
+        h('div', { class: 'detail-section' }, h('h3', { text: tr('How your data is handled') })),
         h('ul', { class: 'muted' },
-          h('li', { text: 'Everything stays in the .kdbx file you chose. Nothing is uploaded anywhere.' }),
-          h('li', { text: 'The app has no network access at all.' }),
-          h('li', { text: 'Passwords are only decrypted when you ask to see or copy one.' }),
-          h('li', { text: 'Quick unlock stores the master password with Windows DPAPI, tied to your Windows account.' })
+          h('li', { text: tr('Everything stays in the .kdbx file you chose. Nothing is uploaded anywhere.') }),
+          h('li', { text: tr('The app has no network access at all.') }),
+          h('li', { text: tr('Passwords are only decrypted when you ask to see or copy one.') }),
+          h('li', { text: tr('Quick unlock stores the master password with Windows DPAPI, tied to your Windows account.') })
         ),
-        h('p', { class: 'muted', text: 'Electron ' + app.electron })
+        h('p', { class: 'muted', text: tr('Electron ') + app.electron })
       )
     });
   }

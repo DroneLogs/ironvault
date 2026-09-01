@@ -211,6 +211,44 @@ async function chooseKeyFile() {
   return result.filePaths[0];
 }
 
+/* ------------------------------------------------------------ site icons */
+
+/**
+ * Fetches a site's icon straight after a save, so adding a URL is all it takes.
+ *
+ * Downloading one was already possible, but only by asking for it on each entry
+ * or running the whole database through the tool, which meant most entries kept
+ * their coloured initials forever.
+ *
+ * Three things it deliberately does not do. It never replaces an icon that is
+ * already there, because that would overwrite one the user chose. It never
+ * makes the save wait, or fail: a site being down is not a reason for saving a
+ * password to go wrong. And it does nothing at all when the setting is off,
+ * since fetching an icon tells that site somebody here has an entry for it.
+ */
+function autoFetchIcon(entryId, url) {
+  if (!entryId || !url) return;
+  if (settings.getPrefs().autoFetchFavicons === false) return;
+
+  let existing = null;
+  try {
+    existing = vault.getEntry(entryId);
+  } catch {
+    return;
+  }
+  if (!existing || existing.customIcon) return;
+
+  setImmediate(async () => {
+    try {
+      await features.downloadFavicon(entryId);
+      const target = ctx.getWindow();
+      if (target && !target.isDestroyed()) target.webContents.send('icon-updated', { id: entryId });
+    } catch {
+      // No icon, no network, or nothing that decodes. All ordinary.
+    }
+  });
+}
+
 /* ----------------------------------------------------------------- handlers */
 
 const handlers = {
@@ -411,8 +449,16 @@ const handlers = {
   'entry.history': ({ id, index }) => vault.getHistoryEntry(id, index),
 
   /* writing */
-  'entry.create': (payload) => vault.createEntry(payload),
-  'entry.update': ({ id, ...payload }) => vault.updateEntry(id, payload),
+  'entry.create': (payload) => {
+    const created = vault.createEntry(payload);
+    autoFetchIcon(created && created.id, payload.url);
+    return created;
+  },
+  'entry.update': ({ id, ...payload }) => {
+    const updated = vault.updateEntry(id, payload);
+    autoFetchIcon(id, payload.url);
+    return updated;
+  },
   'entry.delete': ({ id, permanent }) => vault.deleteEntry(id, { permanent }),
   'entry.restore': ({ id, groupId }) => vault.restoreEntry(id, groupId),
   'entry.move': ({ id, groupId }) => vault.moveEntry(id, groupId),
@@ -801,6 +847,17 @@ const handlers = {
 
 function registerIpc(context) {
   ctx = { ...ctx, ...context };
+
+  // Answered synchronously because the renderer needs the language before its
+  // first script runs, not after a round trip. Nothing secret goes over it.
+  ipcMain.removeAllListeners('propolis-language');
+  ipcMain.on('propolis-language', (event) => {
+    try {
+      event.returnValue = settings.getPrefs().language || 'en';
+    } catch {
+      event.returnValue = 'en';
+    }
+  });
 
   // The extension copies through here, so the popup never holds a password and
   // the clipboard is cleared on the same timer as a copy made in the app.

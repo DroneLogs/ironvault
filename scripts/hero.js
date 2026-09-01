@@ -1,15 +1,17 @@
 'use strict';
 
 /**
- * One picture, for the website.
+ * The pictures for the website.
  *
  * Same harness as shot.js but rendered at twice the size, because a marketing
  * image is shown large on displays that will not forgive a 1x screenshot, and
  * scaled down looks better than scaled up.
  *
- * It builds the same throwaway demo vault, opens an entry that has something
- * worth showing in it, and writes one PNG. Nothing here touches a real
- * database: the profile and the vault are both temporary directories.
+ * It builds the same throwaway demo vault and writes three PNGs: the main
+ * window with an entry open, the security audit, and the generator. Those are
+ * the three things the site says Propolis does, so they are the three it
+ * shows. Nothing here touches a real database: the profile and the vault are
+ * both temporary directories.
  *
  *   npx electron scripts/hero.js [outDir]
  */
@@ -120,15 +122,42 @@ app.whenReady().then(async () => {
   await wait(900);
 
   fs.mkdirSync(outDir, { recursive: true });
-  // Two clean frames before grabbing, or the capture can come back empty or
-  // blended between the old screen and the new one.
-  await run('new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(true))))');
+
+  async function shot(name) {
+    // Nothing keeps focus into the capture: a focus ring or a text caret left
+    // over from driving the UI reads as a photograph of somebody mid-click.
+    await run('document.activeElement && document.activeElement.blur(); true');
+    // Two clean frames before grabbing, or the capture can come back empty or
+    // blended between the old screen and the new one.
+    await run('new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(true))))');
+    await wait(300);
+    const image = await win.webContents.capturePage();
+    const file = path.join(outDir, name + '.png');
+    fs.writeFileSync(file, image.toPNG());
+    const size = image.getSize();
+    console.log('wrote ' + file + '  ' + size.width + 'x' + size.height);
+  }
+
+  await shot('hero');
+
+  // The audit has something to say because one of the demo passwords is
+  // deliberately terrible. Every group is opened so the picture shows the
+  // finding rather than a stack of collapsed headings.
+  await run(`document.querySelector('#btn-audit').click(); true`);
+  await wait(500);
+  await run(`document.querySelectorAll('.audit-group').forEach(d => d.open = true); true`);
   await wait(300);
-  const image = await win.webContents.capturePage();
-  const file = path.join(outDir, 'hero.png');
-  fs.writeFileSync(file, image.toPNG());
-  const size = image.getSize();
-  console.log('wrote ' + file + '  ' + size.width + 'x' + size.height);
+  await shot('audit');
+  await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
+  await wait(300);
+
+  // Advanced stays shut: expanded, the dialog is taller than the window and
+  // the picture ends on a half-cropped checkbox. The character sets and the
+  // strength readout, which are the parts worth seeing, are above it anyway.
+  await run(`document.querySelector('#btn-generator').click(); true`);
+  await wait(500);
+  await shot('generator');
+  await run(`IV.dom.topModal() && IV.dom.topModal().close(); true`);
 
   vault.lock();
   fs.rmSync(workDir, { recursive: true, force: true });

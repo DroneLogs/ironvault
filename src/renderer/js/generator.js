@@ -21,7 +21,7 @@ window.IV = window.IV || {};
   function colorize(password, node) {
     clear(node);
     if (!password) {
-      node.append(h('span', { class: 'gen-empty', text: 'Nothing generated' }));
+      node.append(h('span', { class: 'gen-empty', text: tr('Nothing generated') }));
       return;
     }
     let run = '';
@@ -193,16 +193,16 @@ window.IV = window.IV || {};
         { class: 'gen-preview-actions' },
         h('button', {
           class: 'icon-btn refresh',
-          title: 'Generate another',
+          title: tr('Generate another'),
           onClick: () => regenerate()
         }),
         h('button', {
           class: 'icon-btn copy',
-          title: 'Copy to the clipboard',
+          title: tr('Copy to the clipboard'),
           onClick: async () => {
             if (!current) return;
             await IV.api.copy(current);
-            toast('Password copied');
+            toast(tr('Password copied'));
           }
         })
       )
@@ -261,7 +261,7 @@ window.IV = window.IV || {};
     const excludedInput = h('input', {
       type: 'text',
       value: config.excludedCharacters || '',
-      placeholder: 'none',
+      placeholder: tr('none'),
       spellcheck: 'false',
       onInput: () => {
         config.excludedCharacters = excludedInput.value;
@@ -272,7 +272,7 @@ window.IV = window.IV || {};
     const basicAdvanced = h(
       'details',
       { class: 'adv' },
-      h('summary', { text: 'Advanced' }),
+      h('summary', { text: tr('Advanced') }),
       checkbox(
         'Easy Read Characters Only',
         config.easyReadOnly,
@@ -300,7 +300,7 @@ window.IV = window.IV || {};
         },
         'Include at least one character from each group'
       ).row,
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Excluded Characters' }), excludedInput)
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Excluded Characters') }), excludedInput)
     );
 
     const basicPanel = h(
@@ -327,7 +327,7 @@ window.IV = window.IV || {};
       type: 'text',
       value: config.separator,
       maxlength: '5',
-      placeholder: 'none',
+      placeholder: tr('none'),
       onInput: () => {
         config.separator = separatorInput.value;
         regenerate();
@@ -353,7 +353,7 @@ window.IV = window.IV || {};
       type: 'text',
       spellcheck: 'false',
       value: config.leetspeakCustom || 'a=@, e=3, i=!, o=0, s=$',
-      placeholder: 'a=@, e=3, i=!, o=0, s=$',
+      placeholder: tr('a=@, e=3, i=!, o=0, s=$'),
       onChange: () => {
         config.leetspeakCustom = customLeetInput.value;
         regenerate();
@@ -362,12 +362,12 @@ window.IV = window.IV || {};
     const customRow = h(
       'label',
       { class: 'field', hidden: !String(config.leetspeak || '').startsWith('custom') },
-      h('span', { class: 'field-label', text: 'My replacements' }),
+      h('span', { class: 'field-label', text: tr('My replacements') }),
       customLeetInput,
       h('p', {
         class: 'hint',
         text:
-          'One letter each, written as a=@ and separated by commas. Anything you ' +
+          tr('One letter each, written as a=@ and separated by commas. Anything you ') +
           'leave out is left alone. A rule that does not make sense is skipped, ' +
           'so a half typed one does not throw away the rest.'
       })
@@ -376,15 +376,15 @@ window.IV = window.IV || {};
     const dicewareAdvanced = h(
       'details',
       { class: 'adv' },
-      h('summary', { text: 'Advanced' }),
+      h('summary', { text: tr('Advanced') }),
       select(
         'Casing',
         [
-          { value: 'none', label: 'Do Not Change' },
-          { value: 'lower', label: 'lowercase' },
-          { value: 'upper', label: 'UPPERCASE' },
-          { value: 'title', label: 'Title Case' },
-          { value: 'random', label: 'rAnDom' }
+          { value: 'none', label: tr('Do Not Change') },
+          { value: 'lower', label: tr('lowercase') },
+          { value: 'upper', label: tr('UPPERCASE') },
+          { value: 'title', label: tr('Title Case') },
+          { value: 'random', label: tr('rAnDom') }
         ],
         config.casing,
         (v) => {
@@ -396,13 +396,13 @@ window.IV = window.IV || {};
       select(
         'Leetspeak (e.g. l33t, 1337)',
         [
-          { value: 'none', label: 'None' },
-          { value: 'basic-some', label: 'Basic (some words)' },
-          { value: 'basic-all', label: 'Basic (all words)' },
-          { value: 'pro-some', label: 'Pro (some words)' },
-          { value: 'pro-all', label: 'Pro (all words)' },
-          { value: 'custom-some', label: 'My own (some words)' },
-          { value: 'custom-all', label: 'My own (all words)' }
+          { value: 'none', label: tr('None') },
+          { value: 'basic-some', label: tr('Basic (some words)') },
+          { value: 'basic-all', label: tr('Basic (all words)') },
+          { value: 'pro-some', label: tr('Pro (some words)') },
+          { value: 'pro-all', label: tr('Pro (all words)') },
+          { value: 'custom-some', label: tr('My own (some words)') },
+          { value: 'custom-all', label: tr('My own (all words)') }
         ],
         config.leetspeak,
         (v) => {
@@ -415,10 +415,10 @@ window.IV = window.IV || {};
       select(
         'Add Salt',
         [
-          { value: 'none', label: 'None' },
-          { value: 'prefix', label: 'Prefix' },
-          { value: 'sprinkle', label: 'Sprinkle' },
-          { value: 'suffix', label: 'Suffix' }
+          { value: 'none', label: tr('None') },
+          { value: 'prefix', label: tr('Prefix') },
+          { value: 'sprinkle', label: tr('Sprinkle') },
+          { value: 'suffix', label: tr('Suffix') }
         ],
         config.salt,
         (v) => {
@@ -433,15 +433,15 @@ window.IV = window.IV || {};
       { hidden: true },
       wordSlider.row,
       h('div', { class: 'field' }, IV.glossary.label('Word lists', 'wordlist'), listSelect),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Separator' }), separatorInput),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Separator') }), separatorInput),
       dicewareAdvanced
     );
 
     /* ---- tabs ---- */
 
-    const tabBasic = h('button', { class: 'tab', text: 'Basic', onClick: () => setMode('basic', true) });
-    const tabDiceware = h('button', { class: 'tab', text: 'Diceware', onClick: () => setMode('diceware', true) });
-    const tabHelp = IV.glossary.badge('diceware', { label: 'What is Diceware?' });
+    const tabBasic = h('button', { class: 'tab', text: tr('Basic'), onClick: () => setMode('basic', true) });
+    const tabDiceware = h('button', { class: 'tab', text: tr('Diceware'), onClick: () => setMode('diceware', true) });
+    const tabHelp = IV.glossary.badge('diceware', { label: tr('What is Diceware?') });
 
     function setMode(next, byHand) {
       mode = next;
@@ -472,7 +472,7 @@ window.IV = window.IV || {};
         onUse
           ? h('button', {
               class: 'btn primary',
-              text: 'Use this',
+              text: tr('Use this'),
               onClick: () => {
                 if (!current) return;
                 onUse(current);
@@ -558,7 +558,7 @@ window.IV = window.IV || {};
           h('p', {
             class: 'hint',
             text:
-              'Want a real email alias, one that forwards to you and can be switched ' +
+              tr('Want a real email alias, one that forwards to you and can be switched ') +
               'off later? SimpleLogin, Firefox Relay, DuckDuckGo and addy.io all work.'
           }),
           setUp
@@ -569,7 +569,7 @@ window.IV = window.IV || {};
       for (const provider of ready) {
         const button = h('button', {
           class: 'btn ghost',
-          text: 'Create a ' + provider.name + ' alias',
+          text: tr('Create a ') + provider.name + ' alias',
           onClick: async () => {
             const buttons = aliasRow.querySelectorAll('button');
             for (const b of buttons) b.disabled = true;
@@ -583,7 +583,7 @@ window.IV = window.IV || {};
               });
               if (onUse) onUse(made.address);
               handle.close();
-              toast('Alias created: ' + made.address, 'good');
+              toast(tr('Alias created: ') + made.address, 'good');
             } catch (err) {
               toast(err.message, 'error');
               for (const b of buttons) b.disabled = false;
@@ -597,17 +597,17 @@ window.IV = window.IV || {};
     }
 
     const handle = modal({
-      title: 'Suggested usernames',
+      title: tr('Suggested usernames'),
       body: h(
         'div',
         null,
-        h('p', { class: 'hint', text: 'Pick one, or shuffle for a new set.' }),
+        h('p', { class: 'hint', text: tr('Pick one, or shuffle for a new set.') }),
         list,
         aliasRow
       ),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Shuffle', onClick: refresh }),
-        h('button', { class: 'btn primary', text: 'Close', onClick: () => handle.close() })
+        h('button', { class: 'btn ghost', text: tr('Shuffle'), onClick: refresh }),
+        h('button', { class: 'btn primary', text: tr('Close'), onClick: () => handle.close() })
       ]
     });
     buildAliasRow();

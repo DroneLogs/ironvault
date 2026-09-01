@@ -46,12 +46,12 @@ window.IV = window.IV || {};
       }
     }
 
-    const titleInput = h('input', { type: 'text', value: entry.title || '', placeholder: 'Required' });
+    const titleInput = h('input', { type: 'text', value: entry.title || '', placeholder: tr('Required') });
     const userInput = h('input', { type: 'text', value: entry.username || '', spellcheck: 'false' });
     const userSuggestBtn = h('button', {
       type: 'button',
       class: 'icon-btn dice',
-      title: 'Suggest a username',
+      title: tr('Suggest a username'),
       onClick: () => {
         // The site is passed through so a created alias carries the name of what
         // it was made for. That label is the only thing that keeps a list of two
@@ -71,7 +71,7 @@ window.IV = window.IV || {};
         });
       }
     });
-    const urlInput = h('input', { type: 'text', value: entry.url || '', spellcheck: 'false', placeholder: 'https://' });
+    const urlInput = h('input', { type: 'text', value: entry.url || '', spellcheck: 'false', placeholder: tr('https://') });
     const notesInput = h('textarea', { value: entry.notes || '' });
     let tags = (entry.tags || []).slice();
     const tagChips = h('div', { class: 'tag-row' });
@@ -79,7 +79,7 @@ window.IV = window.IV || {};
     const tagInput = h('input', {
       type: 'text',
       list: 'iv-tag-suggestions',
-      placeholder: 'Add a tag and press Enter',
+      placeholder: tr('Add a tag and press Enter'),
       onKeydown: (e) => {
         if (e.key === 'Enter' || e.key === ',') {
           e.preventDefault();
@@ -131,7 +131,7 @@ window.IV = window.IV || {};
             h('button', {
               type: 'button',
               class: 'chip-x',
-              title: 'Remove tag',
+              title: tr('Remove tag'),
               onClick: () => {
                 tags = tags.filter((t) => t !== tag);
                 refreshTags();
@@ -153,7 +153,7 @@ window.IV = window.IV || {};
     const revealBtn = h('button', {
       type: 'button',
       class: 'icon-btn reveal',
-      title: 'Show password',
+      title: tr('Show password'),
       onClick: () => {
         const showing = passInput.type === 'text';
         passInput.type = showing ? 'password' : 'text';
@@ -164,7 +164,7 @@ window.IV = window.IV || {};
     const genBtn = h('button', {
       type: 'button',
       class: 'icon-btn dice',
-      title: 'Generate',
+      title: tr('Generate'),
       onClick: () =>
         IV.generator.openGenerator({
           onUse: (value) => {
@@ -190,7 +190,7 @@ window.IV = window.IV || {};
         type: 'text',
         class: 'key',
         value: state.key,
-        placeholder: 'Name',
+        placeholder: tr('Name'),
         onInput: () => {
           state.key = keyInput.value;
         }
@@ -241,7 +241,7 @@ window.IV = window.IV || {};
         h('button', {
           type: 'button',
           class: 'icon-btn trash',
-          title: 'Remove field',
+          title: tr('Remove field'),
           onClick: () => {
             row.remove();
             const index = fieldRows.indexOf(record);
@@ -287,9 +287,9 @@ window.IV = window.IV || {};
     const startingType = IV.itemTypes.of(entry);
     let currentType = startingType;
 
-    const userLabel = h('span', { class: 'field-label', text: 'Username' });
-    const passLabel = h('span', { class: 'field-label', text: 'Password' });
-    const urlLabel = h('span', { class: 'field-label', text: 'URL' });
+    const userLabel = h('span', { class: 'field-label', text: tr('Username') });
+    const passLabel = h('span', { class: 'field-label', text: tr('Password') });
+    const urlLabel = h('span', { class: 'field-label', text: tr('URL') });
     const typeHint = h('p', { class: 'hint' });
 
     const typeSelect = h('select', {
@@ -333,7 +333,7 @@ window.IV = window.IV || {};
     const typeBlock = h(
       'div',
       { class: 'field' },
-      h('span', { class: 'field-label', text: 'Type' }),
+      h('span', { class: 'field-label', text: tr('Type') }),
       typeSelect,
       typeHint
     );
@@ -356,45 +356,45 @@ window.IV = window.IV || {};
       'div',
       null,
       typeBlock,
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Title' }), titleInput),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Title') }), titleInput),
       userBlock,
       passBlock,
       urlBlock,
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Notes' }), notesInput),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Notes') }), notesInput),
       h(
         'div',
         { class: 'field' },
-        h('span', { class: 'field-label', text: 'Tags' }),
+        h('span', { class: 'field-label', text: tr('Tags') }),
         tagChips,
         tagInput,
         tagList
       ),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Group' }), groupSelect),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Group') }), groupSelect),
       h(
         'div',
         { class: 'field' },
-        h('span', { class: 'field-label', text: 'Expiry' }),
+        h('span', { class: 'field-label', text: tr('Expiry') }),
         h(
           'div',
           { class: 'row-gap' },
-          h('label', { class: 'checkline' }, expiresCheck, h('span', { text: 'Expires on' })),
+          h('label', { class: 'checkline' }, expiresCheck, h('span', { text: tr('Expires on') })),
           expiryDate
         )
       ),
       h(
         'div',
         { class: 'detail-section' },
-        h('h3', { text: 'Custom fields' }),
+        h('h3', { text: tr('Custom fields') }),
         fieldsWrap,
         h('button', {
           type: 'button',
           class: 'btn ghost small',
-          text: 'Add field',
+          text: tr('Add field'),
           onClick: () => addFieldRow({ key: '', value: '', protected: false, isNew: true })
         }),
         h('p', {
           class: 'hint',
-          text: 'A field named otp holding an otpauth:// URI becomes a one time code.'
+          text: tr('A field named otp holding an otpauth:// URI becomes a one time code.')
         })
       )
     );
@@ -417,7 +417,7 @@ window.IV = window.IV || {};
     async function submit() {
       if (saving) return;
       if (!titleInput.value.trim()) {
-        toast('A title is required', 'error');
+        toast(tr('A title is required'), 'error');
         titleInput.focus();
         return;
       }
@@ -482,7 +482,7 @@ window.IV = window.IV || {};
       wide: true,
       body,
       footer: [
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
         h('button', { class: 'btn primary', text: isNew ? 'Create' : 'Save', onClick: submit })
       ]
     });
@@ -509,7 +509,7 @@ window.IV = window.IV || {};
     async function submit() {
       const name = nameInput.value.trim();
       if (!name) {
-        toast('A name is required', 'error');
+        toast(tr('A name is required'), 'error');
         return;
       }
       try {
@@ -529,11 +529,11 @@ window.IV = window.IV || {};
       body: h(
         'div',
         null,
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Name' }), nameInput),
-        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Notes' }), notesInput)
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Name') }), nameInput),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Notes') }), notesInput)
       ),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
         h('button', { class: 'btn primary', text: isNew ? 'Create' : 'Save', onClick: submit })
       ]
     });
@@ -555,7 +555,7 @@ window.IV = window.IV || {};
    */
   function openMasterKeyDialog() {
     const info = IV.state.info;
-    const keyPath = h('input', { type: 'text', readOnly: true, value: info.keyFilePath || '', placeholder: 'None' });
+    const keyPath = h('input', { type: 'text', readOnly: true, value: info.keyFilePath || '', placeholder: tr('None') });
 
     let mode = 'generated';
     let generated = '';
@@ -569,10 +569,10 @@ window.IV = window.IV || {};
       h(
         'div',
         { class: 'gen-preview-actions' },
-        h('button', { class: 'icon-btn refresh', title: 'Generate another', onClick: () => regenerate() }),
+        h('button', { class: 'icon-btn refresh', title: tr('Generate another'), onClick: () => regenerate() }),
         h('button', {
           class: 'icon-btn copy',
-          title: 'Copy to the clipboard',
+          title: tr('Copy to the clipboard'),
           onClick: async () => {
             if (!generated) return;
             await IV.api.copy(generated);
@@ -623,10 +623,10 @@ window.IV = window.IV || {};
         { class: 'row-gap' },
         h('button', {
           class: 'btn ghost small',
-          text: 'Other options...',
+          text: tr('Other options...'),
           onClick: () =>
             IV.generator.openGenerator({
-              title: 'Choose a master password',
+              title: tr('Choose a master password'),
               mode: 'diceware',
               onUse: async (value) => {
                 generated = value;
@@ -635,20 +635,20 @@ window.IV = window.IV || {};
               }
             })
         }),
-        h('button', { class: 'btn ghost small', text: 'Type my own', onClick: () => setMode('manual') })
+        h('button', { class: 'btn ghost small', text: tr('Type my own'), onClick: () => setMode('manual') })
       ),
       h('p', {
         class: 'error-line',
-        text: 'Write this down before you continue. There is no reset, no recovery, and no back door. Lose it and the database is gone.'
+        text: tr('Write this down before you continue. There is no reset, no recovery, and no back door. Lose it and the database is gone.')
       })
     );
 
     const manualPanel = h(
       'div',
       { hidden: true },
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'New master password' }), pass1, manualMeter),
-      h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Repeat password' }), pass2),
-      h('button', { class: 'btn ghost small', text: 'Generate one for me instead', onClick: () => setMode('generated') })
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('New master password') }), pass1, manualMeter),
+      h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Repeat password') }), pass2),
+      h('button', { class: 'btn ghost small', text: tr('Generate one for me instead'), onClick: () => setMode('generated') })
     );
 
     function setMode(next) {
@@ -661,27 +661,27 @@ window.IV = window.IV || {};
     async function submit() {
       const password = mode === 'generated' ? generated : pass1.value;
       if (mode === 'manual' && pass1.value !== pass2.value) {
-        toast('The two passwords do not match', 'error');
+        toast(tr('The two passwords do not match'), 'error');
         return;
       }
       if (!password && !keyPath.value) {
-        toast('Set a password, a key file, or both', 'error');
+        toast(tr('Set a password, a key file, or both'), 'error');
         return;
       }
       if (mode === 'generated') {
         const saved = await IV.api.confirm({
-          title: 'Have you saved it?',
+          title: tr('Have you saved it?'),
           message: 'Have you written down or saved the new master password?',
           detail: 'This is the only time it is shown. Nobody can recover it for you.',
-          confirmLabel: 'Yes, I saved it'
+          confirmLabel: tr('Yes, I saved it')
         });
         if (!saved) return;
       }
       const confirmed = await IV.api.confirm({
-        title: 'Change master key',
+        title: tr('Change master key'),
         message: 'Change the master key for this database?',
         detail: 'The file is rewritten immediately. Anything that unlocks it today will stop working.',
-        confirmLabel: 'Change key',
+        confirmLabel: tr('Change key'),
         destructive: true
       });
       if (!confirmed) return;
@@ -690,14 +690,14 @@ window.IV = window.IV || {};
         await IV.api.setQuickUnlock({ filePath: info.filePath, enabled: false });
         handle.close();
         await IV.app.refresh();
-        toast('Master key changed', 'good');
+        toast(tr('Master key changed'), 'good');
       } catch (err) {
         toast(err.message, 'error');
       }
     }
 
     const handle = modal({
-      title: 'Change master key',
+      title: tr('Change master key'),
       wide: true,
       body: h(
         'div',
@@ -707,27 +707,27 @@ window.IV = window.IV || {};
         h(
           'div',
           { class: 'field' },
-          h('span', { class: 'field-label', text: 'Key file' }),
+          h('span', { class: 'field-label', text: tr('Key file') }),
           h(
             'div',
             { class: 'row-gap' },
             keyPath,
             h('button', {
               class: 'btn ghost small',
-              text: 'Choose',
+              text: tr('Choose'),
               onClick: async () => {
                 const picked = await IV.api.chooseKeyFile();
                 if (picked) keyPath.value = picked;
               }
             }),
-            h('button', { class: 'btn ghost small', text: 'Clear', onClick: () => (keyPath.value = '') })
+            h('button', { class: 'btn ghost small', text: tr('Clear'), onClick: () => (keyPath.value = '') })
           )
         ),
-        h('p', { class: 'hint', text: 'Any saved quick unlock for this database is discarded.' })
+        h('p', { class: 'hint', text: tr('Any saved quick unlock for this database is discarded.') })
       ),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
-        h('button', { class: 'btn primary', text: 'Change key', onClick: submit })
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
+        h('button', { class: 'btn primary', text: tr('Change key'), onClick: submit })
       ]
     });
 

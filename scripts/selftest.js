@@ -589,6 +589,73 @@ async function main() {
     check('a silent install needs no elevation', nsis.perMachine === false, String(nsis.perMachine));
   }
 
+
+  // Translations are looked up by their English text, so a mistyped key is a
+  // string that silently stays English on one screen and nowhere else. These
+  // are the failures that would not show up by using the app in English.
+  console.log('\ntranslations');
+  {
+    const renderer = path.join(__dirname, '..', 'src', 'renderer');
+    const loaded = {};
+    const IV = { i18n: { register: (code, name, pairs) => { loaded[code] = { name, pairs }; } } };
+    // The locale files are plain data wrapped in a function, so they can be run
+    // here with a stub instead of a browser.
+    const runLocale = new Function('window', fs.readFileSync(path.join(renderer, 'locales', 'es.js'), 'utf8'));
+    runLocale({ IV });
+
+    check('Spanish loads', Boolean(loaded.es), Object.keys(loaded).join(','));
+    const pairs = (loaded.es && loaded.es.pairs) || {};
+    const keys = Object.keys(pairs);
+    check('and carries a useful number of strings', keys.length > 250, String(keys.length));
+    check('it names itself in its own language', loaded.es && loaded.es.name === 'Español');
+
+    check('nothing translates to an empty string',
+      keys.every((k) => typeof pairs[k] === 'string' && pairs[k].trim().length > 0));
+    // Names and borrowed terms are the same word in Spanish, so an identical
+    // value is correct for these and a mistake for anything else.
+    const SAME_IN_BOTH = new Set([
+      'Windows Hello', 'PIN', 'Diceware', 'YubiKey', 'SSH agent', 'Have I Been Pwned',
+      'QR code', 'SHA-256', 'SHA-512', 'Pro (all words)', 'Pro (some words)',
+      // The same word in Spanish, and a line that is nothing but product names.
+      'General', 'WebDAV (Nextcloud, ownCloud, NAS)'
+    ]);
+    const untranslated = keys.filter((k) => pairs[k] === k && !SAME_IN_BOTH.has(k));
+    check('nothing was left in English by accident',
+      untranslated.length === 0, untranslated.slice(0, 3).join(' | '));
+
+    // Accented characters get eaten by shells and by the wrong file encoding,
+    // and the result reads as broken Spanish rather than as an error.
+    const broken = keys.filter((k) => /Ã|Â|�/.test(pairs[k]));
+    check('no mangled accents', broken.length === 0, broken.slice(0, 3).join(' | '));
+    check('accents survived at all', keys.some((k) => /[áéíóúñ¿¡]/.test(pairs[k])));
+
+    // A duplicate key is legal JavaScript and silently wins, so the earlier
+    // translation disappears with no warning anywhere.
+    const source = fs.readFileSync(path.join(renderer, 'locales', 'es.js'), 'utf8');
+    const declared = (source.match(/^\s{4}'?[^:\n]+'?\s*:/gm) || [])
+      .map((line) => line.trim().replace(/:$/, '').replace(/^'|'$/g, ''));
+    const seen = new Set();
+    const dupes = declared.filter((k) => (seen.has(k) ? true : (seen.add(k), false)));
+    check('no key is declared twice', dupes.length === 0, dupes.slice(0, 3).join(' | '));
+
+    // The global is deliberately not called t: several callbacks already take a
+    // tag as t, and a shadowed translator throws only on those screens.
+    const i18nSource = fs.readFileSync(path.join(renderer, 'js', 'i18n.js'), 'utf8');
+    check('the translator is global under a name nothing shadows',
+      /window\.tr\s*=/.test(i18nSource) && !/window\.t\s*=/.test(i18nSource));
+    check('the language is read synchronously, before the first screen is built',
+      /window\.propolis && window\.propolis\.language/.test(i18nSource));
+
+    // Every wrapped call has to reach the real function.
+    const rendererJs = fs.readdirSync(path.join(renderer, 'js')).filter((f) => f.endsWith('.js'));
+    let wrapped = 0;
+    for (const file of rendererJs) {
+      const text = fs.readFileSync(path.join(renderer, 'js', file), 'utf8');
+      wrapped += (text.match(/\btr\('/g) || []).length;
+    }
+    check('the interface actually goes through it', wrapped > 400, String(wrapped));
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   fs.rmSync(tmpDir, { recursive: true, force: true });
   process.exit(failed ? 1 : 0);

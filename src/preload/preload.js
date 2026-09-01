@@ -13,6 +13,7 @@ const listeners = {
   'open-file': new Set(),
   'update-state': new Set(),
   approval: new Set(),
+  'icon-updated': new Set(),
   progress: new Set(),
   'ssh-agent': new Set(),
   'autotype-result': new Set(),
@@ -33,7 +34,17 @@ for (const channel of Object.keys(listeners)) {
   });
 }
 
+// Read before anything renders. The renderer builds some lists as its files
+// load, so waiting for an asynchronous answer would leave those in English.
+let language = 'en';
+try {
+  language = ipcRenderer.sendSync('propolis-language') || 'en';
+} catch {
+  // An older main process, or none. English is a working answer.
+}
+
 contextBridge.exposeInMainWorld('propolis', {
+  language,
   async call(method, args) {
     const response = await ipcRenderer.invoke('propolis', method, args);
     if (response && response.ok) return response.result;

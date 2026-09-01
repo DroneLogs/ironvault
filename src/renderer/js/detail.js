@@ -51,7 +51,7 @@ window.IV = window.IV || {};
 
     const revealBtn = h('button', {
       class: 'icon-btn reveal',
-      title: 'Show ' + label.toLowerCase(),
+      title: tr('Show ') + label.toLowerCase(),
       onClick: async () => {
         revealed = !revealed;
         revealBtn.classList.toggle('on', revealed);
@@ -146,11 +146,11 @@ window.IV = window.IV || {};
       actions.append(
         h('button', {
           class: 'btn ghost small',
-          text: 'Save as...',
+          text: tr('Save as...'),
           onClick: async () => {
             try {
               const result = await IV.api.saveAttachment(entry.id, attachment.name);
-              if (result) toast('Saved to ' + result.path, 'good');
+              if (result) toast(tr('Saved to ') + result.path, 'good');
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -158,12 +158,12 @@ window.IV = window.IV || {};
         }),
         h('button', {
           class: 'icon-btn trash',
-          title: 'Remove attachment',
+          title: tr('Remove attachment'),
           onClick: async () => {
             const ok = await IV.api.confirm({
-              title: 'Remove attachment',
+              title: tr('Remove attachment'),
               message: 'Remove ' + attachment.name + ' from this entry?',
-              confirmLabel: 'Remove',
+              confirmLabel: tr('Remove'),
               destructive: true
             });
             if (!ok) return;
@@ -178,14 +178,14 @@ window.IV = window.IV || {};
     list.append(
       h('button', {
         class: 'btn ghost small',
-        text: 'Attach file...',
+        text: tr('Attach file...'),
         onClick: async () => {
           try {
             const updated = await IV.api.addAttachment(entry.id);
             if (!updated) return;
             await IV.app.refresh({ selectEntryId: entry.id });
             await IV.app.autoSave();
-            toast('Attached', 'good');
+            toast(tr('Attached'), 'good');
           } catch (err) {
             toast(err.message, 'error');
           }
@@ -209,12 +209,12 @@ window.IV = window.IV || {};
             { class: 'df-actions' },
             h('button', {
               class: 'btn ghost small',
-              text: 'View',
+              text: tr('View'),
               onClick: async () => {
                 const snapshot = await IV.api.historyEntry(entry.id, item.index);
                 const secret = '(stored, restore to reveal)';
                 modal({
-                  title: 'Version from ' + IV.dom.formatDate(item.modified),
+                  title: tr('Version from ') + IV.dom.formatDate(item.modified),
                   body: h(
                     'div',
                     null,
@@ -229,20 +229,20 @@ window.IV = window.IV || {};
             }),
             h('button', {
               class: 'btn ghost small',
-              text: 'Restore',
+              text: tr('Restore'),
               onClick: async () => {
                 const ok = await IV.api.confirm({
-                  title: 'Restore version',
+                  title: tr('Restore version'),
                   message: 'Restore this entry to the version from ' + IV.dom.formatDate(item.modified) + '?',
                   detail: 'The current values are kept in history.',
-                  confirmLabel: 'Restore'
+                  confirmLabel: tr('Restore')
                 });
                 if (!ok) return;
                 await IV.api.restoreHistory(entry.id, item.index);
                 handle.close();
                 await IV.app.refresh({ selectEntryId: entry.id });
                 await IV.app.autoSave();
-                toast('Version restored', 'good');
+                toast(tr('Version restored'), 'good');
               }
             })
           )
@@ -251,9 +251,9 @@ window.IV = window.IV || {};
     }
 
     const handle = modal({
-      title: 'History (' + entry.history.length + ')',
+      title: tr('History (') + entry.history.length + ')',
       wide: true,
-      body: entry.history.length ? list : h('p', { class: 'empty-note', text: 'No earlier versions yet.' })
+      body: entry.history.length ? list : h('p', { class: 'empty-note', text: tr('No earlier versions yet.') })
     });
   }
 
@@ -298,12 +298,12 @@ window.IV = window.IV || {};
         }),
         h('button', {
           class: 'icon-btn edit',
-          title: 'Edit (Ctrl+E)',
+          title: tr('Edit (Ctrl+E)'),
           onClick: () => IV.editor.openEntryEditor(entry)
         }),
         h('button', {
           class: 'icon-btn more',
-          title: 'More actions',
+          title: tr('More actions'),
           onClick: (e) => openMoreMenu(entry, e.currentTarget)
         })
       )
@@ -311,22 +311,22 @@ window.IV = window.IV || {};
     detail.append(head);
 
     if (entry.expired) {
-      detail.append(h('p', { class: 'error-line', text: 'This entry expired on ' + IV.dom.formatDate(entry.expiryTime) + '.' }));
+      detail.append(h('p', { class: 'error-line', text: tr('This entry expired on ') + IV.dom.formatDate(entry.expiryTime) + '.' }));
     }
     if (entry.inRecycleBin) {
       detail.append(
         h(
           'div',
           { class: 'row-gap' },
-          h('p', { class: 'error-line', text: 'In the recycle bin.' }),
+          h('p', { class: 'error-line', text: tr('In the recycle bin.') }),
           h('button', {
             class: 'btn ghost small',
-            text: 'Restore',
+            text: tr('Restore'),
             onClick: async () => {
               await IV.api.restoreEntry(entry.id, null);
               await IV.app.refresh({ selectEntryId: entry.id });
               await IV.app.autoSave();
-              toast('Restored', 'good');
+              toast(tr('Restored'), 'good');
             }
           })
         )
@@ -355,14 +355,14 @@ window.IV = window.IV || {};
         copyButton('Copy URL', () => IV.api.copyField(entry.id, 'URL')),
         h('button', {
           class: 'icon-btn image',
-          title: 'Download this site’s icon',
+          title: tr('Download this site’s icon'),
           onClick: async () => {
             try {
-              toast('Fetching icon...');
+              toast(tr('Fetching icon...'));
               const result = await IV.api.favicon(entry.id);
               await IV.app.refresh({ selectEntryId: entry.id });
               await IV.app.autoSave();
-              toast('Icon set from ' + new URL(result.source).hostname, 'good');
+              toast(tr('Icon set from ') + new URL(result.source).hostname, 'good');
             } catch (err) {
               toast(err.message, 'error');
             }
@@ -370,7 +370,7 @@ window.IV = window.IV || {};
         }),
         h('button', {
           class: 'icon-btn link',
-          title: 'Open in browser',
+          title: tr('Open in browser'),
           onClick: () => IV.api.openUrl(entry.url).catch((err) => toast(err.message, 'error'))
         })
       );
@@ -384,12 +384,12 @@ window.IV = window.IV || {};
       h(
         'div',
         { class: 'row-gap' },
-        h('h3', { text: 'One time code' }),
+        h('h3', { text: tr('One time code') }),
         h('div', { class: 'spacer' }),
         entry.totp
           ? h('button', {
               class: 'btn ghost small',
-              text: 'QR code',
+              text: tr('QR code'),
               onClick: () => IV.tools.showTotpQr(entry)
             })
           : null,
@@ -401,7 +401,7 @@ window.IV = window.IV || {};
       )
     );
     if (entry.totp) totpSection.append(renderTotp(entry));
-    else totpSection.append(h('p', { class: 'hint', text: 'No one time code on this entry yet.' }));
+    else totpSection.append(h('p', { class: 'hint', text: tr('No one time code on this entry yet.') }));
     // A one time code belongs to something you sign in to. A card or an identity
     // has nothing to offer it, so the section is left out rather than sitting
     // there empty. An existing code is always shown, whatever the type says.
@@ -416,13 +416,13 @@ window.IV = window.IV || {};
       const wrap = h(
         'div',
         { class: 'detail-section' },
-        h('h3', { text: 'Passkey' }),
+        h('h3', { text: tr('Passkey') }),
         field('Site', relying ? relying.value : '(unknown)').row,
         field('Account', user ? user.value : '(unknown)').row,
         h('p', {
           class: 'hint',
           text:
-            'Stored and kept safe here, and it travels with the database. Signing in with it needs a browser ' +
+            tr('Stored and kept safe here, and it travels with the database. Signing in with it needs a browser ') +
             'extension, which Propolis does not have yet.'
         })
       );
@@ -438,7 +438,7 @@ window.IV = window.IV || {};
         c.key !== IV.itemTypes.markerField()
     );
     if (shownCustom.length) {
-      const wrap = h('div', { class: 'detail-section' }, h('h3', { text: 'Custom fields' }));
+      const wrap = h('div', { class: 'detail-section' }, h('h3', { text: tr('Custom fields') }));
       for (const custom of entry.customFields) {
         if (custom.key === 'otp' || custom.key === 'TOTP Seed' || custom.key === 'TOTP Settings') continue;
         if (/^KPEX_PASSKEY_/i.test(custom.key)) continue;
@@ -449,7 +449,7 @@ window.IV = window.IV || {};
           f.actions.append(
             h('button', {
               class: 'icon-btn reveal',
-              title: 'Show value',
+              title: tr('Show value'),
               onClick: async (e) => {
                 shown = !shown;
                 e.currentTarget.classList.toggle('on', shown);
@@ -486,7 +486,7 @@ window.IV = window.IV || {};
           h(
             'div',
             { class: 'row-gap' },
-            h('h3', { text: 'Notes' }),
+            h('h3', { text: tr('Notes') }),
             h('div', { class: 'spacer' }),
             copyButton('Copy notes', () => IV.api.copyField(entry.id, 'Notes'))
           ),
@@ -497,14 +497,14 @@ window.IV = window.IV || {};
       );
     }
 
-    detail.append(h('div', { class: 'detail-section' }, h('h3', { text: 'Attachments' }), renderAttachments(entry)));
+    detail.append(h('div', { class: 'detail-section' }, h('h3', { text: tr('Attachments') }), renderAttachments(entry)));
 
     if (entry.tags && entry.tags.length) {
       detail.append(
         h(
           'div',
           { class: 'detail-section' },
-          h('h3', { text: 'Tags' }),
+          h('h3', { text: tr('Tags') }),
           h('div', { class: 'tag-row' }, entry.tags.map((t) => h('span', { class: 'tag', text: t })))
         )
       );
@@ -513,17 +513,17 @@ window.IV = window.IV || {};
     const meta = h(
       'div',
       { class: 'meta-grid' },
-      h('div', null, h('b', { text: 'Created' }), IV.dom.formatDate(entry.created)),
-      h('div', null, h('b', { text: 'Modified' }), IV.dom.formatDate(entry.modified)),
-      h('div', null, h('b', { text: 'Accessed' }), IV.dom.formatDate(entry.accessed)),
-      h('div', null, h('b', { text: 'Expires' }), entry.expires ? IV.dom.formatDate(entry.expiryTime) : 'Never')
+      h('div', null, h('b', { text: tr('Created') }), IV.dom.formatDate(entry.created)),
+      h('div', null, h('b', { text: tr('Modified') }), IV.dom.formatDate(entry.modified)),
+      h('div', null, h('b', { text: tr('Accessed') }), IV.dom.formatDate(entry.accessed)),
+      h('div', null, h('b', { text: tr('Expires') }), entry.expires ? IV.dom.formatDate(entry.expiryTime) : 'Never')
     );
-    const metaSection = h('div', { class: 'detail-section' }, h('h3', { text: 'Details' }), meta);
+    const metaSection = h('div', { class: 'detail-section' }, h('h3', { text: tr('Details') }), meta);
     if (entry.history && entry.history.length) {
       metaSection.append(
         h('button', {
           class: 'btn ghost small',
-          text: 'History (' + entry.history.length + ')',
+          text: tr('History (') + entry.history.length + ')',
           onClick: () => openHistory(entry)
         })
       );
@@ -534,36 +534,36 @@ window.IV = window.IV || {};
   function openMoreMenu(entry, anchor) {
     const items = [
       {
-        label: 'Duplicate',
+        label: tr('Duplicate'),
         run: async () => {
           const copy = await IV.api.duplicateEntry(entry.id);
           await IV.app.refresh({ selectEntryId: copy.id });
           await IV.app.autoSave();
-          toast('Entry duplicated', 'good');
+          toast(tr('Entry duplicated'), 'good');
         }
       },
       {
-        label: 'Move to group...',
+        label: tr('Move to group...'),
         run: () => openMoveDialog(entry)
       },
       {
-        label: 'Auto-type into the front window',
+        label: tr('Auto-type into the front window'),
         run: async () => {
           const values = await IV.api.autoTypeNow(null);
-          toast('Typed into ' + values.window);
+          toast(tr('Typed into ') + values.window);
         }
       },
       {
-        label: 'Auto-type settings...',
+        label: tr('Auto-type settings...'),
         run: () => IV.tools.openAutoTypeSettings(entry)
       },
       {
-        label: 'Remove the custom icon',
+        label: tr('Remove the custom icon'),
         run: async () => {
           await IV.api.clearIcon(entry.id);
           await IV.app.refresh({ selectEntryId: entry.id });
           await IV.app.autoSave();
-          toast('Icon removed');
+          toast(tr('Icon removed'));
         }
       },
       {
@@ -571,19 +571,19 @@ window.IV = window.IV || {};
         danger: true,
         run: async () => {
           const ok = await IV.api.confirm({
-            title: 'Delete entry',
+            title: tr('Delete entry'),
             message: entry.inRecycleBin
               ? 'Permanently delete "' + (entry.title || 'this entry') + '"?'
               : 'Move "' + (entry.title || 'this entry') + '" to the recycle bin?',
             detail: entry.inRecycleBin ? 'This cannot be undone.' : '',
-            confirmLabel: 'Delete',
+            confirmLabel: tr('Delete'),
             destructive: true
           });
           if (!ok) return;
           await IV.api.deleteEntry(entry.id, entry.inRecycleBin);
           await IV.app.refresh({ selectEntryId: null });
           await IV.app.autoSave();
-          toast('Entry deleted');
+          toast(tr('Entry deleted'));
         }
       }
     ];
@@ -617,20 +617,20 @@ window.IV = window.IV || {};
   function openMoveDialog(entry) {
     const select = h('select', null, IV.editor.groupOptions(entry.groupId));
     const handle = modal({
-      title: 'Move entry',
-      body: h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Destination group' }), select),
+      title: tr('Move entry'),
+      body: h('label', { class: 'field' }, h('span', { class: 'field-label', text: tr('Destination group') }), select),
       footer: [
-        h('button', { class: 'btn ghost', text: 'Cancel', onClick: () => handle.close() }),
+        h('button', { class: 'btn ghost', text: tr('Cancel'), onClick: () => handle.close() }),
         h('button', {
           class: 'btn primary',
-          text: 'Move',
+          text: tr('Move'),
           onClick: async () => {
             try {
               await IV.api.moveEntry(entry.id, select.value);
               handle.close();
               await IV.app.refresh({ selectEntryId: entry.id });
               await IV.app.autoSave();
-              toast('Entry moved', 'good');
+              toast(tr('Entry moved'), 'good');
             } catch (err) {
               toast(err.message, 'error');
             }

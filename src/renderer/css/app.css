@@ -2033,3 +2033,15 @@ body.reduce-motion .progress-fill {
   font-size: 13px;
   line-height: 1.55;
 }
+
+/* A switch that carries an explanation, so the sentence sits under the line
+   rather than beside the tick. */
+.checkline-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checkline-group .hint {
+  margin: 0 0 4px 26px;
+}

@@ -13,7 +13,7 @@ window.IV = window.IV || {};
 
   const TERMS = {
     diceware: {
-      title: 'What is Diceware?',
+      title: tr('What is Diceware?'),
       body: [
         'A passphrase built from whole words picked at random, like Wafer-Ceramics-Refuse-Armored. The name comes from the original method: roll five dice, look the number up in a printed word list, write the word down, repeat.',
         'It is easier to remember and to type than a jumble of symbols, and it is not weaker. Six words from a 7,776 word list is about 78 bits, which no attacker can search through. What makes it strong is that a machine chose the words, not you: a phrase you invent yourself is far more guessable than it feels.',
@@ -21,7 +21,7 @@ window.IV = window.IV || {};
       ]
     },
     entropy: {
-      title: 'What do the bits mean?',
+      title: tr('What do the bits mean?'),
       body: [
         'Bits count how many guesses an attacker would need. Each extra bit doubles that number, so 60 bits is not twice 30 bits, it is a billion times more work.',
         'The line reads: how many characters, how many bits, and how long a well equipped attacker would take at a billion guesses a second. The names are pinned to Diceware word counts: three words is Very Weak, four is Weak, five Moderate, six Recommended, seven Strong, and ten Quantum Resistant. Six words is the sensible default and anything below five is worth changing.',
@@ -31,28 +31,28 @@ window.IV = window.IV || {};
       ]
     },
     wordlist: {
-      title: 'Which word list should I pick?',
+      title: tr('Which word list should I pick?'),
       body: [
         'It barely matters for safety, so pick the one you find easiest to read. What matters is the number of words in the list, which the line underneath shows, and Propolis counts that honestly.',
         'EFF Large is the sensible default: 7,776 common English words chosen so no two start with the same four letters, which makes typos obvious. The Short lists trade a little strength for shorter words. Fandom and language lists are the same idea with different vocabulary.'
       ]
     },
     keyfile: {
-      title: 'What is a key file?',
+      title: tr('What is a key file?'),
       body: [
         'A file that acts as part of your key, on top of the password. With one set, the database needs both: something you know and something you have.',
         'Any file works, as long as it never changes and you never lose it. Keep a copy somewhere safe and separate from the database, on a USB stick for instance. Lose the key file and the database is unopenable, exactly as if you had forgotten the password.'
       ]
     },
     kdf: {
-      title: 'KDBX 4, Argon2, what?',
+      title: tr('KDBX 4, Argon2, what?'),
       body: [
         'KDBX is the file format KeePass uses, and version 4 is the current one. Any modern KeePass app reads it, including Strongbox on your phone. Pick 3.1 only if something old refuses to open version 4.',
         'Argon2 is the part that turns your master password into the actual encryption key. It is deliberately slow and memory hungry, so a machine trying billions of guesses is slowed down just as much as it slows your unlock by a fraction of a second. It is the better choice, which is why it is the default.'
       ]
     },
     totp: {
-      title: 'What is a one time code?',
+      title: tr('What is a one time code?'),
       body: [
         'The six digit code that changes every thirty seconds, which a site asks for after your password. Also called TOTP, two factor, or an authenticator code.',
         'When a site offers you a QR code to scan, that image is really just a short web address containing a secret. Paste that address here, or type the secret the site shows underneath it, and Propolis produces the same codes your phone would.',
@@ -60,7 +60,7 @@ window.IV = window.IV || {};
       ]
     },
     duress: {
-      title: 'What is a duress PIN?',
+      title: tr('What is a duress PIN?'),
       body: [
         'A second PIN that does something other than unlock, for a situation where somebody is standing over you demanding you open the database.',
         'It can open a decoy database you prepared earlier, which looks like an ordinary vault holding nothing that matters. Or it can delete this database and all its backups.',
@@ -68,7 +68,7 @@ window.IV = window.IV || {};
       ]
     },
     placeholders: {
-      title: 'What are placeholders?',
+      title: tr('What are placeholders?'),
       body: [
         'Text in braces that Propolis fills in. {USERNAME} becomes the username of the entry, {TITLE} its title, {S:Account number} a custom field of yours.',
         'They can also point at another entry, so several entries can share one password without you copying it around: {REF:P@T:GitHub} means the password of the entry titled GitHub.',
@@ -76,21 +76,21 @@ window.IV = window.IV || {};
       ]
     },
     pwned: {
-      title: 'Is this safe to run?',
+      title: tr('Is this safe to run?'),
       body: [
         'Yes, and the reason is worth knowing. Your password is never sent. Propolis hashes it, sends only the first five characters of that hash, and gets back every leaked hash starting with those five, usually several hundred. The comparison happens on your machine.',
         'So the service learns that somebody asked about one of a few hundred possibilities, and nothing else. Not the password, not the site, not who you are.'
       ]
     },
     sshagent: {
-      title: 'What is an SSH agent?',
+      title: tr('What is an SSH agent?'),
       body: [
         'A small helper that holds your SSH keys so ssh and git can use them without the key ever being written to a file on disk.',
         'Start it, run the SSH_AUTH_SOCK line in PowerShell, and any key stored in an entry of this database becomes available for the rest of that session. Lock the database and the keys go with it.'
       ]
     },
     remote: {
-      title: 'How does syncing work?',
+      title: tr('How does syncing work?'),
       body: [
         'Propolis always works on the local copy of the file. Syncing fetches the remote copy, merges the two, and sends the result back.',
         'That is what makes editing offline safe: with no connection you carry on, and the merge happens the next time a sync succeeds. Nothing is thrown away, and newer changes win where both sides edited the same entry.',
@@ -98,7 +98,7 @@ window.IV = window.IV || {};
       ]
     },
     readonly: {
-      title: 'What does read only do?',
+      title: tr('What does read only do?'),
       body: [
         'Opens the database so nothing can change it. Useful on a shared machine, or when you want to look something up without any chance of a slip editing an entry.'
       ]
@@ -133,7 +133,7 @@ window.IV = window.IV || {};
     const handle = IV.dom.modal({
       title: term.title,
       body: h('div', { class: 'explain-body' }, term.body.map((p) => h('p', { text: p }))),
-      footer: [h('button', { class: 'btn primary', text: 'Got it', onClick: () => handle.close() })]
+      footer: [h('button', { class: 'btn primary', text: tr('Got it'), onClick: () => handle.close() })]
     });
   }
 

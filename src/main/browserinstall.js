@@ -26,13 +26,30 @@ const HOST_NAME = 'com.skepwright.propolis';
 /**
  * Where each browser looks. Chromium browsers share a layout; Firefox uses its
  * own key and a slightly different manifest, so it is handled separately.
+ *
+ * Each browser gets a list rather than one key, because a browser does not
+ * necessarily read the key named after it. Brave is the reason: its own
+ * documentation says BraveSoftware\Brave-Browser, and Brave 152 does not read
+ * that at all. It looks under Software\Chromium, the unbranded upstream key,
+ * and reports "Specified native messaging host not found" for a registration
+ * that is otherwise perfect. Writing both costs nothing and means a Brave that
+ * reads either one works, so this does not have to be re-diagnosed when Brave
+ * changes its mind.
  */
 const BROWSERS = [
-  { key: 'chrome', name: 'Chrome', registry: 'Software\\Google\\Chrome\\NativeMessagingHosts', family: 'chromium' },
-  { key: 'edge', name: 'Edge', registry: 'Software\\Microsoft\\Edge\\NativeMessagingHosts', family: 'chromium' },
-  { key: 'brave', name: 'Brave', registry: 'Software\\BraveSoftware\\Brave-Browser\\NativeMessagingHosts', family: 'chromium' },
-  { key: 'vivaldi', name: 'Vivaldi', registry: 'Software\\Vivaldi\\NativeMessagingHosts', family: 'chromium' },
-  { key: 'firefox', name: 'Firefox', registry: 'Software\\Mozilla\\NativeMessagingHosts', family: 'firefox' }
+  { key: 'chrome', name: 'Chrome', registry: ['Software\\Google\\Chrome\\NativeMessagingHosts'], family: 'chromium' },
+  { key: 'edge', name: 'Edge', registry: ['Software\\Microsoft\\Edge\\NativeMessagingHosts'], family: 'chromium' },
+  {
+    key: 'brave',
+    name: 'Brave',
+    registry: [
+      'Software\\BraveSoftware\\Brave-Browser\\NativeMessagingHosts',
+      'Software\\Chromium\\NativeMessagingHosts'
+    ],
+    family: 'chromium'
+  },
+  { key: 'vivaldi', name: 'Vivaldi', registry: ['Software\\Vivaldi\\NativeMessagingHosts'], family: 'chromium' },
+  { key: 'firefox', name: 'Firefox', registry: ['Software\\Mozilla\\NativeMessagingHosts'], family: 'firefox' }
 ];
 
 function browsers() {
@@ -136,7 +153,9 @@ async function install({ browser: browserKey, extensionId } = {}) {
 
   writeLauncher();
   const manifest = writeManifest(browser.family, id);
-  await reg(['add', 'HKCU\\' + browser.registry + '\\' + HOST_NAME, '/ve', '/t', 'REG_SZ', '/d', manifest, '/f']);
+  for (const key of browser.registry) {
+    await reg(['add', 'HKCU\\' + key + '\\' + HOST_NAME, '/ve', '/t', 'REG_SZ', '/d', manifest, '/f']);
+  }
 
   return { ok: true, browser: browser.key, manifest, launcher: launcherPath() };
 }
@@ -144,10 +163,12 @@ async function install({ browser: browserKey, extensionId } = {}) {
 async function uninstall({ browser: browserKey } = {}) {
   const browser = BROWSERS.find((b) => b.key === browserKey);
   if (!browser) throw new Error('Unknown browser');
-  try {
-    await reg(['delete', 'HKCU\\' + browser.registry + '\\' + HOST_NAME, '/f']);
-  } catch {
-    // Already absent is the state we wanted, so it is not an error.
+  for (const key of browser.registry) {
+    try {
+      await reg(['delete', 'HKCU\\' + key + '\\' + HOST_NAME, '/f']);
+    } catch {
+      // Already absent is the state we wanted, so it is not an error.
+    }
   }
   return { ok: true, browser: browser.key };
 }
@@ -156,12 +177,18 @@ async function uninstall({ browser: browserKey } = {}) {
 async function status() {
   const rows = [];
   for (const browser of BROWSERS) {
+    // Any one of a browser's keys is enough for that browser to find us.
     let registered = false;
-    try {
-      const out = await reg(['query', 'HKCU\\' + browser.registry + '\\' + HOST_NAME, '/ve']);
-      registered = out.includes(HOST_NAME) || out.includes('REG_SZ');
-    } catch {
-      registered = false;
+    for (const key of browser.registry) {
+      try {
+        const out = await reg(['query', 'HKCU\\' + key + '\\' + HOST_NAME, '/ve']);
+        if (out.includes(HOST_NAME) || out.includes('REG_SZ')) {
+          registered = true;
+          break;
+        }
+      } catch {
+        // Try the next key: absent here does not mean absent everywhere.
+      }
     }
     rows.push({ key: browser.key, name: browser.name, family: browser.family, registered });
   }

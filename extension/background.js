@@ -106,11 +106,19 @@ function sendNative(message) {
     chrome.runtime.sendNativeMessage(HOST, message, (reply) => {
       if (chrome.runtime.lastError) {
         // The usual cause is that setup was never run for this browser, so the
-        // browser has nothing to launch. Say that rather than the raw error.
-        reject(new Error(
+        // browser has nothing to launch, and that is what the advice assumes.
+        // The browser's own words go on the end regardless: when the cause is
+        // anything else, they are the only thing that says so, and throwing
+        // them away leaves nothing at all to go on.
+        const reason = chrome.runtime.lastError.message || 'no reason given';
+        const err = new Error(
           'Propolis is not connected to this browser yet. Open Propolis, go to ' +
-          'Settings and then Browser extension, and follow the steps there.'
-        ));
+          'Settings and then Browser extension, and follow the steps there.\n\n' +
+          'The browser said: ' + reason
+        );
+        err.code = 'no-host';
+        err.reason = reason;
+        reject(err);
         return;
       }
       if (reply && reply.error) {

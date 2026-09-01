@@ -534,6 +534,40 @@ async function main() {
       derivationError || String(derived && derived.length));
   }
 
+
+  // The extension could not reach the app from Brave because the native
+  // messaging host was registered under Software\BraveSoftware\Brave-Browser,
+  // which is what Brave's own documentation says and which Brave 152 does not
+  // read. It reads the unbranded upstream key, Software\Chromium, and answers
+  // "Specified native messaging host not found" for a registration that is
+  // otherwise perfect, so nothing about the failure points at the cause.
+  //
+  // browserinstall.js pulls in electron, so it is read as source rather than
+  // required, the same way the scrypt constants above are.
+  console.log('\nnative messaging registration');
+  {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'browserinstall.js'), 'utf8');
+    const brave = source.slice(source.indexOf("key: 'brave'"), source.indexOf("key: 'vivaldi'"));
+
+    check('Brave is registered under the key Brave actually reads',
+      brave.includes('Software\\\\Chromium\\\\NativeMessagingHosts'));
+    check('and still under its own documented key, for builds that use it',
+      brave.includes('Software\\\\BraveSoftware\\\\Brave-Browser\\\\NativeMessagingHosts'));
+
+    // A browser with several keys is only registered if every one is written,
+    // so the three places that touch the registry have to loop over the list.
+    // Concatenating it into a string would silently produce one broken key.
+    const loops = source.match(/for \(const key of browser\.registry\)/g) || [];
+    check('install, uninstall and status all walk the list', loops.length === 3, String(loops.length));
+    check('the list is never concatenated into a single key',
+      !/'HKCU\\\\\\\\' \+ browser\.registry \+/.test(source));
+
+    for (const name of ['chrome', 'edge', 'brave', 'vivaldi', 'firefox']) {
+      const entry = source.slice(source.indexOf(`key: '${name}'`));
+      check(name + ' declares its keys as a list', /^[^}]*registry:\s*\[/s.test(entry));
+    }
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   fs.rmSync(tmpDir, { recursive: true, force: true });
   process.exit(failed ? 1 : 0);
